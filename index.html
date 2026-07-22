@@ -898,38 +898,6 @@
                     <button type="button" onclick="openModal('userUploadModal')" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2"><i data-lucide="arrow-up-circle" class="w-4 h-4"></i> העלה תמונות</button>
                 </div>
 
-                <div class="relative py-2">
-                    <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-slate-200"></div></div>
-                    <div class="relative flex justify-center"><span class="bg-white/80 backdrop-blur-sm px-3 text-[10px] text-slate-400 font-bold uppercase tracking-wider">אזור מנהלים</span></div>
-                </div>
-
-                <!-- ממשק אבטחה וחיבור מנהל מאובטח -->
-                <div id="sidebarAuthArea" class="bg-slate-50 border border-slate-200/50 rounded-2xl p-4 shadow-sm space-y-4">
-                    <div class="flex gap-2 border-b border-slate-200 pb-2">
-                        <button type="button" onclick="switchAuthTab('login')" id="tabBtnLogin" class="flex-1 pb-1 text-xs font-bold text-indigo-600 border-b-2 border-indigo-600">התחברות</button>
-                        <span class="flex-1 pb-1 text-xs font-semibold text-slate-400 text-center"></span>
-                    </div>
-
-                    <form id="authForm" onsubmit="event.preventDefault(); handleAuthFormSubmit(this);" class="space-y-3">
-                        <input type="hidden" id="authActionType" value="login">
-                        <div>
-                            <label class="text-[10px] font-bold text-slate-500 block mb-1">אימייל מנהל:</label>
-                            <div class="relative">
-                                <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400"><i data-lucide="mail" class="w-4 h-4"></i></span>
-                                <input type="email" name="email" required placeholder="admin@org.com" class="w-full border border-slate-200 rounded-xl pr-9 pl-3 py-2 text-xs bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
-                            </div>
-                        </div>
-                        <div>
-                            <label class="text-[10px] font-bold text-slate-500 block mb-1">סיסמה:</label>
-                            <div class="relative">
-                                <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400"><i data-lucide="lock" class="w-4 h-4"></i></span>
-                                <input type="password" name="password" required autocomplete="current-password" placeholder="••••••••" class="w-full border border-slate-200 rounded-xl pr-9 pl-3 py-2 text-xs bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
-                            </div>
-                        </div>
-                        <button type="submit" id="authSubmitBtn" class="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all shadow-sm">התחבר למערכת</button>
-                    </form>
-                    <p class="text-[9px] text-slate-400 text-center leading-tight">חשבונות מנהל נוצרים מראש במסוף Firebase בלבד. אין הרשמה ציבורית מהאתר.</p>
-                </div>
             </div>
 
             <!-- אזור ניהול פעיל (מוצג רק למנהל שהתחבר בצורה מאובטחת) -->
@@ -1078,20 +1046,6 @@
                             </div>
                             <button type="submit" class="w-full py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold transition-all">צור תיקייה בענן</button>
                         </form>
-                    </div>
-                </div>
-
-                <!-- אבטחה -->
-                <div id="adminPasswordSecuritySection" class="border border-slate-200 rounded-2xl overflow-hidden bg-white/40 shadow-sm">
-                    <button type="button" onclick="toggleAccordion('accSecurity')" class="w-full hover:bg-slate-50 px-4 py-3 text-xs font-bold text-slate-800 flex items-center justify-between transition-all">
-                        <span class="flex items-center gap-2 text-slate-600"><i data-lucide="lock-keyhole" class="w-4 h-4"></i> אבטחה וסיסמה</span>
-                        <i id="accSecurityArrow" data-lucide="chevron-down" class="w-4 h-4 text-slate-400"></i>
-                    </button>
-                    <div id="accSecurity" class="accordion-content px-4 space-y-3">
-                        <div class="space-y-1.5 p-3 bg-white/90 rounded-xl border border-slate-200 shadow-inner">
-                            <input type="password" id="sideNewPassInput" minlength="6" autocomplete="new-password" placeholder="סיסמה חדשה (מינימום 6 תווים)" class="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-mono">
-                            <button type="button" onclick="handleSidebarUpdatePassword()" class="w-full py-1.5 bg-slate-800 hover:bg-slate-900 text-white text-[10px] font-bold rounded-lg transition-all mt-1">עדכן סיסמה בענן</button>
-                        </div>
                     </div>
                 </div>
 
@@ -1276,7 +1230,7 @@
          ========================================== -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, updatePassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, doc, getDoc, setDoc, deleteDoc, updateDoc, onSnapshot, initializeFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
@@ -1609,32 +1563,6 @@
             }
         };
 
-        // חשיפת פונקציות האבטחה הרשמיות של Firebase למערכת הניהול
-        window.handleSidebarLogin = async function(email, password) {
-            if (!auth) { window.showNotification("המערכת עדיין מתחברת...", false); return; }
-            try {
-                window.showNotification("מתחבר כמנהל...", true);
-                await signInWithEmailAndPassword(auth, email, password);
-                window.showNotification("התחברת בהצלחה כמנהל!", true);
-                window.toggleAdminDrawer();
-            } catch (e) {
-                console.error(e);
-                let msg = "שגיאת התחברות: ";
-                if (e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found') {
-                    msg += "אימייל או סיסמה שגויים.";
-                } else if (e.code === 'auth/invalid-email') {
-                    msg += "כתובת אימייל לא תקינה.";
-                } else {
-                    msg += "נא לוודא שהפרטים נכונים ושיש חיבור אינטרנט.";
-                }
-                window.showNotification(msg, false);
-            }
-        };
-
-        window.handleSidebarRegister = async function() {
-            window.showNotification("הרשמת מנהלים מהאתר חסומה. יש ליצור חשבון מנהל במסוף Firebase.", false);
-        };
-
         window.lockGalleryImmediatelySidebar = async function() {
             if (!auth) return;
             try {
@@ -1646,24 +1574,6 @@
             } catch (e) {
                 console.error(e);
                 window.showNotification("שגיאה במהלך ההתנתקות.", false);
-            }
-        };
-
-        window.handleSidebarUpdatePassword = async function() {
-            if (!auth || !auth.currentUser) return;
-            const newVal = document.getElementById('sideNewPassInput').value.trim();
-            if (newVal.length < 6) {
-                window.showNotification('הסיסמה החדשה חייבת להכיל לפחות 6 תווים', false);
-                return;
-            }
-            try {
-                window.showNotification("מעדכן סיסמה בענן...", true);
-                await updatePassword(auth.currentUser, newVal);
-                document.getElementById('sideNewPassInput').value = '';
-                window.showNotification('הסיסמה שונתה בהצלחה בענן!', true);
-            } catch(e) {
-                console.error(e);
-                window.showNotification('שגיאה בעדכון הסיסמה: יש להתחבר מחדש ולנסות שוב.', false);
             }
         };
 
@@ -1787,16 +1697,15 @@
                     stopAdminListeners();
                     if (user) {
                         const providerIds = (user.providerData || []).map(p => p.providerId);
-                        const isPasswordAdmin = !user.isAnonymous && providerIds.includes('password');
                         const isGoogleUser = !user.isAnonymous && providerIds.includes('google.com');
 
                         window.state.currentUser = user;
                         window.state.isGoogleUser = isGoogleUser;
-                        window.state.isAdminLoggedIn = isPasswordAdmin;
-                        window.state.isLocked = !isPasswordAdmin;
+                        window.state.isAdminLoggedIn = false;
+                        window.state.isLocked = true;
                         window.state.userProfile = null;
-                        window.state.userRole = isPasswordAdmin ? 'admin' : (isGoogleUser ? 'viewer' : 'guest');
-                        window.state.userApprovalStatus = isPasswordAdmin ? 'approved' : (isGoogleUser ? 'pending' : 'signed_out');
+                        window.state.userRole = isGoogleUser ? 'viewer' : 'guest';
+                        window.state.userApprovalStatus = isGoogleUser ? 'pending' : 'signed_out';
 
                         window.updateAdminUI();
                         if (isGoogleUser) {
@@ -1808,7 +1717,6 @@
                             }
                         }
                         setupFirestoreListeners(user);
-                        if (isPasswordAdmin) startAdminListeners();
                     } else {
                         clearDriveConnection();
                         window.firestoreUnsubscribers.forEach(unsubscribe => { try { unsubscribe(); } catch (error) {} });
@@ -2277,33 +2185,7 @@
             await deleteDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'pendingImages', imageId));
         };
 
-        // --- 3. UI Helper Router for Authentication Panel ---
-        window.switchAuthTab = function(type) {
-            const tabLogin = document.getElementById('tabBtnLogin');
-            const actionInput = document.getElementById('authActionType');
-            const submitBtn = document.getElementById('authSubmitBtn');
-
-            if(!tabLogin || !actionInput || !submitBtn) return;
-
-            if (type === 'login') {
-                tabLogin.className = "flex-1 pb-1 text-xs font-bold text-indigo-600 border-b-2 border-indigo-600 bg-transparent text-right";
-                actionInput.value = 'login';
-                submitBtn.textContent = 'התחבר למערכת';
-            }
-        };
-
-        window.handleAuthFormSubmit = async function(form) {
-            const email = form.email.value;
-            const password = form.password.value;
-            const action = document.getElementById('authActionType').value;
-
-            if (action === 'login') {
-                await window.handleSidebarLogin(email, password);
-            }
-            form.password.value = '';
-        };
-
-        // --- 4. Admin UI Update Routing ---
+        // --- 3. Admin UI Update Routing ---
         window.updateAdminUI = function() {
             const userArea = document.getElementById('userActionArea');
             const adminPanel = document.getElementById('sidebarAdminPanel');
@@ -2392,8 +2274,6 @@
 
             if (window.state.isAdminLoggedIn) {
                 if (adminPanel) adminPanel.classList.remove('hidden');
-                const passwordSecuritySection = document.getElementById('adminPasswordSecuritySection');
-                if (passwordSecuritySection) passwordSecuritySection.classList.toggle('hidden', window.state.isGoogleUser);
                 statusBadge.className = "text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800 border border-emerald-200/50";
                 statusBadge.innerText = "ניהול פעיל";
                 const adminName = document.getElementById('adminCurrentUserName');
@@ -3315,4 +3195,3 @@
     </script>
 </body>
 </html>
-
