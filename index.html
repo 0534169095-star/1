@@ -1153,6 +1153,10 @@
                     <div id="accAddSmart" class="accordion-content px-4 space-y-3">
                         <p class="text-[10px] text-slate-500 leading-tight">בחר היכן למקם את הקבצים, או תן למערכת ליצור אוטומטית תת-תיקיות בענן לפי שם התיקייה מהמחשב!</p>
                         <form onsubmit="handleAddPhotoAdmin(event)" class="space-y-3">
+                            <div class="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3 space-y-2">
+                                <p id="adminDriveUploadStatus" class="text-[10px] font-bold text-emerald-800">יש לחבר את Google Drive לפני בחירת התמונות.</p>
+                                <button type="button" id="adminDriveUploadConnectBtn" onclick="connectDriveForUpload()" class="w-full py-2 bg-white hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg text-[10px] font-bold transition-all">חבר Drive באותו דף</button>
+                            </div>
                             <div>
                                 <label class="text-[9px] font-bold text-slate-500 block mb-1">תיקיית יעד:</label>
                                 <select id="adminTargetFolderSelect" class="w-full text-xs border border-indigo-200 rounded-xl py-2 px-2 bg-white text-slate-800 focus:ring-indigo-500">
@@ -1176,7 +1180,7 @@
                                 <p class="text-[10px] font-bold text-indigo-900" id="adminUploadProgressText">מעלה לענן...</p>
                             </div>
 
-                            <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md">העלה לגלריה הארצית</button>
+                            <button type="submit" id="adminUploadSubmitBtn" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-xl text-xs font-bold transition-all shadow-md">העלה לגלריה הארצית</button>
                         </form>
                     </div>
                 </div>
@@ -1261,6 +1265,11 @@
             </div>
             <div class="p-6 space-y-5">
                 <p id="userUploadModeText" class="text-[11px] text-slate-600 leading-relaxed bg-indigo-50/50 p-3 rounded-xl border border-indigo-100">בחר תיקיית יעד ולאחר מכן תמונות בודדות או תיקייה שלמה.</p>
+                <div class="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 space-y-2">
+                    <p id="userDriveUploadStatus" class="text-[11px] font-bold text-emerald-800">ראשית יש לחבר את Google Drive.</p>
+                    <button type="button" id="userDriveUploadConnectBtn" onclick="connectDriveForUpload()" class="w-full py-2.5 bg-white hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold transition-all">חבר Drive באותו דף</button>
+                    <p class="text-[9px] text-emerald-700/80">Google יעבור באותה לשונית ויחזיר אותך אוטומטית לאתר.</p>
+                </div>
                 <div class="space-y-3">
                     <label class="block">
                         <span class="text-[10px] font-bold text-slate-700 mb-1 block">תיקיית יעד בגלריה:</span>
@@ -1466,7 +1475,6 @@
         window.adminUnsubscribers = [];
 
         let auth = null;
-        let driveAuth = null;
         let driveAccessToken = null;
         let driveUploadAccessToken = null;
         let driveUploadFolderId = null;
@@ -1474,18 +1482,16 @@
         let oneTapInitialized = false;
         let oneTapPromptRequested = false;
         const GOOGLE_ONE_TAP_CLIENT_ID = '601586229891-giorl13mdpu7kfbeb6h2aj6qjpkphmmo.apps.googleusercontent.com';
+        const DRIVE_OAUTH_REDIRECT_URI = 'https://0534169095-star.github.io/1/';
+        const DRIVE_UPLOAD_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+        const DRIVE_SYNC_SCOPE = `${DRIVE_UPLOAD_SCOPE} https://www.googleapis.com/auth/drive.readonly`;
+        const DRIVE_OAUTH_STATE_KEY = 'simchas_drive_oauth_state';
+        const DRIVE_OAUTH_INTENT_KEY = 'simchas_drive_redirect_intent';
         // נשמרות רק טביעות SHA-256 של חשבון מנהל-העל, לא הכתובת או המזהה עצמם.
         const INITIAL_ADMIN_UID_SHA256 = 'b38e92d2900b2c32ddfe921142715cc2becbe7b77d9e911196d7a561574d8b39';
         const INITIAL_SUPER_ADMIN_EMAIL_SHA256 = 'd2632af59d29239eef52f10e1cfbf38e27c65c55470b355134b1cd1fb4f809d6';
         const googleProvider = new GoogleAuthProvider();
         googleProvider.setCustomParameters({ prompt: 'select_account' });
-        const driveProvider = new GoogleAuthProvider();
-        driveProvider.addScope('https://www.googleapis.com/auth/drive.readonly');
-        driveProvider.addScope('https://www.googleapis.com/auth/drive.file');
-        driveProvider.setCustomParameters({ prompt: 'consent select_account' });
-        const driveUploadProvider = new GoogleAuthProvider();
-        driveUploadProvider.addScope('https://www.googleapis.com/auth/drive.file');
-        driveUploadProvider.setCustomParameters({ prompt: 'consent select_account' });
 
         function dismissGoogleOneTap() {
             try {
@@ -1583,8 +1589,33 @@
                     : '<i data-lucide="cloud" class="w-4 h-4"></i> חבר Google Drive';
             }
             if (syncButton) syncButton.disabled = !connected;
+            updateDriveUploadUI();
             if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
         }
+
+        function updateDriveUploadUI() {
+            const connected = Boolean(driveUploadAccessToken);
+            const statusText = connected
+                ? 'Google Drive מחובר. אפשר לבחור ולהעלות תמונות.'
+                : 'ראשית יש לחבר את Google Drive לפני בחירת התמונות.';
+            ['userDriveUploadStatus', 'adminDriveUploadStatus'].forEach(id => {
+                const status = document.getElementById(id);
+                if (status) status.textContent = statusText;
+            });
+            ['userDriveUploadConnectBtn', 'adminDriveUploadConnectBtn'].forEach(id => {
+                const button = document.getElementById(id);
+                if (button) button.textContent = connected ? 'החלף חשבון Drive' : 'חבר Drive באותו דף';
+            });
+            ['userMultiFiles', 'userFolderUpload', 'adminMultiFiles', 'adminFolderUpload'].forEach(id => {
+                const input = document.getElementById(id);
+                if (input) input.disabled = !connected;
+            });
+            ['userUploadSubmitBtn', 'adminUploadSubmitBtn'].forEach(id => {
+                const button = document.getElementById(id);
+                if (button) button.disabled = !connected;
+            });
+        }
+        window.updateDriveUploadUI = updateDriveUploadUI;
 
         function clearDriveConnection() {
             driveAccessToken = null;
@@ -1596,54 +1627,94 @@
 
         async function requestDriveUploadAccess() {
             if (driveUploadAccessToken) return driveUploadAccessToken;
-            if (!driveAuth) throw new Error('החיבור ל־Google Drive עדיין נטען. נסה שוב בעוד רגע.');
-            if (!window.state?.currentUser || window.state.userApprovalStatus !== 'approved') {
-                throw new Error('יש להתחבר באמצעות חשבון Google מאושר לפני העלאת תמונות.');
-            }
-
-            try {
-                const result = await signInWithPopup(driveAuth, driveUploadProvider);
-                const credential = GoogleAuthProvider.credentialFromResult(result);
-                if (!credential?.accessToken) throw new Error('לא התקבל אישור העלאה ל־Google Drive.');
-                driveUploadAccessToken = credential.accessToken;
-                driveUploadFolderId = null;
-                driveUploadFolderPromise = null;
-                return driveUploadAccessToken;
-            } catch (error) {
-                if (error.code === 'auth/popup-closed-by-user') throw new Error('חלון החיבור ל־Drive נסגר לפני השלמת האישור.');
-                if (error.code === 'auth/popup-blocked') throw new Error('הדפדפן חסם את חלון החיבור. אשר חלונות קופצים ונסה שוב.');
-                if (error.code === 'auth/unauthorized-domain') throw new Error('הדומיין של האתר אינו מורשה ב־Firebase Authentication.');
-                throw error;
-            }
+            throw new Error('Google Drive עדיין לא מחובר. לחץ תחילה על „חבר Drive באותו דף”.');
         }
         window.requestDriveUploadAccess = requestDriveUploadAccess;
 
-        window.connectGoogleDrive = async function() {
-            if (!window.checkAdminPermission?.()) return;
-            if (!driveAuth) {
-                window.showNotification('החיבור ל־Google Drive עדיין נטען. נסה שוב בעוד רגע.', false);
+        function createDriveOAuthState() {
+            if (window.crypto?.randomUUID) return window.crypto.randomUUID();
+            const bytes = new Uint8Array(24);
+            window.crypto.getRandomValues(bytes);
+            return Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
+        }
+
+        function startDriveOAuthRedirect(scope, intent) {
+            const oauthState = createDriveOAuthState();
+            sessionStorage.setItem(DRIVE_OAUTH_STATE_KEY, oauthState);
+            sessionStorage.setItem(DRIVE_OAUTH_INTENT_KEY, intent);
+
+            const params = new URLSearchParams({
+                client_id: GOOGLE_ONE_TAP_CLIENT_ID,
+                redirect_uri: DRIVE_OAUTH_REDIRECT_URI,
+                response_type: 'token',
+                scope,
+                state: oauthState,
+                include_granted_scopes: 'true',
+                prompt: 'consent select_account'
+            });
+            const currentEmail = String(window.state?.currentUser?.email || '').trim();
+            if (currentEmail) params.set('login_hint', currentEmail);
+
+            dismissGoogleOneTap();
+            window.location.assign(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
+        }
+
+        function consumeDriveOAuthRedirect() {
+            const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+            if (!hashParams.has('access_token') && !hashParams.has('error')) return null;
+
+            // אסימון הגישה מגיע במקטע הכתובת. מסירים אותו מיד מהשורה בדפדפן.
+            window.history.replaceState(null, document.title, `${window.location.pathname}${window.location.search}`);
+
+            const expectedState = sessionStorage.getItem(DRIVE_OAUTH_STATE_KEY);
+            const returnedState = hashParams.get('state');
+            const intent = sessionStorage.getItem(DRIVE_OAUTH_INTENT_KEY);
+            sessionStorage.removeItem(DRIVE_OAUTH_STATE_KEY);
+            sessionStorage.removeItem(DRIVE_OAUTH_INTENT_KEY);
+
+            if (!expectedState || !returnedState || returnedState !== expectedState || !intent) {
+                throw new Error('אימות החיבור ל־Google Drive נכשל. נסה להתחבר מחדש.');
+            }
+
+            const oauthError = hashParams.get('error');
+            if (oauthError) {
+                if (oauthError === 'access_denied') throw new Error('החיבור ל־Google Drive בוטל לפני שניתן אישור.');
+                throw new Error(hashParams.get('error_description') || 'Google לא אישרה את החיבור ל־Drive.');
+            }
+
+            const accessToken = hashParams.get('access_token');
+            if (!accessToken) throw new Error('לא התקבל אישור גישה ל־Google Drive.');
+
+            driveUploadAccessToken = accessToken;
+            driveUploadFolderId = null;
+            driveUploadFolderPromise = null;
+            if (intent === 'sync') driveAccessToken = accessToken;
+            return intent;
+        }
+
+        window.connectDriveForUpload = function() {
+            if (!window.state?.currentUser || window.state.userApprovalStatus !== 'approved') {
+                window.showNotification('יש להתחבר באמצעות חשבון Google מאושר לפני חיבור Drive.', false);
                 return;
             }
+            try {
+                startDriveOAuthRedirect(DRIVE_UPLOAD_SCOPE, 'upload');
+            } catch (error) {
+                console.error('Drive redirect failed:', error);
+                window.showNotification(error.message || 'לא ניתן היה לעבור לחיבור Google Drive.', false);
+            }
+        };
+
+        window.connectGoogleDrive = function() {
+            if (!window.checkAdminPermission?.()) return;
 
             const button = document.getElementById('connectDriveBtn');
             if (button) button.disabled = true;
             try {
-                const result = await signInWithPopup(driveAuth, driveProvider);
-                const credential = GoogleAuthProvider.credentialFromResult(result);
-                if (!credential?.accessToken) throw new Error('לא התקבל אישור גישה ל־Google Drive.');
-                driveAccessToken = credential.accessToken;
-                driveUploadAccessToken = credential.accessToken;
-                driveUploadFolderId = null;
-                driveUploadFolderPromise = null;
-                setDriveConnectionUI(result.user?.email || result.user?.displayName || '');
-                window.showNotification('Google Drive חובר בהצלחה.', true);
+                startDriveOAuthRedirect(DRIVE_SYNC_SCOPE, 'sync');
             } catch (error) {
                 console.error('Google Drive connection failed:', error);
-                let message = error.message || 'החיבור ל־Google Drive נכשל.';
-                if (error.code === 'auth/popup-closed-by-user') message = 'חלון החיבור ל־Drive נסגר לפני השלמת התהליך.';
-                else if (error.code === 'auth/popup-blocked') message = 'הדפדפן חסם את חלון החיבור. אשר חלונות קופצים ונסה שוב.';
-                else if (error.code === 'auth/unauthorized-domain') message = 'הדומיין של האתר אינו מורשה ב־Firebase Authentication.';
-                window.showNotification(message, false);
+                window.showNotification(error.message || 'החיבור ל־Google Drive נכשל.', false);
             } finally {
                 if (button) button.disabled = false;
             }
@@ -1896,7 +1967,6 @@
             try {
                 window.google?.accounts?.id?.disableAutoSelect();
                 clearDriveConnection();
-                if (driveAuth?.currentUser) await signOut(driveAuth);
                 await signOut(auth);
                 window.showNotification("התנתקת מחשבון Google.", true);
             } catch (e) {
@@ -1910,7 +1980,6 @@
             try {
                 window.showNotification("מתנתק ממצב ניהול...", true);
                 clearDriveConnection();
-                if (driveAuth?.currentUser) await signOut(driveAuth);
                 await signOut(auth);
                 window.showNotification("התנתקת בהצלחה. חזרת למצב משתמש.", true);
             } catch (e) {
@@ -2086,15 +2155,23 @@
                 const app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
                 auth.useDeviceLanguage();
-                const driveApp = initializeApp(firebaseConfig, 'drive-sync');
-                driveAuth = getAuth(driveApp);
-                driveAuth.useDeviceLanguage();
                 try {
                     const redirectResult = await getRedirectResult(auth);
                     if (redirectResult?.user) window.showNotification("התחברת בהצלחה באמצעות Google!", true);
                 } catch (e) {
                     console.error("Google redirect result error", e);
                     if (e.code === 'auth/unauthorized-domain') window.showNotification("הדומיין של האתר אינו מורשה ב-Firebase Authentication.", false);
+                }
+
+                try {
+                    const driveIntent = consumeDriveOAuthRedirect();
+                    if (driveIntent === 'sync') setDriveConnectionUI();
+                    else updateDriveUploadUI();
+                    if (driveIntent) window.showNotification('Google Drive חובר בהצלחה. אפשר לבחור ולהעלות תמונות.', true);
+                } catch (error) {
+                    console.error('Google Drive OAuth redirect error:', error);
+                    clearDriveConnection();
+                    window.showNotification(error.message || 'החיבור ל־Google Drive לא הושלם.', false);
                 }
 
                 window.db = getFirestore(app);
@@ -2521,6 +2598,7 @@
                 driveUploadAccessToken = null;
                 driveUploadFolderId = null;
                 driveUploadFolderPromise = null;
+                updateDriveUploadUI();
                 throw new Error('תוקף החיבור ל־Google Drive הסתיים. התחבר מחדש ונסה שוב.');
             }
             if (response.status === 403) {
@@ -3179,7 +3257,7 @@
                 window.showNotification(error.message || 'העלאת התמונות נכשלה. נסה שוב.', false);
             } finally {
                 if(progressContainer) progressContainer.classList.add('hidden');
-                if(btn) btn.disabled = false;
+                if(btn) btn.disabled = !driveUploadAccessToken;
             }
         }
 
