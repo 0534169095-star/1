@@ -1725,7 +1725,7 @@
             }, reportFirestoreError));
         }
 
-        async function ensureGoogleUserProfile(user) {
+        async function syncGoogleUserProfile(user) {
             const profileRef = doc(window.db, 'artifacts', window.appId, 'public', 'data', 'userProfiles', user.uid);
             const snapshot = await getDoc(profileRef);
             const commonData = {
@@ -1746,6 +1746,21 @@
                 window.showNotification('התחברת בהצלחה. בקשת ההצטרפות נשלחה לאישור מנהל.', true);
             } else {
                 await setDoc(profileRef, commonData, { merge: true });
+            }
+        }
+
+        async function ensureGoogleUserProfile(user) {
+            await user.getIdToken();
+            try {
+                await syncGoogleUserProfile(user);
+            } catch (error) {
+                const shouldRetry = error?.code === 'permission-denied' || error?.code === 'unauthenticated';
+                if (!shouldRetry) throw error;
+
+                // לאחר One Tap ייתכן שה-Auth התעדכן רגע לפני Firestore; מרעננים את האסימון ומנסים פעם נוספת.
+                await user.getIdToken(true);
+                await new Promise(resolve => setTimeout(resolve, 500));
+                await syncGoogleUserProfile(user);
             }
         }
 
@@ -1807,7 +1822,8 @@
                                 await ensureGoogleUserProfile(user);
                             } catch (error) {
                                 console.error('Creating Google user profile failed:', error);
-                                window.showNotification('לא ניתן היה לשלוח את בקשת ההצטרפות. בדוק את הרשאות Firebase.', false);
+                                const errorCode = error?.code || 'unknown';
+                                window.showNotification(`לא ניתן היה לשלוח את בקשת ההצטרפות (${errorCode}).`, false);
                             }
                         }
                         setupFirestoreListeners(user);
