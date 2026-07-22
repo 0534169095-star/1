@@ -1796,16 +1796,27 @@
 
         async function ensureGoogleUserProfile(user) {
             await user.getIdToken();
-            try {
-                await syncGoogleUserProfile(user);
-            } catch (error) {
-                const shouldRetry = error?.code === 'permission-denied' || error?.code === 'unauthenticated';
-                if (!shouldRetry) throw error;
+            const maxAttempts = 4;
 
-                // לאחר One Tap ייתכן שה-Auth התעדכן רגע לפני Firestore; מרעננים את האסימון ומנסים פעם נוספת.
-                await user.getIdToken(true);
-                await new Promise(resolve => setTimeout(resolve, 500));
-                await syncGoogleUserProfile(user);
+            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+                try {
+                    await syncGoogleUserProfile(user);
+                    return;
+                } catch (error) {
+                    const isAuthError = error?.code === 'permission-denied' || error?.code === 'unauthenticated';
+                    const isTemporaryNetworkError = error?.code === 'unavailable';
+                    const canRetry = (isAuthError || isTemporaryNetworkError) && attempt < maxAttempts;
+
+                    if (!canRetry) throw error;
+
+                    if (isAuthError) {
+                        // לאחר One Tap ייתכן שה-Auth התעדכן רגע לפני Firestore.
+                        await user.getIdToken(true);
+                    }
+
+                    // חיבורי רשת מסוימים צריכים זמן נוסף לפני ניסיון חוזר.
+                    await new Promise(resolve => setTimeout(resolve, isTemporaryNetworkError ? attempt * 1200 : 500));
+                }
             }
         }
 
@@ -1838,7 +1849,10 @@
                 }
 
                 try {
-                    window.db = initializeFirestore(app, { experimentalAutoDetectLongPolling: true });
+                    window.db = initializeFirestore(app, {
+                        experimentalForceLongPolling: true,
+                        experimentalLongPollingOptions: { timeoutSeconds: 15 }
+                    });
                 } catch(e) {
                     window.db = getFirestore(app);
                 }
