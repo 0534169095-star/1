@@ -1287,6 +1287,8 @@
         let oneTapInitialized = false;
         let oneTapPromptRequested = false;
         const GOOGLE_ONE_TAP_CLIENT_ID = '601586229891-giorl13mdpu7kfbeb6h2aj6qjpkphmmo.apps.googleusercontent.com';
+        // נשמרת רק טביעת SHA-256 של כתובת המנהל הראשי, לא הכתובת עצמה.
+        const INITIAL_ADMIN_EMAIL_SHA256 = 'd2632af59d29239eef52f10e1cfbf38e27c65c55470b355134b1cd1fb4f809d6';
         const googleProvider = new GoogleAuthProvider();
         googleProvider.setCustomParameters({ prompt: 'select_account' });
         const driveProvider = new GoogleAuthProvider();
@@ -1299,6 +1301,15 @@
             } catch (error) {
                 console.warn('Google One Tap dismissal failed:', error);
             }
+        }
+
+        async function isInitialAdminEmail(email) {
+            const normalizedEmail = String(email || '').trim().toLowerCase();
+            if (!normalizedEmail || !window.crypto?.subtle) return false;
+            const bytes = new TextEncoder().encode(normalizedEmail);
+            const digest = await window.crypto.subtle.digest('SHA-256', bytes);
+            const hash = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
+            return hash === INITIAL_ADMIN_EMAIL_SHA256;
         }
 
         async function handleGoogleOneTapCredential(response) {
@@ -1737,6 +1748,7 @@
         async function syncGoogleUserProfile(user) {
             const profileRef = doc(window.db, 'artifacts', window.appId, 'public', 'data', 'userProfiles', user.uid);
             const snapshot = await getDoc(profileRef);
+            const isInitialAdmin = await isInitialAdminEmail(user.email);
             const commonData = {
                 uid: user.uid,
                 displayName: user.displayName || 'משתמש Google',
@@ -1748,13 +1760,37 @@
             if (!snapshot.exists()) {
                 await setDoc(profileRef, {
                     ...commonData,
-                    status: 'pending',
-                    role: 'viewer',
-                    requestedAt: Date.now()
+                    status: isInitialAdmin ? 'approved' : 'pending',
+                    role: isInitialAdmin ? 'admin' : 'viewer',
+                    requestedAt: Date.now(),
+                    ...(isInitialAdmin ? {
+                        approvedAt: Date.now(),
+                        approvedBy: 'initial-admin-bootstrap'
+                    } : {})
                 });
-                window.showNotification('התחברת בהצלחה. בקשת ההצטרפות נשלחה לאישור מנהל.', true);
+                window.showNotification(
+                    isInitialAdmin
+                        ? 'חשבון המנהל הראשי הופעל בהצלחה.'
+                        : 'התחברת בהצלחה. בקשת ההצטרפות נשלחה לאישור מנהל.',
+                    true
+                );
             } else {
-                await setDoc(profileRef, commonData, { merge: true });
+                const existingProfile = snapshot.data();
+                const shouldPromoteInitialAdmin = isInitialAdmin && (
+                    existingProfile.status !== 'approved' || existingProfile.role !== 'admin'
+                );
+                await setDoc(profileRef, {
+                    ...commonData,
+                    ...(isInitialAdmin ? {
+                        status: 'approved',
+                        role: 'admin',
+                        approvedAt: existingProfile.approvedAt || Date.now(),
+                        approvedBy: existingProfile.approvedBy || 'initial-admin-bootstrap'
+                    } : {})
+                }, { merge: true });
+                if (shouldPromoteInitialAdmin) {
+                    window.showNotification('חשבון המנהל הראשי הופעל בהצלחה.', true);
+                }
             }
         }
 
