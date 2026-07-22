@@ -10,6 +10,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 
     <script>
@@ -1266,7 +1267,7 @@
          ========================================== -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithCredential, signInWithPopup, signInWithRedirect, getRedirectResult, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, doc, getDoc, setDoc, deleteDoc, updateDoc, onSnapshot, initializeFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
@@ -1283,11 +1284,64 @@
         let auth = null;
         let driveAuth = null;
         let driveAccessToken = null;
+        let oneTapInitialized = false;
+        let oneTapPromptRequested = false;
+        const GOOGLE_ONE_TAP_CLIENT_ID = '601586229891-giorl13mdpu7kfbeb6h2aj6qjpkphmmo.apps.googleusercontent.com';
         const googleProvider = new GoogleAuthProvider();
         googleProvider.setCustomParameters({ prompt: 'select_account' });
         const driveProvider = new GoogleAuthProvider();
         driveProvider.addScope('https://www.googleapis.com/auth/drive.readonly');
         driveProvider.setCustomParameters({ prompt: 'consent select_account' });
+
+        function dismissGoogleOneTap() {
+            try {
+                window.google?.accounts?.id?.cancel();
+            } catch (error) {
+                console.warn('Google One Tap dismissal failed:', error);
+            }
+        }
+
+        async function handleGoogleOneTapCredential(response) {
+            if (!auth || !response?.credential) return;
+            try {
+                const credential = GoogleAuthProvider.credential(response.credential);
+                await signInWithCredential(auth, credential);
+                dismissGoogleOneTap();
+                window.showNotification('התחברת בהצלחה באמצעות Google!', true);
+            } catch (error) {
+                console.error('Google One Tap sign-in failed:', error);
+                window.showNotification('ההתחברות המהירה באמצעות Google נכשלה. אפשר להשתמש בכפתור ההתחברות הרגיל.', false);
+            }
+        }
+
+        function showGoogleOneTapWhenReady() {
+            if (oneTapPromptRequested || (auth?.currentUser && !auth.currentUser.isAnonymous)) return;
+            let attempts = 0;
+            const tryShow = () => {
+                if (auth?.currentUser && !auth.currentUser.isAnonymous) return;
+                const googleIdentity = window.google?.accounts?.id;
+                if (!googleIdentity) {
+                    attempts += 1;
+                    if (attempts < 40) setTimeout(tryShow, 250);
+                    return;
+                }
+                if (!oneTapInitialized) {
+                    googleIdentity.initialize({
+                        client_id: GOOGLE_ONE_TAP_CLIENT_ID,
+                        callback: handleGoogleOneTapCredential,
+                        context: 'signin',
+                        auto_select: false,
+                        cancel_on_tap_outside: true,
+                        use_fedcm_for_prompt: true,
+                        itp_support: true
+                    });
+                    oneTapInitialized = true;
+                }
+                oneTapPromptRequested = true;
+                googleIdentity.prompt();
+            };
+            tryShow();
+        }
 
         function setDriveConnectionUI(email = '') {
             const connected = Boolean(driveAccessToken);
@@ -1568,6 +1622,7 @@
         window.signInWithGoogleAccount = async function() {
             if (!auth) { window.showNotification("המערכת עדיין מתחברת...", false); return; }
             try {
+                dismissGoogleOneTap();
                 window.showNotification("פותח התחברות באמצעות Google...", true);
                 const useRedirect = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
                 if (useRedirect) {
@@ -1589,6 +1644,7 @@
         window.signOutGoogleAccount = async function() {
             if (!auth) return;
             try {
+                window.google?.accounts?.id?.disableAutoSelect();
                 clearDriveConnection();
                 if (driveAuth?.currentUser) await signOut(driveAuth);
                 await signOut(auth);
@@ -1744,6 +1800,8 @@
                         window.state.userApprovalStatus = isGoogleUser ? 'pending' : 'signed_out';
 
                         window.updateAdminUI();
+                        if (isGoogleUser) dismissGoogleOneTap();
+                        else if (user.isAnonymous) showGoogleOneTapWhenReady();
                         if (isGoogleUser) {
                             try {
                                 await ensureGoogleUserProfile(user);
@@ -1769,6 +1827,7 @@
                         window.state.images = [];
                         window.state.folders = defaultFolders.map(folder => ({ ...folder }));
                         window.updateAdminUI();
+                        showGoogleOneTapWhenReady();
                         window.renderFolders();
                         window.renderImages();
                         // אם אין משתמש מחובר בכלל, נבצע התחברות אנונימית לקריאת נתונים
