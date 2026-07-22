@@ -1287,8 +1287,8 @@
         let oneTapInitialized = false;
         let oneTapPromptRequested = false;
         const GOOGLE_ONE_TAP_CLIENT_ID = '601586229891-giorl13mdpu7kfbeb6h2aj6qjpkphmmo.apps.googleusercontent.com';
-        // נשמרת רק טביעת SHA-256 של כתובת המנהל הראשי, לא הכתובת עצמה.
-        const INITIAL_ADMIN_EMAIL_SHA256 = 'd2632af59d29239eef52f10e1cfbf38e27c65c55470b355134b1cd1fb4f809d6';
+        // נשמרת רק טביעת SHA-256 של UID המנהל הראשי, לא המזהה עצמו.
+        const INITIAL_ADMIN_UID_SHA256 = 'b38e92d2900b2c32ddfe921142715cc2becbe7b77d9e911196d7a561574d8b39';
         const googleProvider = new GoogleAuthProvider();
         googleProvider.setCustomParameters({ prompt: 'select_account' });
         const driveProvider = new GoogleAuthProvider();
@@ -1303,13 +1303,13 @@
             }
         }
 
-        async function isInitialAdminEmail(email) {
-            const normalizedEmail = String(email || '').trim().toLowerCase();
-            if (!normalizedEmail || !window.crypto?.subtle) return false;
-            const bytes = new TextEncoder().encode(normalizedEmail);
+        async function isInitialAdminUid(uid) {
+            const normalizedUid = String(uid || '').trim();
+            if (!normalizedUid || !window.crypto?.subtle) return false;
+            const bytes = new TextEncoder().encode(normalizedUid);
             const digest = await window.crypto.subtle.digest('SHA-256', bytes);
             const hash = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
-            return hash === INITIAL_ADMIN_EMAIL_SHA256;
+            return hash === INITIAL_ADMIN_UID_SHA256;
         }
 
         async function handleGoogleOneTapCredential(response) {
@@ -1748,7 +1748,7 @@
         async function syncGoogleUserProfile(user) {
             const profileRef = doc(window.db, 'artifacts', window.appId, 'public', 'data', 'userProfiles', user.uid);
             const snapshot = await getDoc(profileRef);
-            const isInitialAdmin = await isInitialAdminEmail(user.email);
+            const isInitialAdmin = await isInitialAdminUid(user.uid);
             const commonData = {
                 uid: user.uid,
                 displayName: user.displayName || 'משתמש Google',
