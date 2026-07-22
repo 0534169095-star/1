@@ -511,6 +511,28 @@
         body.gallery-locked #photosGrid,
         body.gallery-locked #emptyState,
         body.gallery-locked #newUpdatesBanner { display: none !important; }
+        body.gallery-locked .gallery-layout {
+            grid-template-columns: minmax(0, 1fr) !important;
+        }
+        body.gallery-locked .gallery-stage {
+            grid-column: 1 / -1;
+            width: 100%;
+            display: grid !important;
+            grid-template-columns: minmax(0, 1.55fr) minmax(340px, 430px);
+            align-items: stretch;
+            gap: clamp(18px, 2.4vw, 34px) !important;
+        }
+        body.gallery-locked .gallery-hero {
+            min-height: clamp(460px, calc(100vh - 190px), 680px);
+        }
+        body.gallery-locked #galleryAccessGate {
+            min-height: 100%;
+            margin: 0;
+            padding-inline: clamp(28px, 4vw, 52px) !important;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
         #galleryAccessGate {
             color: var(--paper);
             background: linear-gradient(145deg, rgba(20,24,33,.96), rgba(13,16,23,.96));
@@ -650,6 +672,7 @@
 
         #drawerOverlay { background: rgba(3,4,7,.72) !important; backdrop-filter: blur(6px) !important; }
         #adminDrawer {
+            width: min(360px, calc(100vw - 16px)) !important;
             color: #e8ebf0;
             background: #0e1118 !important;
             border-color: var(--line) !important;
@@ -726,6 +749,19 @@
             #folderList .folder-row { min-width: max-content; }
             .folder-panel-note { display: none; }
             #photosGrid { grid-template-columns: repeat(2, minmax(0,1fr)) !important; }
+        }
+
+        @media (max-width: 900px) {
+            body.gallery-locked .gallery-stage {
+                grid-template-columns: minmax(0, 1fr);
+            }
+            body.gallery-locked .gallery-hero {
+                min-height: 340px;
+            }
+            body.gallery-locked #galleryAccessGate {
+                min-height: auto;
+                padding-block: 42px !important;
+            }
         }
 
         @media (max-width: 680px) {
