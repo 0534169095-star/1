@@ -1315,10 +1315,12 @@
         }
 
         function showGoogleOneTapWhenReady() {
-            if (oneTapPromptRequested || (auth?.currentUser && !auth.currentUser.isAnonymous)) return;
+            // מבקשים מ-Google להציג את בוחר החשבון בכל ביקור בדף, גם אם
+            // Firebase זוכר התחברות קודמת. Google עצמה עשויה להסתיר את
+            // החלון בזמן השהיה לאחר שהמשתמש סגר אותו.
+            if (oneTapPromptRequested) return;
             let attempts = 0;
             const tryShow = () => {
-                if (auth?.currentUser && !auth.currentUser.isAnonymous) return;
                 const googleIdentity = window.google?.accounts?.id;
                 if (!googleIdentity) {
                     attempts += 1;
@@ -1331,7 +1333,7 @@
                         callback: handleGoogleOneTapCredential,
                         context: 'signin',
                         auto_select: false,
-                        cancel_on_tap_outside: true,
+                        cancel_on_tap_outside: false,
                         use_fedcm_for_prompt: true,
                         itp_support: true
                     });
@@ -1342,6 +1344,13 @@
             };
             tryShow();
         }
+
+        // גם חזרה לדף מהמטמון של הדפדפן נחשבת ביקור חדש.
+        window.addEventListener('pageshow', (event) => {
+            if (!event.persisted) return;
+            oneTapPromptRequested = false;
+            showGoogleOneTapWhenReady();
+        });
 
         function setDriveConnectionUI(email = '') {
             const connected = Boolean(driveAccessToken);
@@ -1815,8 +1824,7 @@
                         window.state.userApprovalStatus = isGoogleUser ? 'pending' : 'signed_out';
 
                         window.updateAdminUI();
-                        if (isGoogleUser) dismissGoogleOneTap();
-                        else if (user.isAnonymous) showGoogleOneTapWhenReady();
+                        showGoogleOneTapWhenReady();
                         if (isGoogleUser) {
                             try {
                                 await ensureGoogleUserProfile(user);
