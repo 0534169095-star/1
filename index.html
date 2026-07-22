@@ -700,6 +700,140 @@
             border-color: var(--line-strong) !important;
         }
 
+        /* לוח ניהול רחב, ברור ונוח יותר */
+        #adminDrawer {
+            width: min(940px, calc(100vw - 28px)) !important;
+        }
+        #adminDrawer button::before { display: none; }
+        #adminDrawer button:hover { transform: none; }
+        #adminDrawer .admin-drawer-header {
+            min-height: 76px;
+            padding: 18px 26px !important;
+            position: sticky;
+            top: 0;
+            z-index: 4;
+            background: rgba(16,20,28,.96) !important;
+            backdrop-filter: blur(18px);
+        }
+        #adminDrawer .admin-drawer-header h3 { font-size: 19px; letter-spacing: -.02em; }
+        #adminDrawer .admin-drawer-header > button {
+            width: 42px;
+            height: 42px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            background: rgba(255,255,255,.04);
+        }
+        #adminDrawer .admin-drawer-body {
+            padding: 22px 26px 30px !important;
+            background:
+                radial-gradient(circle at 100% 0, rgba(100,216,229,.055), transparent 32%),
+                #0e1118;
+        }
+        #sidebarAdminPanel:not(.hidden) {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            align-items: start;
+            gap: 14px;
+        }
+        #sidebarAdminPanel:not(.hidden) > * { margin-top: 0 !important; }
+        #sidebarAdminPanel .admin-identity-card,
+        #sidebarAdminPanel .admin-overview,
+        #sidebarAdminPanel .admin-logout {
+            grid-column: 1 / -1;
+        }
+        #sidebarAdminPanel .admin-identity-card {
+            min-height: 76px;
+            padding: 14px 16px !important;
+            background: linear-gradient(120deg, #171d28, #11161f) !important;
+            border: 1px solid rgba(255,255,255,.09) !important;
+            box-shadow: 0 12px 35px rgba(0,0,0,.2) !important;
+        }
+        #sidebarAdminPanel .admin-identity-card img,
+        #sidebarAdminPanel .admin-identity-card > div:first-child {
+            width: 46px;
+            height: 46px;
+        }
+        #adminCurrentUserName { font-size: 14px !important; }
+        #adminCurrentUserEmail { margin-top: 3px; font-size: 11px !important; }
+        #sidebarAdminPanel .admin-overview {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+        }
+        #sidebarAdminPanel .admin-stat {
+            min-height: 88px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px;
+            border: 1px solid var(--line);
+            border-radius: 15px;
+            background: rgba(255,255,255,.035);
+        }
+        #sidebarAdminPanel .admin-stat-icon {
+            width: 38px;
+            height: 38px;
+            flex: 0 0 38px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 11px;
+            color: var(--cyan);
+            background: rgba(100,216,229,.09);
+            border: 1px solid rgba(100,216,229,.15);
+        }
+        #sidebarAdminPanel .admin-stat strong {
+            display: block;
+            color: var(--paper);
+            font-size: 22px;
+            line-height: 1;
+        }
+        #sidebarAdminPanel .admin-stat > div > span {
+            display: block;
+            margin-top: 6px;
+            color: var(--muted);
+            font-size: 10px;
+            font-weight: 700;
+        }
+        #sidebarAdminPanel .admin-control-card {
+            border-color: var(--line) !important;
+            border-radius: 16px !important;
+            background: #131821 !important;
+            box-shadow: 0 10px 28px rgba(0,0,0,.16) !important;
+        }
+        #sidebarAdminPanel .admin-control-card > button {
+            min-height: 58px;
+            padding: 14px 16px !important;
+            color: var(--paper) !important;
+            font-size: 13px !important;
+            text-align: right;
+        }
+        #sidebarAdminPanel .admin-control-card > button:hover { background: rgba(255,255,255,.035) !important; }
+        #sidebarAdminPanel .accordion-content.active { padding: 4px 16px 16px !important; }
+        #sidebarAdminPanel input,
+        #sidebarAdminPanel select { min-height: 42px; font-size: 12px !important; border-radius: 11px !important; }
+        #sidebarAdminPanel .admin-logout {
+            min-height: 48px;
+            margin-top: 4px !important;
+            color: #ffb4a8 !important;
+            background: rgba(239,68,68,.08) !important;
+            border: 1px solid rgba(239,68,68,.18) !important;
+            box-shadow: none !important;
+        }
+        @media (max-width: 760px) {
+            #adminDrawer { width: 100% !important; }
+            #adminDrawer .admin-drawer-header { min-height: 68px; padding: 14px 16px !important; }
+            #adminDrawer .admin-drawer-body { padding: 16px !important; }
+            #sidebarAdminPanel:not(.hidden) { grid-template-columns: 1fr; }
+            #sidebarAdminPanel .admin-overview { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            #sidebarAdminPanel .admin-identity-card,
+            #sidebarAdminPanel .admin-overview,
+            #sidebarAdminPanel .admin-logout { grid-column: 1; }
+        }
+
         #newUpdatesBanner {
             color: var(--paper) !important;
             background: #141821 !important;
@@ -893,12 +1027,12 @@
     <div id="drawerOverlay" class="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40 hidden transition-all duration-300" onclick="toggleAdminDrawer()" aria-hidden="true"></div>
     <div id="adminDrawer" class="fixed inset-y-0 left-0 w-80 sm:w-96 bg-white/90 backdrop-blur-3xl shadow-2xl z-50 transform -translate-x-full transition-transform duration-300 ease-in-out border-r border-slate-200/60 flex flex-col" role="dialog" aria-modal="true" aria-label="אזור אישי והגדרות" inert>
 
-        <div class="bg-white text-slate-800 p-5 flex justify-between items-center flex-shrink-0 border-b border-slate-200/60">
-            <h3 class="font-bold text-lg flex items-center gap-2 text-indigo-950"><i data-lucide="user-round-cog" class="w-5 h-5 text-indigo-600"></i> פרופיל והרשאות</h3>
+        <div class="admin-drawer-header bg-white text-slate-800 p-5 flex justify-between items-center flex-shrink-0 border-b border-slate-200/60">
+            <h3 class="font-bold text-lg flex items-center gap-2 text-indigo-950"><i data-lucide="layout-dashboard" class="w-5 h-5 text-indigo-600"></i> לוח ניהול הגלריה</h3>
             <button type="button" onclick="toggleAdminDrawer()" class="text-slate-500 hover:text-slate-800 transition-all" aria-label="סגירת אזור ההגדרות"><i data-lucide="x" class="w-6 h-6"></i></button>
         </div>
 
-        <div class="flex-1 overflow-y-auto p-5 space-y-4">
+        <div class="admin-drawer-body flex-1 overflow-y-auto p-5 space-y-4">
             <div class="flex items-center justify-between pb-2 border-b border-slate-100">
                 <span class="text-xs font-bold text-slate-500">סטטוס חיבור:</span>
                 <span id="sidebarLockStatus" class="text-[10px] px-2 py-0.5 rounded-full font-bold"></span>
@@ -940,7 +1074,7 @@
             <!-- אזור ניהול פעיל (מוצג רק למנהל שהתחבר בצורה מאובטחת) -->
             <div id="sidebarAdminPanel" class="hidden space-y-3">
 
-                <div class="bg-slate-900 text-white rounded-2xl p-3.5 flex items-center gap-3 border border-white/10 shadow-sm">
+                <div class="admin-identity-card bg-slate-900 text-white rounded-2xl p-3.5 flex items-center gap-3 border border-white/10 shadow-sm">
                     <div id="adminCurrentUserFallback" class="w-10 h-10 rounded-full bg-emerald-500/15 text-emerald-300 flex items-center justify-center border border-emerald-400/20"><i data-lucide="shield-check" class="w-5 h-5"></i></div>
                     <img id="adminCurrentUserPhoto" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="תמונת פרופיל מנהל" class="hidden w-10 h-10 rounded-full object-cover border border-white/20">
                     <div class="min-w-0 flex-1">
@@ -950,8 +1084,15 @@
                     <span class="text-[9px] px-2 py-1 rounded-full font-bold bg-emerald-500/15 text-emerald-300">דרגה 3</span>
                 </div>
 
+                <section class="admin-overview" aria-label="סיכום נתוני הגלריה">
+                    <div class="admin-stat"><span class="admin-stat-icon"><i data-lucide="users" class="w-5 h-5"></i></span><div><strong id="adminOverviewUsersCount">0</strong><span>בקשות הצטרפות</span></div></div>
+                    <div class="admin-stat"><span class="admin-stat-icon"><i data-lucide="image-plus" class="w-5 h-5"></i></span><div><strong id="adminOverviewPendingCount">0</strong><span>תמונות לאישור</span></div></div>
+                    <div class="admin-stat"><span class="admin-stat-icon"><i data-lucide="images" class="w-5 h-5"></i></span><div><strong id="adminOverviewImagesCount">0</strong><span>תמונות בגלריה</span></div></div>
+                    <div class="admin-stat"><span class="admin-stat-icon"><i data-lucide="folders" class="w-5 h-5"></i></span><div><strong id="adminOverviewFoldersCount">0</strong><span>תיקיות</span></div></div>
+                </section>
+
                 <!-- אישור משתמשים חדשים ובחירת דרגה -->
-                <div class="border border-cyan-200 rounded-2xl overflow-hidden bg-gradient-to-b from-cyan-50/50 to-white/30 shadow-sm">
+                <div class="admin-control-card border border-cyan-200 rounded-2xl overflow-hidden bg-gradient-to-b from-cyan-50/50 to-white/30 shadow-sm">
                     <button type="button" onclick="toggleAccordion('accUserApprovals')" class="w-full hover:bg-cyan-50/50 px-4 py-3 text-xs font-bold text-slate-800 flex items-center justify-between transition-all">
                         <span class="flex items-center gap-2 text-cyan-700"><i data-lucide="user-check" class="w-4 h-4"></i> בקשות הצטרפות (<span id="pendingUsersCountBadge">0</span>)</span>
                         <i id="accUserApprovalsArrow" data-lucide="chevron-down" class="w-4 h-4 text-cyan-500/70"></i>
@@ -963,7 +1104,7 @@
                 </div>
 
                 <!-- אישור ממתינות -->
-                <div class="border border-amber-200 rounded-2xl overflow-hidden bg-gradient-to-b from-amber-50/40 to-white/30 shadow-sm">
+                <div class="admin-control-card border border-amber-200 rounded-2xl overflow-hidden bg-gradient-to-b from-amber-50/40 to-white/30 shadow-sm">
                     <button type="button" onclick="toggleAccordion('accPending')" class="w-full hover:bg-amber-50/50 px-4 py-3 text-xs font-bold text-slate-800 flex items-center justify-between transition-all">
                         <span class="flex items-center gap-2 text-amber-700"><i data-lucide="bell" class="w-4 h-4"></i> בקשות העלאה לאישור (<span id="pendingCountBadge">0</span>)</span>
                         <i id="accPendingArrow" data-lucide="chevron-down" class="w-4 h-4 text-amber-500/60"></i>
@@ -987,7 +1128,7 @@
                 </div>
 
                 <!-- העלאה חכמה / יצירת תיקייה -->
-                <div class="border border-indigo-100 rounded-2xl overflow-hidden bg-white/40 shadow-sm mt-2">
+                <div class="admin-control-card border border-indigo-100 rounded-2xl overflow-hidden bg-white/40 shadow-sm mt-2">
                     <button type="button" onclick="toggleAccordion('accAddSmart')" class="w-full hover:bg-indigo-50/40 px-4 py-3 text-xs font-bold text-slate-800 flex items-center justify-between transition-all">
                         <span class="flex items-center gap-2 text-indigo-700"><i data-lucide="cloud-upload" class="w-4 h-4"></i> העלאת תמונות מרובות ויצירת תיקיות</span>
                         <i id="accAddSmartArrow" data-lucide="chevron-down" class="w-4 h-4 text-indigo-400"></i>
@@ -1024,7 +1165,7 @@
                 </div>
 
                 <!-- סנכרון Google Drive -->
-                <div class="border border-emerald-200 rounded-2xl overflow-hidden bg-gradient-to-b from-emerald-50/60 to-white/40 shadow-sm">
+                <div class="admin-control-card border border-emerald-200 rounded-2xl overflow-hidden bg-gradient-to-b from-emerald-50/60 to-white/40 shadow-sm">
                     <button type="button" onclick="toggleAccordion('accDriveSync')" class="w-full hover:bg-emerald-50/60 px-4 py-3 text-xs font-bold text-slate-800 flex items-center justify-between transition-all">
                         <span class="flex items-center gap-2 text-emerald-700"><i data-lucide="refresh-cw" class="w-4 h-4"></i> סנכרון מ־Google Drive</span>
                         <i id="accDriveSyncArrow" data-lucide="chevron-down" class="w-4 h-4 text-emerald-500/70"></i>
@@ -1067,7 +1208,7 @@
                 </div>
 
                 <!-- יצירת תיקייה ריקה -->
-                <div class="border border-slate-200 rounded-2xl overflow-hidden bg-white/40 shadow-sm">
+                <div class="admin-control-card border border-slate-200 rounded-2xl overflow-hidden bg-white/40 shadow-sm">
                     <button type="button" onclick="toggleAccordion('accEmptyFolder')" class="w-full hover:bg-slate-50 px-4 py-3 text-xs font-bold text-slate-800 flex items-center justify-between transition-all">
                         <span class="flex items-center gap-2 text-slate-600"><i data-lucide="folder-plus" class="w-4 h-4"></i> יצירת תיקייה ריקה</span>
                         <i id="accEmptyFolderArrow" data-lucide="chevron-down" class="w-4 h-4 text-slate-400"></i>
@@ -1086,7 +1227,7 @@
                     </div>
                 </div>
 
-                <button type="button" onclick="lockGalleryImmediatelySidebar()" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-md mt-4">
+                <button type="button" onclick="lockGalleryImmediatelySidebar()" class="admin-logout w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-md mt-4">
                     <i data-lucide="log-out" class="w-4 h-4"></i>
                     התנתק ממצב ניהול
                 </button>
@@ -2586,6 +2727,7 @@
         function handleSearch(val) { window.state.searchQuery = val; window.renderImages(); }
 
         window.renderFolders = function() {
+            if (typeof window.updateAdminOverview === 'function') window.updateAdminOverview();
             const folderList = document.getElementById('folderList'); if (!folderList) return; folderList.innerHTML = '';
             const isEditBlocked = window.state.isLocked && !window.state.isAdminLoggedIn;
             window.state.folders.forEach(folder => {
@@ -2607,6 +2749,7 @@
         }
 
         window.renderImages = function() {
+            if (typeof window.updateAdminOverview === 'function') window.updateAdminOverview();
             const grid = document.getElementById('photosGrid'); const emptyState = document.getElementById('emptyState');
             if (!grid || !emptyState) return; grid.innerHTML = '';
             let filtered = window.state.tempSearchResults !== null ? window.state.tempSearchResults : window.state.images;
@@ -2871,9 +3014,23 @@
             if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
         };
 
+        window.updateAdminOverview = function() {
+            const values = {
+                adminOverviewUsersCount: (window.state.pendingUsers || []).length,
+                adminOverviewPendingCount: (window.state.pendingImages || []).length,
+                adminOverviewImagesCount: (window.state.images || []).length,
+                adminOverviewFoldersCount: (window.state.folders || []).filter(folder => folder.id !== 'all').length
+            };
+            Object.entries(values).forEach(([id, value]) => {
+                const element = document.getElementById(id);
+                if (element) element.textContent = String(value);
+            });
+        };
+
         window.updatePendingUsersBadge = function() {
             const badge = document.getElementById('pendingUsersCountBadge');
             if (badge) badge.textContent = String((window.state.pendingUsers || []).length);
+            window.updateAdminOverview();
         };
 
         window.approveUserAccess = async function(uid, role) {
@@ -2935,7 +3092,11 @@
             });
         }
 
-        window.updatePendingBadge = function() { const badge = document.getElementById('pendingCountBadge'); if (badge) badge.innerText = (window.state.pendingImages || []).length; }
+        window.updatePendingBadge = function() {
+            const badge = document.getElementById('pendingCountBadge');
+            if (badge) badge.innerText = (window.state.pendingImages || []).length;
+            window.updateAdminOverview();
+        }
 
         function toggleSelectAllPending() {
             const checkboxes = document.querySelectorAll('input[name="pendingImgCheck"]');
