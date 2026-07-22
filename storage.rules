@@ -1,0 +1,42 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function initialSuperAdmin() {
+      return signedIn() && request.auth.uid == 'u16HUOqIP7hhUC2Wxbejpb9jWao2';
+    }
+
+    function profile() {
+      return firestore.get(/databases/(default)/documents/artifacts/org-gallery/public/data/userProfiles/$(request.auth.uid));
+    }
+
+    function approved() {
+      return initialSuperAdmin() || (signedIn() && profile().data.status == 'approved');
+    }
+
+    function roleIs(role) {
+      return approved() && (initialSuperAdmin() || profile().data.role == role);
+    }
+
+    function superAdmin() {
+      return initialSuperAdmin() || roleIs('super_admin');
+    }
+
+    match /artifacts/org-gallery/public/data/images/{fileName} {
+      allow read: if approved();
+      allow create: if approved() &&
+        request.resource.size < 10 * 1024 * 1024 &&
+        request.resource.contentType.matches('image/.*');
+      allow update: if roleIs('uploader') || roleIs('admin') || roleIs('super_admin');
+      allow delete: if superAdmin();
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
