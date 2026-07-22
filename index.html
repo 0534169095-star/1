@@ -1268,7 +1268,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithCredential, signInWithPopup, signInWithRedirect, getRedirectResult, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, getDoc, setDoc, deleteDoc, updateDoc, onSnapshot, initializeFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, doc, getDoc, getDocs, setDoc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-lite.js";
         import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
         // גישה גלובלית לפונקציות פיירבייס מכל מקום בקוד
@@ -1276,6 +1276,35 @@
         window.storage = null;
         window.appId = typeof __app_id !== 'undefined' ? __app_id : 'org-gallery';
         window.firestoreModules = { collection, doc, getDoc, setDoc, deleteDoc, updateDoc };
+
+        // Firestore Lite משתמש בבקשות HTTPS רגילות. הרענון המחזורי מחליף את החיבור
+        // המתמשך של onSnapshot, שעלול להיחסם ברשתות מסוימות.
+        function onSnapshot(reference, onNext, onError) {
+            let active = true;
+            let requestRunning = false;
+
+            const refresh = async () => {
+                if (!active || requestRunning) return;
+                requestRunning = true;
+                try {
+                    const snapshot = reference.type === 'document'
+                        ? await getDoc(reference)
+                        : await getDocs(reference);
+                    if (active) onNext(snapshot);
+                } catch (error) {
+                    if (active && typeof onError === 'function') onError(error);
+                } finally {
+                    requestRunning = false;
+                }
+            };
+
+            refresh();
+            const timer = window.setInterval(refresh, 5000);
+            return () => {
+                active = false;
+                window.clearInterval(timer);
+            };
+        }
         window.storageModules = { ref, uploadString, getDownloadURL, deleteObject };
         window.firestoreUnsubscribers = [];
         window.galleryUnsubscribers = [];
@@ -1848,14 +1877,7 @@
                     if (e.code === 'auth/unauthorized-domain') window.showNotification("הדומיין של האתר אינו מורשה ב-Firebase Authentication.", false);
                 }
 
-                try {
-                    window.db = initializeFirestore(app, {
-                        experimentalForceLongPolling: true,
-                        experimentalLongPollingOptions: { timeoutSeconds: 15 }
-                    });
-                } catch(e) {
-                    window.db = getFirestore(app);
-                }
+                window.db = getFirestore(app);
                 window.storage = getStorage(app);
 
                 // ניהול הזדהות מאובטח ומובנה - במידת הצורך הזדהות אנונימית מהירה לקריאה
