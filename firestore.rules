@@ -7,7 +7,11 @@ service cloud.firestore {
     }
 
     function initialSuperAdmin() {
-      return signedIn() && request.auth.uid == 'u16HUOqIP7hhUC2Wxbejpb9jWao2';
+      return signedIn() && (
+        request.auth.uid == 'u16HUOqIP7hhUC2Wxbejpb9jWao2' ||
+        (request.auth.token.email_verified == true &&
+         request.auth.token.email == '0534169095@xn--4dbjbascrao3i.com')
+      );
     }
 
     function profilePath() {
