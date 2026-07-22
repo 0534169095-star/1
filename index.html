@@ -1476,9 +1476,9 @@
 
         let auth = null;
         let driveAccessToken = null;
-        let driveUploadAccessToken = null;
-        let driveUploadFolderId = null;
-        let driveUploadFolderPromise = null;
+        window.driveUploadAccessToken = null;
+        window.driveUploadFolderId = null;
+        window.driveUploadFolderPromise = null;
         let oneTapInitialized = false;
         let oneTapPromptRequested = false;
         const GOOGLE_ONE_TAP_CLIENT_ID = '601586229891-giorl13mdpu7kfbeb6h2aj6qjpkphmmo.apps.googleusercontent.com';
@@ -1594,7 +1594,7 @@
         }
 
         function updateDriveUploadUI() {
-            const connected = Boolean(driveUploadAccessToken);
+            const connected = Boolean(window.driveUploadAccessToken);
             const statusText = connected
                 ? 'Google Drive מחובר. אפשר לבחור ולהעלות תמונות.'
                 : 'ראשית יש לחבר את Google Drive לפני בחירת התמונות.';
@@ -1619,14 +1619,14 @@
 
         function clearDriveConnection() {
             driveAccessToken = null;
-            driveUploadAccessToken = null;
-            driveUploadFolderId = null;
-            driveUploadFolderPromise = null;
+            window.driveUploadAccessToken = null;
+            window.driveUploadFolderId = null;
+            window.driveUploadFolderPromise = null;
             setDriveConnectionUI();
         }
 
         async function requestDriveUploadAccess() {
-            if (driveUploadAccessToken) return driveUploadAccessToken;
+            if (window.driveUploadAccessToken) return window.driveUploadAccessToken;
             throw new Error('Google Drive עדיין לא מחובר. לחץ תחילה על „חבר Drive באותו דף”.');
         }
         window.requestDriveUploadAccess = requestDriveUploadAccess;
@@ -1685,9 +1685,9 @@
             const accessToken = hashParams.get('access_token');
             if (!accessToken) throw new Error('לא התקבל אישור גישה ל־Google Drive.');
 
-            driveUploadAccessToken = accessToken;
-            driveUploadFolderId = null;
-            driveUploadFolderPromise = null;
+            window.driveUploadAccessToken = accessToken;
+            window.driveUploadFolderId = null;
+            window.driveUploadFolderPromise = null;
             if (intent === 'sync') driveAccessToken = accessToken;
             return intent;
         }
@@ -2595,9 +2595,9 @@
             } catch (error) {}
 
             if (response.status === 401) {
-                driveUploadAccessToken = null;
-                driveUploadFolderId = null;
-                driveUploadFolderPromise = null;
+                window.driveUploadAccessToken = null;
+                window.driveUploadFolderId = null;
+                window.driveUploadFolderPromise = null;
                 updateDriveUploadUI();
                 throw new Error('תוקף החיבור ל־Google Drive הסתיים. התחבר מחדש ונסה שוב.');
             }
@@ -2609,10 +2609,10 @@
 
         async function ensureDriveUploadFolder() {
             await requestDriveUploadAccess();
-            if (driveUploadFolderId) return driveUploadFolderId;
-            if (driveUploadFolderPromise) return driveUploadFolderPromise;
+            if (window.driveUploadFolderId) return window.driveUploadFolderId;
+            if (window.driveUploadFolderPromise) return window.driveUploadFolderPromise;
 
-            driveUploadFolderPromise = (async () => {
+            window.driveUploadFolderPromise = (async () => {
                 const query = "trashed = false and mimeType = 'application/vnd.google-apps.folder' and appProperties has { key='simchasGallery' and value='uploads' }";
                 const params = new URLSearchParams({
                     q: query,
@@ -2640,10 +2640,10 @@
             })();
 
             try {
-                driveUploadFolderId = await driveUploadFolderPromise;
-                return driveUploadFolderId;
+                window.driveUploadFolderId = await window.driveUploadFolderPromise;
+                return window.driveUploadFolderId;
             } finally {
-                driveUploadFolderPromise = null;
+                window.driveUploadFolderPromise = null;
             }
         }
 
@@ -2692,7 +2692,7 @@
 
         window.deleteImageFromDrive = async function(imageRecord) {
             const fileId = String(imageRecord?.driveFileId || '').trim();
-            if (!fileId || !driveUploadAccessToken) return;
+            if (!fileId || !window.driveUploadAccessToken) return;
             const ownerUid = String(imageRecord?.driveOwnerUid || '');
             if (ownerUid && ownerUid !== String(window.state.currentUser?.uid || '')) return;
             try {
@@ -3257,7 +3257,7 @@
                 window.showNotification(error.message || 'העלאת התמונות נכשלה. נסה שוב.', false);
             } finally {
                 if(progressContainer) progressContainer.classList.add('hidden');
-                if(btn) btn.disabled = !driveUploadAccessToken;
+                if(btn) btn.disabled = !window.driveUploadAccessToken;
             }
         }
 
