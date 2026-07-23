@@ -931,6 +931,552 @@
             #newUpdatesBanner { right: 14px !important; left: 14px; bottom: 82px !important; max-width: none !important; }
             #customAlert { left: 16px !important; bottom: 82px !important; }
         }
+
+        /* ==========================================================
+           CELESTIAL ARCHIVE — חוויית פרימיום קולנועית
+           ========================================================== */
+        :root {
+            --void: #05060a;
+            --void-2: #080b12;
+            --glass: rgba(13, 17, 27, .74);
+            --glass-strong: rgba(16, 21, 34, .93);
+            --electric: #72f1ff;
+            --electric-soft: rgba(114, 241, 255, .14);
+            --violet: #8b5cf6;
+            --violet-soft: rgba(139, 92, 246, .16);
+            --solar: #ffc52f;
+            --solar-soft: rgba(255, 197, 47, .15);
+            --pearl: #fffaf0;
+            --quiet: #9ca8bb;
+        }
+
+        body.app-shell {
+            background: var(--void) !important;
+            background-image:
+                radial-gradient(circle at 50% -20%, rgba(139,92,246,.08), transparent 32%),
+                linear-gradient(180deg, rgba(255,255,255,.012), transparent 22%) !important;
+        }
+
+        body.app-shell::before {
+            opacity: .48;
+            background-image:
+                linear-gradient(rgba(114,241,255,.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(114,241,255,.025) 1px, transparent 1px);
+            background-size: 56px 56px;
+            mask-image: linear-gradient(to bottom, black, transparent 92%);
+        }
+
+        body.app-shell::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            z-index: -7;
+            pointer-events: none;
+            opacity: .32;
+            background-image:
+                radial-gradient(circle at 12% 17%, rgba(255,255,255,.75) 0 1px, transparent 1.5px),
+                radial-gradient(circle at 72% 8%, rgba(114,241,255,.75) 0 1px, transparent 1.5px),
+                radial-gradient(circle at 82% 65%, rgba(255,197,47,.65) 0 1px, transparent 1.5px),
+                radial-gradient(circle at 35% 82%, rgba(255,255,255,.65) 0 1px, transparent 1.5px);
+            background-size: 170px 170px, 230px 230px, 290px 290px, 340px 340px;
+            animation: celestialDrift 34s linear infinite;
+        }
+
+        #bg-container {
+            background:
+                radial-gradient(ellipse at 6% 10%, rgba(114,241,255,.16), transparent 30%),
+                radial-gradient(ellipse at 92% 24%, rgba(139,92,246,.20), transparent 34%),
+                radial-gradient(ellipse at 56% 108%, rgba(255,197,47,.11), transparent 35%),
+                linear-gradient(145deg, #05060a 0%, #090c14 52%, #05060a 100%) !important;
+            animation: cosmicBreath 13s ease-in-out infinite alternate !important;
+        }
+
+        @keyframes cosmicBreath {
+            0% { filter: saturate(.92) brightness(.93); transform: scale(1); }
+            100% { filter: saturate(1.15) brightness(1.04); transform: scale(1.035); }
+        }
+
+        @keyframes celestialDrift {
+            to { background-position: 170px 80px, -230px 120px, 145px -290px, -170px -170px; }
+        }
+
+        .site-header {
+            background: linear-gradient(180deg, rgba(5,6,10,.94), rgba(5,6,10,.76)) !important;
+            border-bottom-color: rgba(114,241,255,.12) !important;
+            box-shadow: 0 16px 70px rgba(0,0,0,.24) !important;
+        }
+
+        .site-header::after {
+            content: "";
+            position: absolute;
+            right: 0;
+            bottom: -1px;
+            width: min(46vw, 720px);
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--electric), var(--solar), transparent);
+            opacity: .72;
+        }
+
+        .brand-mark {
+            position: relative;
+            border: 0 !important;
+            background:
+                linear-gradient(var(--void), var(--void)) padding-box,
+                conic-gradient(from 180deg, var(--solar), var(--electric), var(--violet), var(--solar)) border-box !important;
+            border: 1px solid transparent !important;
+            box-shadow:
+                inset 0 0 0 5px rgba(5,6,10,.72),
+                0 0 28px rgba(114,241,255,.12),
+                0 0 52px rgba(139,92,246,.1) !important;
+            animation: markPulse 5s ease-in-out infinite;
+        }
+
+        .brand-mark::after {
+            content: "";
+            position: absolute;
+            inset: -7px;
+            border: 1px solid rgba(255,197,47,.12);
+            border-radius: inherit;
+        }
+
+        @keyframes markPulse {
+            50% { box-shadow: inset 0 0 0 5px rgba(5,6,10,.72), 0 0 42px rgba(114,241,255,.23), 0 0 72px rgba(139,92,246,.14); }
+        }
+
+        .brand-kicker { color: var(--electric) !important; }
+        .brand-title {
+            color: transparent !important;
+            background: linear-gradient(100deg, #fff 5%, #fff5d5 45%, #bdf8ff 88%) !important;
+            -webkit-background-clip: text !important;
+            background-clip: text !important;
+            text-shadow: 0 0 36px rgba(114,241,255,.08);
+        }
+
+        .header-status {
+            border-color: rgba(114,241,255,.15);
+            background: linear-gradient(135deg, rgba(114,241,255,.07), rgba(139,92,246,.06));
+            box-shadow: inset 0 1px rgba(255,255,255,.04), 0 12px 30px rgba(0,0,0,.14);
+        }
+
+        .gallery-layout {
+            max-width: 1580px !important;
+            grid-template-columns: minmax(230px, 290px) minmax(0, 1fr) !important;
+            gap: clamp(28px, 3.4vw, 58px) !important;
+            padding-top: 54px !important;
+        }
+
+        .folder-panel {
+            position: relative;
+            overflow: hidden;
+            background:
+                linear-gradient(160deg, rgba(18,24,38,.94), rgba(8,11,18,.96)) padding-box,
+                linear-gradient(150deg, rgba(114,241,255,.26), rgba(255,255,255,.04) 45%, rgba(255,197,47,.18)) border-box !important;
+            border: 1px solid transparent !important;
+            box-shadow:
+                inset 0 1px rgba(255,255,255,.045),
+                0 34px 100px rgba(0,0,0,.34) !important;
+        }
+
+        .folder-panel::before {
+            content: "";
+            position: absolute;
+            width: 180px;
+            height: 180px;
+            right: -90px;
+            top: -110px;
+            border-radius: 50%;
+            background: var(--violet);
+            filter: blur(90px);
+            opacity: .22;
+            pointer-events: none;
+        }
+
+        #folderList .folder-button {
+            position: relative;
+            overflow: hidden;
+        }
+
+        #folderList .folder-button::after {
+            content: "";
+            position: absolute;
+            inset-block: 9px;
+            right: 0;
+            width: 2px;
+            border-radius: 99px;
+            background: linear-gradient(var(--electric), var(--violet));
+            opacity: 0;
+            transform: scaleY(.3);
+            transition: .25s ease;
+        }
+
+        #folderList .folder-button:hover::after,
+        #folderList .folder-row.is-active .folder-button::after {
+            opacity: 1;
+            transform: scaleY(1);
+        }
+
+        #folderList .folder-row.is-active .folder-button {
+            color: var(--pearl) !important;
+            background: linear-gradient(110deg, rgba(114,241,255,.16), rgba(139,92,246,.14)) !important;
+            border-color: rgba(114,241,255,.2) !important;
+            box-shadow: inset 0 1px rgba(255,255,255,.05), 0 12px 35px rgba(0,0,0,.16) !important;
+        }
+
+        #folderList .folder-row.is-active .folder-count {
+            color: var(--electric) !important;
+            background: rgba(114,241,255,.08) !important;
+            border-color: rgba(114,241,255,.14) !important;
+        }
+
+        .gallery-hero {
+            min-height: clamp(390px, 42vw, 520px);
+            align-items: center;
+            padding: clamp(32px, 5.5vw, 76px);
+            border-radius: 42px;
+            border: 1px solid transparent;
+            background:
+                linear-gradient(120deg, rgba(5,6,10,.97) 2%, rgba(8,11,18,.82) 47%, rgba(8,11,18,.26) 100%) padding-box,
+                linear-gradient(125deg, rgba(114,241,255,.42), rgba(255,255,255,.04) 38%, rgba(139,92,246,.34) 70%, rgba(255,197,47,.4)) border-box;
+            box-shadow:
+                inset 0 1px rgba(255,255,255,.05),
+                inset -90px -80px 140px rgba(139,92,246,.09),
+                0 55px 150px rgba(0,0,0,.46);
+        }
+
+        .gallery-hero::before {
+            content: "MOMENTS";
+            left: 1%;
+            top: 46%;
+            color: transparent;
+            -webkit-text-stroke: 1px rgba(255,255,255,.055);
+            text-shadow: 0 0 70px rgba(114,241,255,.06);
+            font-size: clamp(86px, 17vw, 230px);
+            letter-spacing: -.1em;
+        }
+
+        .gallery-hero::after {
+            width: clamp(250px, 34vw, 480px);
+            height: clamp(250px, 34vw, 480px);
+            left: clamp(-120px, 3vw, 48px);
+            top: clamp(-170px, -7vw, -80px);
+            border-color: rgba(114,241,255,.3);
+            box-shadow:
+                0 0 0 28px rgba(114,241,255,.018),
+                0 0 0 70px rgba(139,92,246,.018),
+                inset 0 0 85px rgba(114,241,255,.04);
+            animation: orbitFloat 9s ease-in-out infinite alternate;
+        }
+
+        @keyframes orbitFloat {
+            to { transform: translate(22px, 20px) rotate(9deg); border-color: rgba(255,197,47,.34); }
+        }
+
+        .hero-content { max-width: 850px; }
+        .hero-kicker {
+            color: var(--electric);
+            padding: 8px 12px;
+            border: 1px solid rgba(114,241,255,.16);
+            border-radius: 999px;
+            background: rgba(114,241,255,.055);
+            backdrop-filter: blur(10px);
+        }
+
+        .hero-title {
+            max-width: 940px;
+            margin-top: 22px;
+            font-size: clamp(48px, 7.6vw, 104px);
+            line-height: .87;
+            letter-spacing: -.065em;
+            text-wrap: balance;
+            text-shadow: 0 22px 70px rgba(0,0,0,.45);
+        }
+
+        .hero-title span {
+            display: inline-block;
+            margin-top: 10px;
+            background: linear-gradient(100deg, var(--solar), #fff2bd 42%, var(--electric) 82%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-stroke: 0;
+            color: transparent;
+            font-size: .64em;
+            letter-spacing: -.04em;
+        }
+
+        .hero-copy { max-width: 680px; color: #b6c0d2; font-size: clamp(14px, 1.4vw, 18px); }
+
+        .hero-seal {
+            width: 112px;
+            height: 112px;
+            color: var(--electric);
+            border: 1px solid transparent;
+            background:
+                linear-gradient(rgba(7,9,15,.78), rgba(7,9,15,.78)) padding-box,
+                conic-gradient(var(--electric), var(--violet), var(--solar), var(--electric)) border-box;
+            box-shadow: inset 0 0 40px rgba(114,241,255,.05), 0 0 50px rgba(114,241,255,.08);
+            animation: sealHover 4.5s ease-in-out infinite;
+        }
+
+        @keyframes sealHover {
+            50% { transform: translateY(-10px) rotate(5deg); box-shadow: inset 0 0 50px rgba(114,241,255,.09), 0 20px 60px rgba(0,0,0,.28); }
+        }
+
+        .hero-metrics {
+            position: absolute;
+            z-index: 3;
+            right: clamp(32px, 5.5vw, 76px);
+            bottom: clamp(26px, 4vw, 52px);
+            display: flex;
+            align-items: stretch;
+            gap: 8px;
+        }
+
+        .hero-metric {
+            min-width: 112px;
+            padding: 11px 13px;
+            border: 1px solid rgba(255,255,255,.09);
+            border-radius: 14px;
+            color: #cad2df;
+            background: rgba(5,7,12,.46);
+            backdrop-filter: blur(14px);
+            box-shadow: inset 0 1px rgba(255,255,255,.035);
+        }
+
+        .hero-metric strong {
+            display: block;
+            color: var(--pearl);
+            font-size: 12px;
+            line-height: 1.2;
+        }
+
+        .hero-metric span {
+            display: block;
+            margin-top: 5px;
+            color: #788398;
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: .04em;
+        }
+
+        .gallery-toolbar {
+            position: sticky;
+            top: 102px;
+            z-index: 25;
+            border: 1px solid transparent !important;
+            background:
+                linear-gradient(135deg, rgba(14,18,29,.88), rgba(8,11,18,.88)) padding-box,
+                linear-gradient(100deg, rgba(114,241,255,.22), rgba(255,255,255,.05), rgba(139,92,246,.22)) border-box !important;
+            box-shadow: inset 0 1px rgba(255,255,255,.04), 0 22px 70px rgba(0,0,0,.28) !important;
+            backdrop-filter: blur(26px) saturate(150%) !important;
+        }
+
+        .face-search-button {
+            background: linear-gradient(120deg, var(--electric), #a8f7ff 55%, #d6fbff) !important;
+            box-shadow: 0 12px 32px rgba(114,241,255,.12) !important;
+        }
+
+        #imageCounter {
+            color: #121622 !important;
+            background: linear-gradient(120deg, var(--solar), #ffe38c) !important;
+            border: 0 !important;
+            box-shadow: 0 10px 30px rgba(255,197,47,.12);
+        }
+
+        #photosGrid {
+            grid-auto-flow: dense;
+            gap: 22px !important;
+        }
+
+        .gallery-card {
+            position: relative;
+            overflow: hidden;
+            border: 1px solid transparent !important;
+            border-radius: 26px !important;
+            background:
+                linear-gradient(160deg, rgba(18,23,36,.98), rgba(9,12,19,.98)) padding-box,
+                linear-gradient(135deg, rgba(114,241,255,.22), rgba(255,255,255,.045) 45%, rgba(139,92,246,.18)) border-box !important;
+            box-shadow:
+                inset 0 1px rgba(255,255,255,.035),
+                0 22px 65px rgba(0,0,0,.22) !important;
+            transition: transform .48s cubic-bezier(.16,1,.3,1), box-shadow .48s ease, filter .3s ease !important;
+        }
+
+        .gallery-card::before {
+            content: "";
+            position: absolute;
+            z-index: 4;
+            inset: -1px;
+            pointer-events: none;
+            border-radius: inherit;
+            background: linear-gradient(115deg, transparent 22%, rgba(255,255,255,.16) 48%, transparent 72%);
+            transform: translateX(-125%);
+            transition: transform .8s cubic-bezier(.16,1,.3,1);
+        }
+
+        .gallery-card:hover::before { transform: translateX(125%); }
+        .gallery-card:hover {
+            transform: translateY(-10px) scale(1.012) !important;
+            box-shadow:
+                inset 0 1px rgba(255,255,255,.06),
+                0 34px 100px rgba(0,0,0,.4),
+                0 0 0 1px rgba(114,241,255,.13),
+                0 0 55px rgba(139,92,246,.08) !important;
+            filter: brightness(1.035);
+        }
+
+        .gallery-media::after {
+            background:
+                linear-gradient(to top, rgba(5,6,10,.86), transparent 58%),
+                linear-gradient(115deg, rgba(114,241,255,.08), transparent 45%, rgba(139,92,246,.06));
+        }
+
+        .gallery-card-img {
+            filter: saturate(.92) contrast(1.06) brightness(.92);
+            transition: transform .85s cubic-bezier(.16,1,.3,1), filter .5s ease !important;
+        }
+
+        .gallery-card:hover .gallery-card-img {
+            transform: scale(1.085) !important;
+            filter: saturate(1.11) contrast(1.04) brightness(1.02);
+        }
+
+        .gallery-number {
+            border-color: rgba(114,241,255,.2);
+            background: rgba(6,8,13,.58);
+            color: var(--electric);
+            box-shadow: inset 0 1px rgba(255,255,255,.05);
+        }
+
+        .gallery-caption {
+            position: relative;
+            background:
+                radial-gradient(circle at 100% 100%, rgba(139,92,246,.07), transparent 42%),
+                transparent;
+        }
+
+        .gallery-title { font-size: 16px; letter-spacing: -.015em; }
+        .gallery-folder-tag {
+            color: var(--electric) !important;
+            background: var(--electric-soft) !important;
+            border-color: rgba(114,241,255,.17) !important;
+        }
+
+        .settings-trigger {
+            color: var(--electric) !important;
+            border: 1px solid transparent !important;
+            background:
+                linear-gradient(#111722, #111722) padding-box,
+                conic-gradient(from 90deg, var(--electric), var(--violet), var(--solar), var(--electric)) border-box !important;
+            box-shadow: 0 20px 60px rgba(0,0,0,.4), 0 0 35px rgba(114,241,255,.1) !important;
+        }
+
+        #adminDrawer {
+            width: min(1080px, calc(100vw - 24px)) !important;
+            background:
+                radial-gradient(circle at 100% 0, rgba(114,241,255,.08), transparent 34%),
+                radial-gradient(circle at 0 100%, rgba(139,92,246,.08), transparent 36%),
+                #080b12 !important;
+            border-right: 1px solid rgba(114,241,255,.15) !important;
+        }
+
+        #adminDrawer .admin-drawer-header {
+            background: rgba(8,11,18,.88) !important;
+            border-color: rgba(114,241,255,.12) !important;
+        }
+
+        #adminDrawer .admin-drawer-header h3 {
+            color: transparent !important;
+            background: linear-gradient(100deg, #fff, var(--electric)) !important;
+            -webkit-background-clip: text !important;
+            background-clip: text !important;
+        }
+
+        #adminDrawer .admin-drawer-body {
+            background:
+                linear-gradient(rgba(114,241,255,.018) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(114,241,255,.018) 1px, transparent 1px) !important;
+            background-size: 38px 38px !important;
+        }
+
+        #sidebarAdminPanel .admin-identity-card {
+            background:
+                linear-gradient(125deg, rgba(19,27,43,.96), rgba(11,15,24,.96)) padding-box,
+                linear-gradient(110deg, rgba(114,241,255,.3), rgba(139,92,246,.18), rgba(255,197,47,.28)) border-box !important;
+            border: 1px solid transparent !important;
+        }
+
+        #sidebarAdminPanel .admin-stat {
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(150deg, rgba(255,255,255,.055), rgba(255,255,255,.018));
+            box-shadow: inset 0 1px rgba(255,255,255,.035);
+        }
+
+        #sidebarAdminPanel .admin-stat::after {
+            content: "";
+            position: absolute;
+            width: 65px;
+            height: 65px;
+            left: -24px;
+            bottom: -30px;
+            border-radius: 50%;
+            background: var(--violet);
+            filter: blur(35px);
+            opacity: .14;
+        }
+
+        #sidebarAdminPanel .admin-stat-icon {
+            color: var(--electric);
+            background: var(--electric-soft);
+            border-color: rgba(114,241,255,.16);
+        }
+
+        #sidebarAdminPanel .admin-control-card {
+            background:
+                linear-gradient(150deg, rgba(18,24,38,.96), rgba(9,12,19,.96)) padding-box,
+                linear-gradient(135deg, rgba(114,241,255,.14), rgba(255,255,255,.035), rgba(139,92,246,.11)) border-box !important;
+            border: 1px solid transparent !important;
+        }
+
+        [id$="Modal"] > div:not(.flex-1) {
+            background:
+                linear-gradient(150deg, rgba(19,25,39,.98), rgba(8,11,18,.98)) padding-box,
+                linear-gradient(130deg, rgba(114,241,255,.28), rgba(255,255,255,.04), rgba(139,92,246,.24)) border-box !important;
+            border: 1px solid transparent !important;
+        }
+
+        @media (max-width: 1080px) {
+            .gallery-layout { grid-template-columns: 1fr !important; }
+            .gallery-toolbar { top: 90px; }
+            .hero-metrics { right: 28px; bottom: 26px; }
+        }
+
+        @media (max-width: 760px) {
+            body.app-shell::after { opacity: .2; }
+            .gallery-hero { min-height: 410px; border-radius: 28px; align-items: flex-start; }
+            .hero-title { margin-top: 18px; line-height: .92; }
+            .hero-copy { margin-top: 14px; }
+            .hero-metrics {
+                right: 20px;
+                left: 20px;
+                bottom: 20px;
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0,1fr));
+            }
+            .hero-metric { min-width: 0; padding: 9px; }
+            .gallery-toolbar { top: 82px; }
+            .gallery-card:hover { transform: translateY(-4px) !important; }
+        }
+
+        @media (max-width: 460px) {
+            .gallery-hero { min-height: 440px; padding: 26px 22px; }
+            .hero-title { font-size: clamp(43px, 14vw, 61px); }
+            .hero-title span { font-size: .55em; line-height: 1.1; }
+            .hero-copy { font-size: 13px; line-height: 1.55; }
+            .hero-metric span { display: none; }
+            .hero-metric { text-align: center; }
+            .gallery-toolbar { position: relative; top: auto; }
+        }
     </style>
 </head>
 <body class="app-shell text-slate-800 min-h-screen flex flex-col bg-slate-50">
@@ -981,6 +1527,11 @@
                     <p class="hero-copy">אירועים, טיולים ורגעים מהדרך — מסודרים בארכיון אחד, נגיש וחי.</p>
                 </div>
                 <div class="hero-seal" aria-hidden="true"><i data-lucide="scan-line"></i></div>
+                <div class="hero-metrics" aria-label="מאפייני הארכיון">
+                    <div class="hero-metric"><strong>ארכיון חי</strong><span>מתעדכן בזמן אמת</span></div>
+                    <div class="hero-metric"><strong>גישה חכמה</strong><span>הרשאות לפי דרגה</span></div>
+                    <div class="hero-metric"><strong>R2 Cloud</strong><span>אחסון מהיר ומאובטח</span></div>
+                </div>
             </div>
 
             <div id="galleryAccessGate" class="hidden p-8 sm:p-12 text-center space-y-5">
@@ -1166,9 +1717,9 @@
                     <div id="accAddSmart" class="accordion-content px-4 space-y-3">
                         <p class="text-[10px] text-slate-500 leading-tight">בחר היכן למקם את הקבצים, או תן למערכת ליצור אוטומטית תת-תיקיות בענן לפי שם התיקייה מהמחשב!</p>
                         <form onsubmit="handleAddPhotoAdmin(event)" class="space-y-3">
-                            <div class="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3 space-y-2">
-                                <p id="adminDriveUploadStatus" class="text-[10px] font-bold text-emerald-800">יש לחבר את Google Drive לפני בחירת התמונות.</p>
-                                <button type="button" id="adminDriveUploadConnectBtn" onclick="connectDriveForUpload()" class="w-full py-2 bg-white hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg text-[10px] font-bold transition-all">חבר Drive באותו דף</button>
+                            <div class="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-3 space-y-1">
+                                <p id="adminStorageStatus" class="text-[10px] font-bold text-cyan-700">אחסון Cloudflare R2 מאובטח מחובר.</p>
+                                <p class="text-[9px] text-slate-500">התמונות עולות ישירות לשרת לאחר בדיקת הרשאת החשבון.</p>
                             </div>
                             <div>
                                 <label class="text-[9px] font-bold text-slate-500 block mb-1">תיקיית יעד:</label>
@@ -1195,49 +1746,6 @@
 
                             <button type="submit" id="adminUploadSubmitBtn" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-xl text-xs font-bold transition-all shadow-md">העלה לגלריה הארצית</button>
                         </form>
-                    </div>
-                </div>
-
-                <!-- סנכרון Google Drive -->
-                <div class="admin-control-card border border-emerald-200 rounded-2xl overflow-hidden bg-gradient-to-b from-emerald-50/60 to-white/40 shadow-sm">
-                    <button type="button" onclick="toggleAccordion('accDriveSync')" class="w-full hover:bg-emerald-50/60 px-4 py-3 text-xs font-bold text-slate-800 flex items-center justify-between transition-all">
-                        <span class="flex items-center gap-2 text-emerald-700"><i data-lucide="refresh-cw" class="w-4 h-4"></i> סנכרון מ־Google Drive</span>
-                        <i id="accDriveSyncArrow" data-lucide="chevron-down" class="w-4 h-4 text-emerald-500/70"></i>
-                    </button>
-                    <div id="accDriveSync" class="accordion-content px-4 space-y-3">
-                        <p class="text-[10px] text-slate-500 leading-relaxed">חבר חשבון Drive, הדבק קישור לתיקייה וסנכרן את התמונות ותיקיות המשנה ישירות לגלריה.</p>
-
-                        <div id="driveConnectionStatus" role="status" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-[10px] font-semibold text-slate-500">
-                            Google Drive עדיין לא מחובר
-                        </div>
-
-                        <button type="button" id="connectDriveBtn" onclick="connectGoogleDrive()" class="w-full py-2.5 bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2">
-                            <i data-lucide="cloud" class="w-4 h-4"></i>
-                            חבר Google Drive
-                        </button>
-
-                        <label class="block">
-                            <span class="text-[9px] font-bold text-slate-600 block mb-1">קישור לתיקיית Drive או מזהה תיקייה:</span>
-                            <input type="text" id="driveFolderInput" inputmode="url" autocomplete="off" placeholder="https://drive.google.com/drive/folders/..." class="w-full border border-emerald-200 rounded-xl px-3 py-2 text-xs bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20" dir="ltr">
-                        </label>
-
-                        <label class="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 cursor-pointer">
-                            <input type="checkbox" id="driveIncludeSubfolders" checked class="rounded text-emerald-600 focus:ring-emerald-500 border-slate-300">
-                            <span class="text-[10px] font-semibold text-slate-600">כלול גם תיקיות משנה</span>
-                        </label>
-
-                        <div id="driveSyncProgress" class="hidden rounded-xl border border-emerald-100 bg-emerald-50/70 p-3" aria-live="polite">
-                            <div class="h-1.5 w-full overflow-hidden rounded-full bg-emerald-100">
-                                <div id="driveSyncProgressBar" class="h-full w-0 rounded-full bg-emerald-600 transition-all duration-300"></div>
-                            </div>
-                            <p id="driveSyncProgressText" class="mt-2 text-[10px] font-bold text-emerald-800">מתכונן לסנכרון...</p>
-                        </div>
-
-                        <button type="button" id="driveSyncBtn" onclick="startGoogleDriveSync()" disabled class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2">
-                            <i data-lucide="folder-sync" class="w-4 h-4"></i>
-                            סנכרן עכשיו
-                        </button>
-                        <p class="pb-1 text-[9px] text-slate-400 leading-relaxed">הסנכרון מוסיף ומעדכן בלבד. הוא לא מוחק מהגלריה תמונות שהוסרו מ־Drive.</p>
                     </div>
                 </div>
 
@@ -1278,10 +1786,9 @@
             </div>
             <div class="p-6 space-y-5">
                 <p id="userUploadModeText" class="text-[11px] text-slate-600 leading-relaxed bg-indigo-50/50 p-3 rounded-xl border border-indigo-100">בחר תיקיית יעד ולאחר מכן תמונות בודדות או תיקייה שלמה.</p>
-                <div class="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 space-y-2">
-                    <p id="userDriveUploadStatus" class="text-[11px] font-bold text-emerald-800">ראשית יש לחבר את Google Drive.</p>
-                    <button type="button" id="userDriveUploadConnectBtn" onclick="connectDriveForUpload()" class="w-full py-2.5 bg-white hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold transition-all">חבר Drive באותו דף</button>
-                    <p class="text-[9px] text-emerald-700/80">Google יעבור באותה לשונית ויחזיר אותך אוטומטית לאתר.</p>
+                <div class="rounded-2xl border border-cyan-500/20 bg-cyan-500/5 p-4 space-y-1">
+                    <p id="userStorageStatus" class="text-[11px] font-bold text-cyan-700">אחסון התמונות מוכן.</p>
+                    <p class="text-[9px] text-slate-500">הקבצים יישלחו ישירות לשרת המאובטח, ללא חיבור נוסף.</p>
                 </div>
                 <div class="space-y-3">
                     <label class="block">
@@ -1500,6 +2007,7 @@
         const DRIVE_SYNC_SCOPE = `${DRIVE_UPLOAD_SCOPE} https://www.googleapis.com/auth/drive.readonly`;
         const DRIVE_OAUTH_STATE_KEY = 'simchas_drive_oauth_state';
         const DRIVE_OAUTH_INTENT_KEY = 'simchas_drive_redirect_intent';
+        const R2_API_BASE = 'https://api.xn--4dbjbascrao3i.com';
         // נשמרות רק טביעות SHA-256 של חשבון מנהל-העל, לא הכתובת או המזהה עצמם.
         const INITIAL_ADMIN_UID_SHA256 = 'b38e92d2900b2c32ddfe921142715cc2becbe7b77d9e911196d7a561574d8b39';
         const INITIAL_SUPER_ADMIN_EMAIL_SHA256 = 'd2632af59d29239eef52f10e1cfbf38e27c65c55470b355134b1cd1fb4f809d6';
@@ -1607,25 +2115,18 @@
         }
 
         function updateDriveUploadUI() {
-            const connected = Boolean(window.driveUploadAccessToken);
-            const statusText = connected
-                ? 'Google Drive מחובר. אפשר לבחור ולהעלות תמונות.'
-                : 'ראשית יש לחבר את Google Drive לפני בחירת התמונות.';
-            ['userDriveUploadStatus', 'adminDriveUploadStatus'].forEach(id => {
+            const statusText = 'אחסון Cloudflare R2 מוכן. אפשר לבחור ולהעלות תמונות.';
+            ['userStorageStatus', 'adminStorageStatus'].forEach(id => {
                 const status = document.getElementById(id);
                 if (status) status.textContent = statusText;
             });
-            ['userDriveUploadConnectBtn', 'adminDriveUploadConnectBtn'].forEach(id => {
-                const button = document.getElementById(id);
-                if (button) button.textContent = connected ? 'החלף חשבון Drive' : 'חבר Drive באותו דף';
-            });
             ['userMultiFiles', 'userFolderUpload', 'adminMultiFiles', 'adminFolderUpload'].forEach(id => {
                 const input = document.getElementById(id);
-                if (input) input.disabled = !connected;
+                if (input) input.disabled = false;
             });
             ['userUploadSubmitBtn', 'adminUploadSubmitBtn'].forEach(id => {
                 const button = document.getElementById(id);
-                if (button) button.disabled = !connected;
+                if (button) button.disabled = false;
             });
         }
         window.updateDriveUploadUI = updateDriveUploadUI;
@@ -2176,16 +2677,7 @@
                     if (e.code === 'auth/unauthorized-domain') window.showNotification("הדומיין של האתר אינו מורשה ב-Firebase Authentication.", false);
                 }
 
-                try {
-                    const driveIntent = consumeDriveOAuthRedirect();
-                    if (driveIntent === 'sync') setDriveConnectionUI();
-                    else updateDriveUploadUI();
-                    if (driveIntent) window.showNotification('Google Drive חובר בהצלחה. אפשר לבחור ולהעלות תמונות.', true);
-                } catch (error) {
-                    console.error('Google Drive OAuth redirect error:', error);
-                    clearDriveConnection();
-                    window.showNotification(error.message || 'החיבור ל־Google Drive לא הושלם.', false);
-                }
+                updateDriveUploadUI();
 
                 window.db = getFirestore(app);
 
@@ -2715,6 +3207,98 @@
             }
         };
 
+        function encodeR2ObjectKey(key) {
+            return String(key || '').split('/').map(encodeURIComponent).join('/');
+        }
+
+        async function r2ApiRequest(path, options = {}) {
+            const currentUser = auth?.currentUser;
+            if (!currentUser) throw new Error('יש להתחבר לחשבון לפני ביצוע הפעולה.');
+
+            const headers = new Headers(options.headers || {});
+            headers.set('Authorization', `Bearer ${await currentUser.getIdToken(true)}`);
+
+            let response;
+            try {
+                response = await fetch(`${R2_API_BASE}${path}`, { ...options, headers });
+            } catch (error) {
+                throw new Error('לא ניתן להתחבר לשרת התמונות. ייתכן שהדומיין עדיין בתהליך הפעלה ב־Cloudflare.');
+            }
+            if (response.ok) return response;
+
+            let message = '';
+            try {
+                const payload = await response.json();
+                message = payload?.message || '';
+            } catch (error) {}
+            if (response.status === 401) throw new Error(message || 'תוקף ההתחברות הסתיים. התחבר מחדש ונסה שוב.');
+            if (response.status === 403) throw new Error(message || 'אין לחשבון הרשאה לבצע פעולה זו.');
+            throw new Error(message || `שרת התמונות החזיר שגיאה (${response.status}).`);
+        }
+
+        window.uploadImageToR2 = async function(base64Data, imageId, title = 'תמונה') {
+            const imageBlob = dataUrlToBlob(base64Data);
+            const cleanTitle = String(title || 'תמונה').replace(/[\\/:*?"<>|]+/g, '-').trim().slice(0, 100) || 'תמונה';
+            const extension = imageBlob.type === 'image/png' ? 'png'
+                : imageBlob.type === 'image/webp' ? 'webp'
+                : imageBlob.type === 'image/gif' ? 'gif'
+                : 'jpg';
+            const form = new FormData();
+            form.append('file', imageBlob, `${cleanTitle}-${String(imageId).slice(-8)}.${extension}`);
+            form.append('imageId', imageId);
+            form.append('title', cleanTitle);
+
+            const response = await r2ApiRequest('/upload', { method: 'POST', body: form });
+            const payload = await response.json();
+            if (!payload?.key || !payload?.url) throw new Error('שרת התמונות לא החזיר פרטי קובץ תקינים.');
+            return {
+                url: payload.url,
+                r2Key: payload.key,
+                r2State: payload.state,
+                r2OwnerUid: window.state.currentUser?.uid || '',
+                storageProvider: 'cloudflare-r2'
+            };
+        };
+
+        window.approvePendingImageStorage = async function(imageRecord) {
+            const key = String(imageRecord?.r2Key || '');
+            if (!key.startsWith('pending/')) return {};
+            const response = await r2ApiRequest('/approve', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key })
+            });
+            const payload = await response.json();
+            if (!payload?.key || !payload?.url) throw new Error('אישור קובץ התמונה לא הושלם.');
+            return {
+                url: payload.url,
+                r2Key: payload.key,
+                r2State: payload.state || 'approved',
+                storageProvider: 'cloudflare-r2'
+            };
+        };
+
+        window.deleteImageFromR2 = async function(imageRecord) {
+            const key = String(imageRecord?.r2Key || '').trim();
+            if (!key) return;
+            await r2ApiRequest(`/media/${encodeR2ObjectKey(key)}`, { method: 'DELETE' });
+        };
+
+        window.loadProtectedR2Image = async function(imageElement, imageRecord) {
+            const key = String(imageRecord?.r2Key || '').trim();
+            if (!imageElement || !key.startsWith('pending/')) return;
+            try {
+                const response = await r2ApiRequest(`/media/${encodeR2ObjectKey(key)}`);
+                const objectUrl = URL.createObjectURL(await response.blob());
+                imageElement.addEventListener('load', () => URL.revokeObjectURL(objectUrl), { once: true });
+                imageElement.src = objectUrl;
+            } catch (error) {
+                console.error('Pending image preview failed:', error);
+                imageElement.alt = 'לא ניתן לטעון תצוגה מקדימה';
+                imageElement.classList.add('bg-slate-100');
+            }
+        };
+
         window.saveFolderToCloud = async function(folderData) {
             if (!window.db) throw new Error('החיבור לענן עדיין לא מוכן. נסה שוב בעוד רגע.');
             const folderId = safeRecordId(folderData?.id);
@@ -2747,11 +3331,11 @@
 
             if (imageRecord.url && imageRecord.url.startsWith('data:')) {
                 try {
-                    const driveImage = await window.uploadImageToDrive(imageRecord.url, imageId, imageRecord.title);
-                    Object.assign(imageRecord, driveImage);
+                    const storedImage = await window.uploadImageToR2(imageRecord.url, imageId, imageRecord.title);
+                    Object.assign(imageRecord, storedImage);
                 } catch(e) {
-                    console.error('Google Drive upload failed:', e);
-                    throw new Error(e.message || 'העלאת התמונה ל־Google Drive נכשלה.');
+                    console.error('Cloudflare R2 upload failed:', e);
+                    throw new Error(e.message || 'העלאת התמונה לשרת נכשלה.');
                 }
             }
 
@@ -2759,7 +3343,7 @@
             await setDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'images', imageId), imageRecord);
         };
 
-        // מחיקת רשומת הגלריה; קובץ Drive נמחק רק כשהחשבון המחובר הוא בעל הקובץ.
+        // מחיקת רשומת הגלריה וקובץ R2; תמונות ישנות מ־Drive נשארות במקור שלהן.
         window.deleteImageCloud = async function(id) {
             if (!window.db) throw new Error('החיבור לענן עדיין לא מוכן. נסה שוב בעוד רגע.');
             if (!window.state.isSuperAdmin) throw new Error('מחיקת תמונה דורשת אישור מנהל־על.');
@@ -2767,9 +3351,10 @@
             if (!imageId) throw new Error('מזהה התמונה אינו תקין.');
             try {
                 const img = window.state.images.find(i => safeRecordId(i.id) === imageId);
-                if (img) await window.deleteImageFromDrive(img);
+                if (img?.r2Key) await window.deleteImageFromR2(img);
             } catch (e) {
-                console.warn('Drive deletion failed or skipped during cloud delete:', e);
+                console.error('R2 deletion failed:', e);
+                throw e;
             }
             const { doc, deleteDoc } = window.firestoreModules;
             await deleteDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'images', imageId));
@@ -2793,11 +3378,11 @@
 
             if (imageRecord.url && imageRecord.url.startsWith('data:')) {
                 try {
-                    const driveImage = await window.uploadImageToDrive(imageRecord.url, imageId, imageRecord.title);
-                    Object.assign(imageRecord, driveImage);
+                    const storedImage = await window.uploadImageToR2(imageRecord.url, imageId, imageRecord.title);
+                    Object.assign(imageRecord, storedImage);
                 } catch(e) {
-                    console.error('Google Drive upload failed:', e);
-                    throw new Error(e.message || 'העלאת התמונה ל־Google Drive נכשלה.');
+                    console.error('Cloudflare R2 upload failed:', e);
+                    throw new Error(e.message || 'העלאת התמונה לשרת נכשלה.');
                 }
             }
 
@@ -2805,7 +3390,7 @@
             await setDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'pendingImages', imageId), imageRecord);
         };
 
-        // מחיקת בקשה ממתינה; קובץ Drive נמחק רק כשהחשבון המחובר הוא בעל הקובץ.
+        // מחיקת בקשה ממתינה וקובץ R2; דורשת מנהל־על.
         window.deletePendingImageCloud = async function(id) {
             if (!window.db) throw new Error('החיבור לענן עדיין לא מוכן. נסה שוב בעוד רגע.');
             if (!window.state.isSuperAdmin) throw new Error('מחיקת תמונה ממתינה דורשת אישור מנהל־על.');
@@ -2813,9 +3398,10 @@
             if (!imageId) throw new Error('מזהה התמונה אינו תקין.');
             try {
                 const img = window.state.pendingImages.find(i => safeRecordId(i.id) === imageId);
-                if (img) await window.deleteImageFromDrive(img);
+                if (img?.r2Key) await window.deleteImageFromR2(img);
             } catch (e) {
-                console.warn('Drive deletion failed or skipped during pending delete:', e);
+                console.error('R2 pending deletion failed:', e);
+                throw e;
             }
             const { doc, deleteDoc } = window.firestoreModules;
             await deleteDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'pendingImages', imageId));
@@ -3200,12 +3786,11 @@
             const pText = document.getElementById('adminUploadProgressText');
 
             try {
-                if(pText) pText.innerText = 'מתחבר ל־Google Drive...';
-                await requestDriveUploadAccess();
+                if(pText) pText.innerText = 'מכין את התמונות להעלאה...';
                 const newImages = await processFilesWithFolders(allFiles, targetFolderId, true);
                 if (newImages.length === 0) throw new Error('לא נמצאו קובצי תמונה תקינים.');
                 for (let index = 0; index < newImages.length; index++) {
-                    if(pText) pText.innerText = `מעלה ל־Google Drive: ${index + 1} מתוך ${newImages.length}`;
+                    if(pText) pText.innerText = `מעלה לשרת: ${index + 1} מתוך ${newImages.length}`;
                     await window.saveImageToCloud(newImages[index]);
                 }
                 if(filesInput) filesInput.value = '';
@@ -3249,8 +3834,7 @@
             const pText = document.getElementById('userUploadProgressText');
 
             try {
-                if(pText) pText.innerText = 'מתחבר ל־Google Drive...';
-                await requestDriveUploadAccess();
+                if(pText) pText.innerText = 'מכין את התמונות להעלאה...';
                 const newImages = await processFilesWithFolders(allFiles, targetFolderId, false);
                 if (newImages.length === 0) throw new Error('לא נמצאו קובצי תמונה תקינים.');
                 for (let index = 0; index < newImages.length; index++) {
@@ -3270,7 +3854,7 @@
                 window.showNotification(error.message || 'העלאת התמונות נכשלה. נסה שוב.', false);
             } finally {
                 if(progressContainer) progressContainer.classList.add('hidden');
-                if(btn) btn.disabled = !window.driveUploadAccessToken;
+                if(btn) btn.disabled = false;
             }
         }
 
@@ -3650,16 +4234,20 @@
             pending.forEach(img => {
                 const imageId = safeRecordId(img.id);
                 const imageUrl = safeImageUrl(img.url);
+                const protectedPreview = String(img.r2Key || '').startsWith('pending/');
                 if (!imageId) return;
                 list.insertAdjacentHTML('beforeend', `
                     <label class="flex items-center gap-3 p-2 hover:bg-amber-100/50 border border-amber-100 rounded-xl cursor-pointer transition-all bg-white shadow-sm">
                         <input type="checkbox" name="pendingImgCheck" value="${imageId}" class="rounded text-amber-500 focus:ring-amber-500 bg-white border-slate-200" checked>
-                        <img src="${escapeHtml(imageUrl)}" loading="lazy" decoding="async" alt="" class="w-10 h-10 object-cover rounded-lg border border-slate-200" onerror="handleImageError(this)">
+                        <img id="pendingPreview_${imageId}" ${protectedPreview ? '' : `src="${escapeHtml(imageUrl)}"`} loading="lazy" decoding="async" alt="" class="w-10 h-10 object-cover rounded-lg border border-slate-200" onerror="handleImageError(this)">
                         <div class="flex-1 min-w-0">
                             <p class="text-[11px] font-bold text-slate-800 truncate">${escapeHtml(img.title)}</p>
                             <p class="text-[9px] text-slate-500 truncate">תיקייה מקורית: ${escapeHtml(img.originalFolderName)}</p>
                         </div>
                     </label>`);
+                if (protectedPreview) {
+                    window.loadProtectedR2Image(document.getElementById(`pendingPreview_${imageId}`), img);
+                }
             });
         }
 
@@ -3696,11 +4284,14 @@
                         }
                         finalFolderId = existing.id;
                     }
-                    const activeImage = { ...img, folderId: finalFolderId, createdAt: Date.now(), status: 'active' };
+                    const storageUpdate = await window.approvePendingImageStorage(img);
+                    Object.assign(img, storageUpdate);
+                    const activeImage = { ...img, ...storageUpdate, folderId: finalFolderId, createdAt: Date.now(), status: 'active' };
                     await window.saveImageToCloud(activeImage);
                     // שומרים תיעוד של האישור במקום למחוק, כדי שמנהל דרגה 3 לא יקבל הרשאת מחיקה עקיפה.
                     const { doc, setDoc } = window.firestoreModules;
                     await setDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'pendingImages', img.id), {
+                        ...storageUpdate,
                         status: 'approved',
                         approvedAt: Date.now(),
                         approvedBy: window.state.currentUser?.uid || ''
