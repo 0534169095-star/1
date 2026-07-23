@@ -39,17 +39,17 @@ service cloud.firestore {
     }
 
     match /artifacts/org-gallery/public/data/userProfiles/{uid} {
-      allow read: if signedIn() && (request.auth.uid == uid || superAdmin());
+      allow read: if signedIn() && (request.auth.uid == uid || admin());
 
       allow create: if signedIn() && request.auth.uid == uid && (
         (initialSuperAdmin() && request.resource.data.status == 'approved' && request.resource.data.role == 'super_admin') ||
         (request.resource.data.status == 'pending' && request.resource.data.role == 'viewer')
       );
 
-      allow update: if superAdmin() || (
+      allow update: if admin() || (
         signedIn() && request.auth.uid == uid &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          'uid', 'displayName', 'email', 'photoURL', 'lastLoginAt'
+          'uid', 'displayName', 'email', 'photoURL', 'lastLoginAt', 'requestDetails', 'messages'
         ])
       );
 
@@ -87,6 +87,11 @@ service cloud.firestore {
       allow read: if superAdmin() || (roleIs('admin') && resource.data.requestedBy == request.auth.uid);
       allow update: if superAdmin();
       allow delete: if false;
+    }
+
+    match /artifacts/org-gallery/public/data/broadcasts/{broadcastId} {
+      allow read: if approved();
+      allow create, update, delete: if superAdmin();
     }
 
     match /{document=**} {

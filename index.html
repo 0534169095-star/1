@@ -274,39 +274,61 @@
             inset: 0;
             z-index: -8;
             pointer-events: none;
-            opacity: 0.34;
+            opacity: 0.38;
             background-image:
-                linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
-            background-size: 44px 44px;
-            mask-image: linear-gradient(to bottom, black, transparent 86%);
+                linear-gradient(rgba(255,255,255,.015) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,.015) 1px, transparent 1px);
+            background-size: 32px 32px;
+            mask-image: linear-gradient(to bottom, black, transparent 90%);
+        }
+
+        body.app-shell::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            z-index: -7;
+            pointer-events: none;
+            opacity: 0.015;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
         }
 
         #bg-container {
             background:
-                radial-gradient(circle at 12% 5%, rgba(255, 182, 39, .16), transparent 28%),
-                radial-gradient(circle at 88% 28%, rgba(100, 216, 229, .11), transparent 26%),
-                linear-gradient(145deg, #090b10 0%, #0d1017 48%, #080a0f 100%) !important;
+                radial-gradient(circle at 15% 10%, rgba(255, 182, 39, .15), transparent 32%),
+                radial-gradient(circle at 85% 25%, rgba(100, 216, 229, .12), transparent 30%),
+                radial-gradient(circle at 50% 70%, rgba(99, 102, 241, .06), transparent 45%),
+                linear-gradient(150deg, #050609 0%, #0c0f16 45%, #07090d 100%) !important;
             animation: none !important;
         }
 
         #bg-container > div { display: none !important; }
 
-        ::selection { color: #0b0d12; background: var(--accent); }
-        :focus-visible { outline: 3px solid rgba(255, 182, 39, .7) !important; outline-offset: 3px; }
+        ::selection { color: #050608; background: var(--accent); }
+        :focus-visible { outline: 3px solid rgba(255, 182, 39, .8) !important; outline-offset: 3px; }
         body.app-shell button::before { display: none !important; }
         body.app-shell button:hover { transform: none; }
 
         .site-header {
-            background: rgba(9, 11, 16, .86) !important;
-            border-bottom: 1px solid var(--line) !important;
-            box-shadow: none !important;
-            backdrop-filter: blur(18px) saturate(130%) !important;
+            background: rgba(5, 6, 9, 0.85) !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4) !important;
+            backdrop-filter: blur(20px) saturate(150%) !important;
         }
 
         .site-header > div { height: 88px !important; max-width: 1480px !important; }
 
         .brand-lockup { gap: 14px !important; }
+
+        @keyframes breatheGlow {
+            0%, 100% {
+                box-shadow: inset 0 0 0 5px rgba(5,6,9,.7), 0 0 25px rgba(255,182,39,.12);
+                border-color: rgba(255, 182, 39, .44);
+            }
+            50% {
+                box-shadow: inset 0 0 0 5px rgba(5,6,9,.7), 0 0 38px rgba(255,182,39,.3);
+                border-color: rgba(255, 182, 39, .8);
+            }
+        }
 
         .brand-mark {
             width: 50px;
@@ -316,42 +338,59 @@
             border-radius: 50% !important;
             color: var(--accent) !important;
             background: var(--accent-soft) !important;
-            box-shadow: inset 0 0 0 5px rgba(9,11,16,.65), 0 0 35px rgba(255,182,39,.08) !important;
             display: grid;
             place-items: center;
+            animation: breatheGlow 4s ease-in-out infinite;
         }
 
         .brand-mark svg { width: 23px; height: 23px; }
-        .brand-kicker { color: var(--accent) !important; letter-spacing: .17em; font-size: 9px !important; font-weight: 800; }
+        .brand-kicker { color: var(--accent) !important; letter-spacing: .2em; font-size: 9px !important; font-weight: 800; text-transform: uppercase; opacity: 0.9; }
 
         .brand-title {
-            background: none !important;
-            color: var(--paper) !important;
+            background: linear-gradient(135deg, #ffe082 0%, #ffb627 50%, #b38938 100%) !important;
+            -webkit-background-clip: text !important;
+            -webkit-text-fill-color: transparent !important;
             font-size: clamp(20px, 2.2vw, 27px) !important;
-            font-weight: 800 !important;
+            font-weight: 900 !important;
             line-height: 1.05;
+            letter-spacing: -0.01em;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
         .header-status {
             display: flex;
             align-items: center;
-            gap: 9px;
-            padding: 9px 13px;
-            border: 1px solid var(--line);
+            gap: 10px;
+            padding: 8px 16px;
+            border: 1px solid rgba(255, 182, 39, 0.2) !important;
             border-radius: 999px;
-            color: #cbd1dd;
-            background: rgba(255,255,255,.035);
+            color: var(--paper);
+            background: rgba(255, 182, 39, 0.04);
             font-size: 11px;
             font-weight: 700;
+            backdrop-filter: blur(10px);
+            box-shadow: inset 0 1px 1px rgba(255, 182, 39, 0.05);
+            transition: all 0.3s ease;
+        }
+        .header-status:hover {
+            border-color: rgba(255, 182, 39, 0.4) !important;
+            background: rgba(255, 182, 39, 0.08);
+            box-shadow: 0 0 10px rgba(255, 182, 39, 0.1);
         }
 
         .header-status::before {
             content: "";
-            width: 7px;
-            height: 7px;
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
-            background: var(--cyan);
-            box-shadow: 0 0 14px rgba(100,216,229,.8);
+            background: var(--accent);
+            box-shadow: 0 0 14px var(--accent);
+            animation: pulseCyan 2s infinite alternate;
+        }
+
+        @keyframes pulseCyan {
+            0% { box-shadow: 0 0 4px rgba(255, 182, 39, 0.5); }
+            100% { box-shadow: 0 0 16px rgba(255, 182, 39, 1); }
         }
 
         .gallery-layout {
@@ -368,14 +407,85 @@
         .settings-trigger {
             width: 48px !important;
             height: 48px !important;
-            border-radius: 14px !important;
-            color: var(--paper) !important;
+            border-radius: 50% !important;
+            color: var(--accent) !important;
             background: var(--panel-2) !important;
-            border: 1px solid var(--line-strong) !important;
+            border: 1px solid rgba(255, 182, 39, 0.2) !important;
             box-shadow: 0 14px 45px rgba(0,0,0,.28) !important;
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
         }
-        .settings-trigger:hover { color: var(--accent) !important; border-color: rgba(255,182,39,.45) !important; }
-        .settings-trigger:hover { transform: scale(1.04) !important; }
+        .settings-trigger:hover {
+            color: #ffffff !important;
+            border-color: rgba(255,182,39,.65) !important;
+            transform: scale(1.06) rotate(15deg) !important;
+            box-shadow: 0 0 20px rgba(255,182,39,0.3) !important;
+        }
+
+        /* Luxury Classes & Controls */
+        .google-auth-card {
+            background: rgba(255, 255, 255, 0.03) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            border-radius: 16px !important;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2) !important;
+        }
+        .btn-google-login {
+            background: #ffffff !important;
+            color: #1e293b !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        }
+        .btn-google-login:hover {
+            background: #f8fafc !important;
+            transform: translateY(-1px) !important;
+            box-shadow: 0 6px 16px rgba(255, 255, 255, 0.1) !important;
+        }
+
+        .luxury-action-card {
+            background: linear-gradient(145deg, rgba(255, 182, 39, 0.05), rgba(0, 0, 0, 0)) !important;
+            border: 1px solid rgba(255, 182, 39, 0.15) !important;
+            border-radius: 20px !important;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15) !important;
+        }
+        .luxury-icon-circle {
+            background: var(--accent-soft) !important;
+            border: 1px solid rgba(255, 182, 39, 0.3) !important;
+            color: var(--accent) !important;
+            box-shadow: 0 0 15px rgba(255,182,39,0.1) !important;
+        }
+
+        .btn-primary-gold {
+            background: linear-gradient(135deg, #ffe082, #ffb627) !important;
+            color: #050609 !important;
+            border: none !important;
+            box-shadow: 0 4px 15px rgba(255, 182, 39, 0.2) !important;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        }
+        .btn-primary-gold:hover {
+            transform: translateY(-1.5px) !important;
+            box-shadow: 0 6px 20px rgba(255, 182, 39, 0.35) !important;
+            filter: brightness(1.08) !important;
+        }
+        .btn-primary-gold:disabled {
+            background: #2a2e37 !important;
+            color: #64748b !important;
+            box-shadow: none !important;
+            cursor: not-allowed !important;
+        }
+
+        .btn-secondary-dark {
+            background: rgba(255, 255, 255, 0.05) !important;
+            color: var(--paper) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            transition: all 0.3s ease !important;
+        }
+        .btn-secondary-dark:hover {
+            background: rgba(255, 255, 255, 0.1) !important;
+            border-color: rgba(255, 182, 39, 0.3) !important;
+            color: var(--accent) !important;
+        }
 
         .folder-rail { width: auto !important; position: sticky; top: 122px; }
         .folder-panel {
@@ -398,17 +508,22 @@
             min-height: 46px;
             border: 1px solid transparent !important;
             border-radius: 13px !important;
-            color: #aeb6c6 !important;
+            color: #cbd5e1 !important;
             background: transparent !important;
             box-shadow: none !important;
-            transition: color .2s ease, background .2s ease, border-color .2s ease !important;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
         }
-        #folderList .folder-button:hover { color: var(--paper) !important; background: rgba(255,255,255,.045) !important; }
+        #folderList .folder-button:hover {
+            color: var(--paper) !important;
+            background: rgba(255,255,255,.05) !important;
+            border-color: rgba(255,255,255,0.06) !important;
+        }
         #folderList .folder-row.is-active .folder-button {
-            color: #101217 !important;
-            background: var(--accent) !important;
+            color: #050609 !important;
+            background: linear-gradient(135deg, var(--accent), #fbbf24) !important;
             border-color: var(--accent) !important;
-            font-weight: 800 !important;
+            font-weight: 900 !important;
+            box-shadow: 0 4px 15px rgba(251,191,36,0.2) !important;
         }
         #folderList .folder-row.is-active { background: transparent !important; }
         #folderList .folder-count {
@@ -422,7 +537,7 @@
 
         .gallery-hero {
             min-height: 300px;
-            border: 1px solid var(--line);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 34px;
             padding: clamp(28px, 5vw, 60px);
             overflow: hidden;
@@ -431,10 +546,15 @@
             display: flex;
             align-items: flex-end;
             background:
-                linear-gradient(90deg, rgba(9,11,16,.98) 0%, rgba(9,11,16,.8) 52%, rgba(9,11,16,.2) 100%),
+                linear-gradient(90deg, rgba(5,6,9,.98) 0%, rgba(5,6,9,.8) 52%, rgba(5,6,9,.2) 100%),
                 radial-gradient(circle at 88% 22%, rgba(100,216,229,.38), transparent 24%),
-                linear-gradient(135deg, #1a2632, #16131d 52%, #352814);
-            box-shadow: 0 38px 100px rgba(0,0,0,.32);
+                linear-gradient(135deg, #131c26, #110e17 52%, #261c0a);
+            box-shadow: 0 30px 80px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,0.06);
+            transition: border-color 0.4s ease, box-shadow 0.4s ease;
+        }
+        .gallery-hero:hover {
+            border-color: rgba(255,182,39,.3);
+            box-shadow: 0 30px 100px rgba(255,182,39,.05), inset 0 1px 0 rgba(255,255,255,0.08);
         }
 
         .gallery-hero::before {
@@ -445,7 +565,7 @@
             top: 50%;
             transform: translateY(-55%);
             z-index: -1;
-            color: rgba(255,255,255,.035);
+            color: rgba(255,255,255,.025);
             font-size: clamp(72px, 15vw, 190px);
             line-height: .8;
             font-weight: 900;
@@ -460,9 +580,9 @@
             height: 220px;
             left: 7%;
             top: -72px;
-            border: 1px solid rgba(255,182,39,.38);
+            border: 1px solid rgba(255,182,39,.25);
             border-radius: 50%;
-            box-shadow: 0 0 0 24px rgba(255,182,39,.025), 0 0 0 48px rgba(255,182,39,.018);
+            box-shadow: 0 0 0 24px rgba(255,182,39,.015), 0 0 0 48px rgba(255,182,39,.01);
         }
 
         .hero-content { max-width: 680px; position: relative; z-index: 2; }
@@ -490,32 +610,47 @@
         #holidayBanner { display: none !important; }
 
         .gallery-toolbar {
-            padding: 13px !important;
-            padding-left: 13px !important;
-            border-radius: 20px !important;
-            border: 1px solid var(--line) !important;
-            background: rgba(17,20,28,.86) !important;
-            box-shadow: 0 18px 55px rgba(0,0,0,.18) !important;
-            backdrop-filter: blur(14px) !important;
+            padding: 14px !important;
+            border-radius: 24px !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            background: rgba(14, 18, 27, 0.85) !important;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5) !important;
+            backdrop-filter: blur(18px) saturate(140%) !important;
+            transition: all 0.3s ease;
+        }
+        .gallery-toolbar:hover {
+            border-color: rgba(255, 255, 255, 0.12) !important;
         }
 
         .gallery-toolbar input {
-            min-height: 46px;
+            min-height: 48px;
             color: var(--paper) !important;
-            background: #0c0f15 !important;
-            border-color: var(--line) !important;
-            border-radius: 13px !important;
+            background: #080a0f !important;
+            border-color: rgba(255, 255, 255, 0.08) !important;
+            border-radius: 16px !important;
+            transition: all 0.3s ease !important;
         }
-        .gallery-toolbar input::placeholder { color: #687184; }
-        .gallery-toolbar input:focus { border-color: rgba(255,182,39,.65) !important; box-shadow: 0 0 0 4px rgba(255,182,39,.08) !important; }
-        .gallery-toolbar .search-icon { color: #727b8d !important; }
+        .gallery-toolbar input::placeholder { color: #525a6c; }
+        .gallery-toolbar input:focus {
+            border-color: rgba(255,182,39,.65) !important;
+            box-shadow: 0 0 0 4px rgba(255,182,39,.12) !important;
+            background: #050609 !important;
+        }
+        .gallery-toolbar .search-icon { color: #525a6c !important; }
         .face-search-button {
-            min-height: 46px;
-            color: #0c0f14 !important;
-            background: var(--cyan) !important;
+            min-height: 48px;
+            color: #050609 !important;
+            background: linear-gradient(135deg, #ffe082, #ffb627) !important;
             border-color: transparent !important;
-            border-radius: 13px !important;
-            box-shadow: none !important;
+            border-radius: 16px !important;
+            box-shadow: 0 4px 15px rgba(255, 182, 39, 0.25) !important;
+            font-weight: 800 !important;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        }
+        .face-search-button:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 6px 20px rgba(255, 182, 39, 0.45) !important;
+            filter: brightness(1.1);
         }
         .face-search-button svg { color: #0c0f14 !important; }
         #submitFaceSearchBtn:enabled { opacity: 1 !important; cursor: pointer !important; }
@@ -549,10 +684,16 @@
         }
         #galleryAccessGate {
             color: var(--paper);
-            background: linear-gradient(145deg, rgba(20,24,33,.96), rgba(13,16,23,.96));
-            border: 1px solid var(--line);
+            background: linear-gradient(145deg, rgba(20,26,38,0.95), rgba(10,13,20,0.97));
+            border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: var(--radius-lg);
-            box-shadow: 0 28px 80px rgba(0,0,0,.28);
+            box-shadow: 0 35px 90px rgba(0,0,0,0.65), inset 0 1px 1px rgba(255,255,255,0.05);
+            backdrop-filter: blur(16px);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        #galleryAccessGate:hover {
+            border-color: rgba(255, 182, 39, 0.25);
+            box-shadow: 0 35px 100px rgba(255, 182, 39, 0.04), inset 0 1px 1px rgba(255,255,255,0.08);
         }
         #imageCounter {
             min-width: 92px;
@@ -582,17 +723,18 @@
         .gallery-card {
             min-height: 100%;
             color: var(--paper) !important;
-            background: var(--panel) !important;
-            border: 1px solid var(--line) !important;
-            border-radius: 22px !important;
-            box-shadow: none !important;
+            background: linear-gradient(135deg, var(--panel), #181d29) !important;
+            border: 1px solid rgba(255, 255, 255, 0.05) !important;
+            border-radius: 24px !important;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3) !important;
             transform: none;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
             animation-delay: calc(var(--card-index, 0) * 55ms);
         }
         .gallery-card:hover {
-            transform: translateY(-6px) !important;
-            border-color: rgba(255,182,39,.34) !important;
-            box-shadow: 0 24px 70px rgba(0,0,0,.28) !important;
+            transform: translateY(-8px) !important;
+            border-color: rgba(255, 182, 39, 0.3) !important;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.5), 0 0 20px rgba(255, 182, 39, 0.05) !important;
         }
         .gallery-card:nth-child(8n + 1) { grid-column: span 2; }
         .gallery-card:nth-child(8n + 1) .gallery-media { aspect-ratio: 16 / 8.25; }
@@ -919,6 +1061,8 @@
             .header-status { display: none; }
             .gallery-layout { padding-top: 22px !important; padding-inline: 14px !important; }
             .settings-wrap { position: fixed !important; top: auto !important; left: 16px !important; bottom: 18px; z-index: 35; }
+            .floating-profile-container { top: 92px !important; left: 16px !important; }
+            .floating-profile-panel { top: 162px !important; left: 16px !important; width: calc(100vw - 32px) !important; }
             .gallery-hero { min-height: 285px; border-radius: 25px; align-items: center; }
             .gallery-hero::after { width: 150px; height: 150px; left: -25px; }
             .hero-title { font-size: clamp(38px, 13vw, 58px); }
@@ -931,22 +1075,104 @@
             #newUpdatesBanner { right: 14px !important; left: 14px; bottom: 82px !important; max-width: none !important; }
             #customAlert { left: 16px !important; bottom: 82px !important; }
         }
+
+        /* Expanded Luxury Styling — Black Label Golden Cyber Mesh */
+        .neon-glow-gold {
+            box-shadow: 0 0 20px rgba(255, 182, 39, 0.35), inset 0 0 10px rgba(255, 182, 39, 0.2);
+            border-color: rgba(255, 182, 39, 0.6) !important;
+        }
+        .neon-glow-cyan {
+            box-shadow: 0 0 20px rgba(100, 216, 229, 0.3), inset 0 0 10px rgba(100, 216, 229, 0.15);
+            border-color: rgba(100, 216, 229, 0.5) !important;
+        }
+
+        /* Floating Profile Widget */
+        .floating-profile-container {
+            position: fixed;
+            top: 104px;
+            left: 24px;
+            z-index: 50;
+        }
+        .floating-profile-btn {
+            width: 58px;
+            height: 58px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(20, 26, 38, 0.95), rgba(10, 13, 20, 0.97));
+            border: 2px solid rgba(255, 182, 39, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 15px rgba(255, 182, 39, 0.2);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .floating-profile-btn:hover {
+            transform: scale(1.08) rotate(5deg);
+            border-color: rgba(255, 182, 39, 0.85);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), 0 0 25px rgba(255, 182, 39, 0.4);
+        }
+
+        /* Expanded Floating Profile Panel */
+        .floating-profile-panel {
+            position: fixed;
+            top: 174px;
+            left: 24px;
+            width: 360px;
+            max-height: 580px;
+            border-radius: 24px;
+            background: linear-gradient(150deg, rgba(20, 26, 38, 0.98), rgba(10, 13, 20, 0.99));
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 20px 80px rgba(0, 0, 0, 0.65), inset 0 1px 1px rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            z-index: 49;
+            transform: translateY(-20px) scale(0.95);
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .floating-profile-panel.active {
+            transform: translateY(0) scale(1);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Shimmer sweep line animation */
+        .gold-sweep-line {
+            position: relative;
+            overflow: hidden;
+        }
+        .gold-sweep-line::after {
+            content: '';
+            position: absolute;
+            top: 0; right: 0; bottom: 0; left: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 182, 39, 0.15), transparent);
+            transform: translateX(-100%);
+            animation: sweepShimmer 4s infinite;
+        }
+        @keyframes sweepShimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
     </style>
 </head>
-<body class="app-shell text-slate-800 min-h-screen flex flex-col bg-slate-50">
+<body class="app-shell text-slate-100 min-h-screen flex flex-col bg-slate-950">
 
     <!-- רקע גרדיאנט דינמי עם בועות מונפשות עמומות בגווני פסטל בהירים -->
     <div id="bg-container" aria-hidden="true"></div>
 
-    <header class="site-header bg-white/80 backdrop-blur-xl text-slate-900 border-b border-slate-200/50 sticky top-0 z-40 shadow-sm shadow-slate-100/40">
+    <header class="site-header bg-black/80 backdrop-blur-xl border-b sticky top-0 z-40 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
             <div class="brand-lockup flex items-center gap-4">
-                <div class="brand-mark bg-gradient-to-br from-indigo-500 to-violet-600 text-white p-2.5 rounded-xl shadow-md" aria-hidden="true">
+                <div class="brand-mark bg-gradient-to-br text-white p-2.5 rounded-xl shadow-md" aria-hidden="true">
                     <i data-lucide="aperture" class="w-8 h-8"></i>
                 </div>
                 <div>
                     <p class="brand-kicker">הארכיון הדיגיטלי</p>
-                    <h1 class="brand-title text-xl sm:text-2xl font-extrabold bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 bg-clip-text text-transparent tracking-tight">גלריית שמחת התורה</h1>
+                    <h1 class="brand-title text-xl sm:text-2xl font-extrabold tracking-tight">גלריית שמחת התורה</h1>
                 </div>
             </div>
             <div id="headerConnectionStatus" class="header-status" role="status">נדרשת התחברות</div>
@@ -955,16 +1181,16 @@
 
     <main class="gallery-layout max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 flex flex-col lg:flex-row gap-8 w-full relative">
         <div class="settings-wrap absolute left-4 top-8 z-30">
-            <button type="button" onclick="toggleAdminDrawer()" class="settings-trigger w-12 h-12 bg-white hover:bg-slate-50 text-indigo-600 rounded-full shadow-md hover:shadow-lg flex items-center justify-center transition-all transform hover:scale-105 active:scale-95 border border-slate-200/80" title="פתיחת אזור אישי והגדרות" aria-label="פתיחת אזור אישי והגדרות" aria-controls="adminDrawer" aria-expanded="false">
+            <button type="button" onclick="toggleAdminDrawer()" class="settings-trigger w-12 h-12 rounded-full flex items-center justify-center transition-all transform hover:scale-105 active:scale-95" title="פתיחת אזור אישי והגדרות" aria-label="פתיחת אזור אישי והגדרות" aria-controls="adminDrawer" aria-expanded="false">
                 <i data-lucide="settings" class="w-6 h-6"></i>
             </button>
         </div>
 
         <aside class="folder-rail w-full lg:w-80 flex-shrink-0 space-y-6" aria-label="תיקיות הגלריה">
-            <div class="folder-panel bg-white/70 backdrop-blur-xl rounded-3xl border border-white/80 p-5 shadow-sm shadow-slate-100/50">
-                <div class="folder-panel-heading flex items-center justify-between mb-4 pb-2 border-b border-slate-200/50">
-                    <h2 class="font-bold text-slate-800 flex items-center gap-2">
-                        <i data-lucide="folder-open" class="w-5 h-5 text-indigo-600"></i>
+            <div class="folder-panel rounded-3xl p-5 shadow-sm">
+                <div class="folder-panel-heading flex items-center justify-between mb-4 pb-2 border-b">
+                    <h2 class="font-bold flex items-center gap-2">
+                        <i data-lucide="folder-open" class="w-5 h-5"></i>
                         תיקיות
                     </h2>
                     <span class="folder-panel-note">Collections</span>
@@ -983,13 +1209,13 @@
                 <div class="hero-seal" aria-hidden="true"><i data-lucide="scan-line"></i></div>
             </div>
 
-            <div id="galleryAccessGate" class="hidden p-8 sm:p-12 text-center space-y-5">
-                <div class="w-16 h-16 mx-auto rounded-2xl bg-amber-500/10 text-amber-300 border border-amber-400/20 flex items-center justify-center"><i data-lucide="shield-user" class="w-8 h-8"></i></div>
-                <div>
-                    <h3 id="galleryAccessGateTitle" class="text-xl sm:text-2xl font-extrabold">התחבר כדי לצפות בגלריה</h3>
-                    <p id="galleryAccessGateText" class="mt-2 text-sm text-slate-400 max-w-lg mx-auto leading-relaxed">התחבר באמצעות Google. לאחר מכן תישלח למנהל בקשה לאישור החשבון.</p>
+            <div id="galleryAccessGate" class="hidden p-8 sm:p-12 text-center space-y-6">
+                <div class="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-tr from-amber-500/10 to-amber-400/20 text-amber-300 border border-amber-400/20 flex items-center justify-center shadow-lg shadow-amber-500/5"><i data-lucide="shield-user" class="w-10 h-10"></i></div>
+                <div class="space-y-2">
+                    <h3 id="galleryAccessGateTitle" class="text-2xl sm:text-3xl font-black tracking-tight text-white">התחבר כדי לצפות בגלריה</h3>
+                    <p id="galleryAccessGateText" class="text-sm text-slate-400 max-w-lg mx-auto leading-relaxed font-medium">התחבר באמצעות Google. לאחר מכן תישלח למנהל בקשה לאישור החשבון.</p>
                 </div>
-                <button type="button" onclick="toggleAdminDrawer()" class="px-6 py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-sm font-extrabold shadow-lg">פתח את הפרופיל והתחבר</button>
+                <button type="button" onclick="toggleAdminDrawer()" class="px-8 py-4 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 text-sm font-black shadow-xl shadow-amber-500/10 hover:shadow-amber-500/20 transition-all">פתח את הפרופיל והתחבר</button>
             </div>
 
             <div class="simchat-header shadow-md hidden" id="holidayBanner">
@@ -997,67 +1223,67 @@
                 <h1>📸 גלריית מסיבת סוף השנה</h1>
             </div>
 
-            <div class="gallery-toolbar bg-white/70 backdrop-blur-xl rounded-3xl border border-white/80 p-4 flex flex-col sm:flex-row gap-4 justify-between items-center shadow-sm pl-16">
+            <div class="gallery-toolbar p-4 flex flex-col sm:flex-row gap-4 justify-between items-center shadow-sm">
                 <div class="flex w-full sm:w-auto items-center gap-2 flex-1 max-w-lg">
                     <div class="relative flex-1">
                         <label for="searchInput" class="sr-only">חיפוש תמונות לפי שם</label>
-                        <span class="search-icon absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-400"><i data-lucide="search" class="w-5 h-5"></i></span>
-                        <input type="search" id="searchInput" oninput="handleSearch(this.value)" placeholder="חיפוש בארכיון..." autocomplete="off" class="w-full bg-slate-50/50 border border-slate-200 rounded-xl py-2.5 pr-10 pl-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-900/20 focus:border-indigo-900 transition-all text-slate-800">
+                        <span class="search-icon absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none"><i data-lucide="search" class="w-5 h-5"></i></span>
+                        <input type="search" id="searchInput" oninput="handleSearch(this.value)" placeholder="חיפוש בארכיון..." autocomplete="off" class="w-full rounded-xl py-2.5 pr-10 pl-4 text-sm focus:outline-none transition-all">
                     </div>
-                    <button type="button" onclick="openFaceSearchModal()" title="חיפוש תמונות לפי פנים" class="face-search-button p-2.5 bg-gradient-to-br from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-indigo-100 text-indigo-600 border border-indigo-200/50 rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 font-bold text-xs">
-                        <i data-lucide="sparkles" class="w-4 h-4 text-indigo-500"></i><span>חיפוש פרצוף</span>
+                    <button type="button" onclick="openFaceSearchModal()" title="חיפוש תמונות לפי פנים" class="face-search-button p-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 font-bold text-xs">
+                        <i data-lucide="sparkles" class="w-4 h-4"></i><span>חיפוש פרצוף</span>
                     </button>
                 </div>
-                <div class="flex items-center gap-2 text-xs text-slate-500 font-medium self-end sm:self-auto">
-                    <span id="imageCounter" class="bg-indigo-50 text-indigo-700 border border-indigo-100 px-3 py-1.5 rounded-full font-bold">טוען...</span>
+                <div class="flex items-center gap-2 text-xs font-medium self-end sm:self-auto">
+                    <span id="imageCounter" class="px-3 py-1.5 rounded-full font-bold">טוען...</span>
                 </div>
             </div>
 
-            <div id="tempSearchBanner" class="hidden border border-slate-200 rounded-2xl p-4 flex justify-between items-center shadow-sm animate-fade-in transition-all"></div>
+            <div id="tempSearchBanner" class="hidden rounded-2xl p-4 flex justify-between items-center shadow-sm animate-fade-in transition-all"></div>
 
             <div id="photosGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"></div>
 
-            <div id="emptyState" class="gallery-empty hidden flex-col items-center justify-center py-20 text-center bg-white/40 backdrop-blur-sm rounded-3xl border border-white p-8 shadow-sm">
-                <div class="bg-slate-100 p-4 rounded-full text-slate-400 mb-4"><i data-lucide="image-off" class="w-12 h-12"></i></div>
-                <h3 class="text-lg font-bold text-slate-700 mb-1">אין תמונות להצגה</h3>
-                <p class="text-sm text-slate-500 max-w-sm">הארכיון ריק כרגע, או שהתמונות עדיין נטענות מהענן.</p>
+            <div id="emptyState" class="gallery-empty hidden flex-col items-center justify-center py-20 text-center p-8">
+                <div class="p-4 rounded-full mb-4"><i data-lucide="image-off" class="w-12 h-12"></i></div>
+                <h3 class="text-lg font-bold mb-1">אין תמונות להצגה</h3>
+                <p class="text-sm max-w-sm">הארכיון ריק כרגע, או שהתמונות עדיין נטענות מהענן.</p>
             </div>
         </section>
     </main>
 
     <!-- NEW UPDATES BANNER -->
-    <div id="newUpdatesBanner" class="fixed bottom-6 right-6 z-50 bg-white/90 backdrop-blur-xl text-slate-800 rounded-2xl p-4 shadow-xl border border-slate-200/50 hidden flex-col sm:flex-row gap-4 items-center max-w-sm animate-fade-in" role="status">
-        <div class="bg-indigo-50 border border-indigo-100 p-3 rounded-full flex-shrink-0"><i data-lucide="bell-ring" class="w-7 h-7 text-indigo-600"></i></div>
+    <div id="newUpdatesBanner" class="fixed bottom-6 right-6 z-50 rounded-2xl p-4 shadow-xl border hidden flex-col sm:flex-row gap-4 items-center max-w-sm animate-fade-in" role="status">
+        <div class="bell-icon-container p-3 rounded-full flex-shrink-0"><i data-lucide="bell-ring" class="w-7 h-7"></i></div>
         <div class="text-right flex-1">
-            <h3 class="font-bold text-slate-800 text-base mb-0.5">יש עדכונים בגלריה!</h3>
-            <p class="text-[11px] text-slate-500 leading-tight">נוספו תמונות חדשות בשבוע האחרון.</p>
+            <h3 class="font-bold text-base mb-0.5">יש עדכונים בגלריה!</h3>
+            <p class="text-[11px] leading-tight">נוספו תמונות חדשות בשבוע האחרון.</p>
         </div>
         <div class="flex flex-col gap-2 w-full sm:w-auto">
-            <button type="button" onclick="showNewUpdates()" class="bg-indigo-600 text-white px-4 py-1.5 rounded-xl text-[11px] font-bold shadow-md hover:bg-indigo-50 transition-all text-center">צפה עכשיו</button>
-            <button type="button" onclick="dismissNewUpdates()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-1.5 rounded-xl text-[11px] font-semibold transition-all border border-slate-200 text-center">סגור</button>
+            <button type="button" onclick="showNewUpdates()" class="btn-primary-gold px-4 py-1.5 rounded-xl text-[11px] font-bold text-center">צפה עכשיו</button>
+            <button type="button" onclick="dismissNewUpdates()" class="btn-secondary-dark px-4 py-1.5 rounded-xl text-[11px] font-semibold text-center">סגור</button>
         </div>
     </div>
 
     <!-- ADMIN & USER DRAWER -->
     <div id="drawerOverlay" class="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40 hidden transition-all duration-300" onclick="toggleAdminDrawer()" aria-hidden="true"></div>
-    <div id="adminDrawer" class="fixed inset-y-0 left-0 w-80 sm:w-96 bg-white/90 backdrop-blur-3xl shadow-2xl z-50 transform -translate-x-full transition-transform duration-300 ease-in-out border-r border-slate-200/60 flex flex-col" role="dialog" aria-modal="true" aria-label="אזור אישי והגדרות" inert>
+    <div id="adminDrawer" class="fixed inset-y-0 left-0 w-80 sm:w-96 shadow-2xl z-50 transform -translate-x-full transition-transform duration-300 ease-in-out flex flex-col" role="dialog" aria-modal="true" aria-label="אזור אישי והגדרות" inert>
 
-        <div class="admin-drawer-header bg-white text-slate-800 p-5 flex justify-between items-center flex-shrink-0 border-b border-slate-200/60">
-            <h3 class="font-bold text-lg flex items-center gap-2 text-indigo-950"><i data-lucide="layout-dashboard" class="w-5 h-5 text-indigo-600"></i> לוח ניהול הגלריה</h3>
-            <button type="button" onclick="toggleAdminDrawer()" class="text-slate-500 hover:text-slate-800 transition-all" aria-label="סגירת אזור ההגדרות"><i data-lucide="x" class="w-6 h-6"></i></button>
+        <div class="admin-drawer-header p-5 flex justify-between items-center flex-shrink-0 border-b">
+            <h3 class="font-bold text-lg flex items-center gap-2"><i data-lucide="layout-dashboard" class="w-5 h-5"></i> לוח ניהול הגלריה</h3>
+            <button type="button" onclick="toggleAdminDrawer()" class="text-slate-400 hover:text-white transition-all" aria-label="סגירת אזור ההגדרות"><i data-lucide="x" class="w-6 h-6"></i></button>
         </div>
 
         <div class="admin-drawer-body flex-1 overflow-y-auto p-5 space-y-4">
-            <div class="flex items-center justify-between pb-2 border-b border-slate-100">
-                <span class="text-xs font-bold text-slate-500">סטטוס חיבור:</span>
+            <div class="flex items-center justify-between pb-2 border-b border-white/10">
+                <span class="text-xs font-bold text-slate-400">סטטוס חיבור:</span>
                 <span id="sidebarLockStatus" class="text-[10px] px-2 py-0.5 rounded-full font-bold"></span>
             </div>
 
             <!-- פרופיל משתמש וכניסת מנהל -->
             <div id="userActionArea" class="hidden space-y-5">
-                <div id="googleAuthArea" class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3">
+                <div id="googleAuthArea" class="google-auth-card p-4 space-y-3">
                     <div id="googleSignedOutView">
-                        <button type="button" onclick="signInWithGoogleAccount()" class="w-full py-2.5 bg-white hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold transition-all shadow-sm border border-slate-300 flex items-center justify-center gap-2">
+                        <button type="button" onclick="signInWithGoogleAccount()" class="w-full py-2.5 btn-google-login rounded-xl text-xs font-bold flex items-center justify-center gap-2">
                             <svg aria-hidden="true" class="w-5 h-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.4-.18-2.06H12v3.9h5.38a4.6 4.6 0 0 1-2 3.02v2.53h3.24c1.9-1.75 2.98-4.33 2.98-7.39Z"/><path fill="#34A853" d="M12 22c2.7 0 4.97-.9 6.63-2.38l-3.24-2.53c-.9.6-2.05.96-3.39.96-2.61 0-4.82-1.76-5.61-4.13H3.04v2.61A10 10 0 0 0 12 22Z"/><path fill="#FBBC05" d="M6.39 13.92A6.02 6.02 0 0 1 6.08 12c0-.67.12-1.32.31-1.92V7.47H3.04A10 10 0 0 0 2 12c0 1.61.38 3.13 1.04 4.53l3.35-2.61Z"/><path fill="#EA4335" d="M12 5.95c1.47 0 2.79.5 3.83 1.5l2.87-2.87C16.96 2.96 14.7 2 12 2a10 10 0 0 0-8.96 5.47l3.35 2.61C7.18 7.71 9.39 5.95 12 5.95Z"/></svg>
                             התחבר באמצעות Google
                         </button>
@@ -1065,23 +1291,23 @@
                     </div>
                     <div id="googleSignedInView" class="hidden">
                         <div class="flex items-center gap-3">
-                            <img id="googleUserPhoto" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="תמונת משתמש" class="w-10 h-10 rounded-full border border-slate-200 object-cover hidden">
+                            <img id="googleUserPhoto" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="תמונת משתמש" class="w-10 h-10 rounded-full border object-cover hidden">
                             <div class="min-w-0 flex-1">
-                                <p id="googleUserName" class="text-xs font-bold text-slate-800 truncate"></p>
-                                <p id="googleUserEmail" class="text-[10px] text-slate-500 truncate"></p>
+                                <p id="googleUserName" class="text-xs font-bold text-slate-200 truncate"></p>
+                                <p id="googleUserEmail" class="text-[10px] text-slate-400 truncate"></p>
                                 <span id="googleUserRoleBadge" class="inline-flex mt-1 text-[9px] px-2 py-0.5 rounded-full font-bold bg-amber-100 text-amber-800">ממתין לאישור</span>
                             </div>
                         </div>
-                        <p id="googleUserApprovalText" class="mt-3 text-[10px] leading-relaxed text-slate-500 bg-slate-50 border border-slate-100 rounded-xl p-2.5">בקשת ההצטרפות שלך ממתינה לאישור מנהל.</p>
-                        <button type="button" onclick="signOutGoogleAccount()" class="w-full mt-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-[10px] font-bold border border-slate-200">התנתק מחשבון Google</button>
+                        <p id="googleUserApprovalText" class="mt-3 text-[10px] leading-relaxed text-slate-400 rounded-xl p-2.5 bg-white/5 border border-white/5">בקשת ההצטרפות שלך ממתינה לאישור מנהל.</p>
+                        <button type="button" onclick="signOutGoogleAccount()" class="w-full mt-3 py-2 btn-secondary-dark rounded-xl text-[10px] font-bold">התנתק מחשבון Google</button>
                     </div>
                 </div>
 
-                <div id="userUploadAccessCard" class="hidden bg-gradient-to-br from-indigo-50/50 to-blue-50/50 border border-indigo-100/50 rounded-2xl p-5 text-center shadow-sm">
-                    <div class="bg-white w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm border border-slate-100"><i data-lucide="cloud-upload" class="w-6 h-6 text-indigo-500"></i></div>
-                    <h4 id="userUploadAccessTitle" class="font-bold text-slate-800 mb-1.5">העלאת תמונות לגלריה</h4>
-                    <p id="userUploadAccessText" class="text-[11px] text-slate-500 mb-4 leading-relaxed">בחר תמונות להעלאה בהתאם לדרגת ההרשאה שלך.</p>
-                    <button type="button" onclick="openModal('userUploadModal')" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2"><i data-lucide="arrow-up-circle" class="w-4 h-4"></i> העלה תמונות</button>
+                <div id="userUploadAccessCard" class="hidden luxury-action-card p-5 text-center">
+                    <div class="luxury-icon-circle w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3"><i data-lucide="cloud-upload" class="w-6 h-6"></i></div>
+                    <h4 id="userUploadAccessTitle" class="font-bold mb-1.5">העלאת תמונות לגלריה</h4>
+                    <p id="userUploadAccessText" class="text-[11px] mb-4 leading-relaxed">בחר תמונות להעלאה בהתאם לדרגת ההרשאה שלך.</p>
+                    <button type="button" onclick="openModal('userUploadModal')" class="w-full py-2.5 btn-primary-gold rounded-xl text-xs font-bold flex items-center justify-center gap-2"><i data-lucide="arrow-up-circle" class="w-4 h-4"></i> העלה תמונות</button>
                 </div>
 
             </div>
@@ -1107,13 +1333,13 @@
                 </section>
 
                 <!-- אישור משתמשים חדשים ובחירת דרגה -->
-                <div id="superAdminUsersCard" class="hidden super-admin-only admin-control-card border border-cyan-200 rounded-2xl overflow-hidden bg-gradient-to-b from-cyan-50/50 to-white/30 shadow-sm">
-                    <button type="button" onclick="toggleAccordion('accUserApprovals')" class="w-full hover:bg-cyan-50/50 px-4 py-3 text-xs font-bold text-slate-800 flex items-center justify-between transition-all">
-                        <span class="flex items-center gap-2 text-cyan-700"><i data-lucide="users-round" class="w-4 h-4"></i> ניהול משתמשים ובקשות (<span id="pendingUsersCountBadge">0</span>)</span>
-                        <i id="accUserApprovalsArrow" data-lucide="chevron-down" class="w-4 h-4 text-cyan-500/70"></i>
+                <div id="superAdminUsersCard" class="hidden super-admin-only admin-control-card rounded-2xl overflow-hidden">
+                    <button type="button" onclick="toggleAccordion('accUserApprovals')" class="w-full hover:bg-white/5 px-4 py-3 text-xs font-bold text-slate-200 flex items-center justify-between transition-all">
+                        <span class="flex items-center gap-2 text-amber-400"><i data-lucide="users-round" class="w-4 h-4"></i> ניהול משתמשים ובקשות (<span id="pendingUsersCountBadge">0</span>)</span>
+                        <i id="accUserApprovalsArrow" data-lucide="chevron-down" class="w-4 h-4 text-amber-500/70"></i>
                     </button>
                     <div id="accUserApprovals" class="accordion-content px-3 space-y-2">
-                        <p class="text-[10px] text-slate-500 leading-relaxed">מנהל־על יכול לאשר משתמשים, לשנות דרגות ולחסום חשבונות.</p>
+                        <p class="text-[10px] text-slate-400 leading-relaxed">מנהל־על יכול לאשר משתמשים, לשנות דרגות ולחסום חשבונות.</p>
                         <div id="pendingUsersList" class="max-h-80 overflow-y-auto space-y-2 pb-2 pr-1"></div>
                         <div class="border-t border-slate-200/50 pt-3 mt-3">
                             <p class="text-[10px] font-bold text-slate-500 mb-2">כל המשתמשים</p>
@@ -1134,106 +1360,106 @@
                 </div>
 
                 <!-- אישור ממתינות -->
-                <div class="admin-control-card border border-amber-200 rounded-2xl overflow-hidden bg-gradient-to-b from-amber-50/40 to-white/30 shadow-sm">
-                    <button type="button" onclick="toggleAccordion('accPending')" class="w-full hover:bg-amber-50/50 px-4 py-3 text-xs font-bold text-slate-800 flex items-center justify-between transition-all">
-                        <span class="flex items-center gap-2 text-amber-700"><i data-lucide="bell" class="w-4 h-4"></i> בקשות העלאה לאישור (<span id="pendingCountBadge">0</span>)</span>
-                        <i id="accPendingArrow" data-lucide="chevron-down" class="w-4 h-4 text-amber-500/60"></i>
+                <div class="admin-control-card rounded-2xl overflow-hidden">
+                    <button type="button" onclick="toggleAccordion('accPending')" class="w-full hover:bg-white/5 px-4 py-3 text-xs font-bold text-slate-200 flex items-center justify-between transition-all">
+                        <span class="flex items-center gap-2 text-amber-400"><i data-lucide="bell" class="w-4 h-4"></i> בקשות העלאה לאישור (<span id="pendingCountBadge">0</span>)</span>
+                        <i id="accPendingArrow" data-lucide="chevron-down" class="w-4 h-4 text-amber-500/70"></i>
                     </button>
                     <div id="accPending" class="accordion-content px-3 space-y-3">
-                        <div class="flex justify-between items-center px-1"><span class="text-[10px] font-semibold text-slate-500">בחר תמונות:</span> <button type="button" onclick="toggleSelectAllPending()" class="text-[9px] text-amber-700 hover:underline">סמן הכל</button></div>
+                        <div class="flex justify-between items-center px-1"><span class="text-[10px] font-semibold text-slate-400">בחר תמונות:</span> <button type="button" onclick="toggleSelectAllPending()" class="text-[9px] text-amber-400 hover:underline">סמן הכל</button></div>
                         <div id="pendingList" class="max-h-60 overflow-y-auto space-y-2 pb-2 pr-1"></div>
-                        <div class="border-t border-slate-200/50 pt-3 pb-1 space-y-2.5">
+                        <div class="border-t border-white/10 pt-3 pb-1 space-y-2.5">
                             <div>
-                                <label class="text-[9px] font-bold text-slate-500 block mb-1">יעד שמירה בגלריה:</label>
-                                <select id="pendingTargetFolder" class="w-full text-xs border border-slate-200 rounded-lg py-1.5 px-2 bg-white text-slate-800 focus:ring-amber-500">
+                                <label class="text-[9px] font-bold text-slate-400 block mb-1">יעד שמירה בגלריה:</label>
+                                <select id="pendingTargetFolder" class="w-full text-xs rounded-lg py-1.5 px-2">
                                     <option value="auto">חלוקה אוטומטית לפי תיקיות מקוריות</option>
                                 </select>
                             </div>
                             <div class="flex gap-2">
                                 <button type="button" onclick="approveSelectedPending()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs py-2 rounded-lg font-bold transition-all shadow-sm">אשר נבחרים</button>
-                                <button type="button" id="rejectPendingBtn" onclick="rejectSelectedPending()" class="flex-1 bg-red-50 hover:bg-red-100 text-red-600 text-xs py-2 rounded-lg font-bold transition-all border border-red-200">בקש מחיקה</button>
+                                <button type="button" id="rejectPendingBtn" onclick="rejectSelectedPending()" class="flex-1 bg-red-950/40 hover:bg-red-900/60 text-red-400 text-xs py-2 rounded-lg font-bold transition-all border border-red-500/30">בקש מחיקה</button>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- העלאה חכמה / יצירת תיקייה -->
-                <div class="admin-control-card border border-indigo-100 rounded-2xl overflow-hidden bg-white/40 shadow-sm mt-2">
-                    <button type="button" onclick="toggleAccordion('accAddSmart')" class="w-full hover:bg-indigo-50/40 px-4 py-3 text-xs font-bold text-slate-800 flex items-center justify-between transition-all">
-                        <span class="flex items-center gap-2 text-indigo-700"><i data-lucide="cloud-upload" class="w-4 h-4"></i> העלאת תמונות מרובות ויצירת תיקיות</span>
-                        <i id="accAddSmartArrow" data-lucide="chevron-down" class="w-4 h-4 text-indigo-400"></i>
+                <div class="admin-control-card rounded-2xl overflow-hidden mt-2">
+                    <button type="button" onclick="toggleAccordion('accAddSmart')" class="w-full hover:bg-white/5 px-4 py-3 text-xs font-bold text-slate-200 flex items-center justify-between transition-all">
+                        <span class="flex items-center gap-2 text-amber-400"><i data-lucide="cloud-upload" class="w-4 h-4"></i> העלאת תמונות מרובות ויצירת תיקיות</span>
+                        <i id="accAddSmartArrow" data-lucide="chevron-down" class="w-4 h-4 text-amber-500/70"></i>
                     </button>
                     <div id="accAddSmart" class="accordion-content px-4 space-y-3">
-                        <p class="text-[10px] text-slate-500 leading-tight">בחר היכן למקם את הקבצים, או תן למערכת ליצור אוטומטית תת-תיקיות בענן לפי שם התיקייה מהמחשב!</p>
+                        <p class="text-[10px] text-slate-400 leading-tight">בחר היכן למקם את הקבצים, או תן למערכת ליצור אוטומטית תת-תיקיות בענן לפי שם התיקייה מהמחשב!</p>
                         <form onsubmit="handleAddPhotoAdmin(event)" class="space-y-3">
-                            <div class="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3 space-y-2">
-                                <p id="adminDriveUploadStatus" class="text-[10px] font-bold text-emerald-800">יש לחבר את Google Drive לפני בחירת התמונות.</p>
-                                <button type="button" id="adminDriveUploadConnectBtn" onclick="connectDriveForUpload()" class="w-full py-2 bg-white hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg text-[10px] font-bold transition-all">חבר Drive באותו דף</button>
+                            <div class="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 space-y-2">
+                                <p id="adminDriveUploadStatus" class="text-[10px] font-bold text-amber-400">יש לחבר את Google Drive לפני בחירת התמונות.</p>
+                                <button type="button" id="adminDriveUploadConnectBtn" onclick="connectDriveForUpload()" class="w-full py-2 btn-secondary-dark rounded-lg text-[10px] font-bold">חבר Drive באותו דף</button>
                             </div>
                             <div>
-                                <label class="text-[9px] font-bold text-slate-500 block mb-1">תיקיית יעד:</label>
-                                <select id="adminTargetFolderSelect" class="w-full text-xs border border-indigo-200 rounded-xl py-2 px-2 bg-white text-slate-800 focus:ring-indigo-500">
-                                    <option value="auto" class="font-bold text-indigo-700">יצירה וחלוקה אוטומטית לפי תיקיות</option>
+                                <label class="text-[9px] font-bold text-slate-400 block mb-1">תיקיית יעד:</label>
+                                <select id="adminTargetFolderSelect" class="w-full text-xs rounded-xl py-2 px-2 focus:ring-amber-500">
+                                    <option value="auto" class="font-bold text-amber-400">יצירה וחלוקה אוטומטית לפי תיקיות</option>
                                 </select>
                             </div>
 
-                            <div class="border-t border-slate-200 pt-3 space-y-2">
+                            <div class="border-t border-white/10 pt-3 space-y-2">
                                 <label class="block">
-                                    <span class="text-[10px] font-bold text-slate-700 block mb-1">העלאת תמונות מרובות:</span>
-                                    <input type="file" id="adminMultiFiles" multiple accept="image/*" class="w-full text-xs border border-slate-200 rounded-lg p-1.5 bg-white cursor-pointer text-slate-600">
+                                    <span class="text-[10px] font-bold text-slate-300 block mb-1">העלאת תמונות מרובות:</span>
+                                    <input type="file" id="adminMultiFiles" multiple accept="image/*" class="w-full text-xs rounded-lg p-1.5 cursor-pointer text-slate-400 bg-white/5 border border-white/10">
                                 </label>
                                 <label class="block pt-1">
-                                    <span class="text-[10px] font-bold text-indigo-700 block mb-1">העלאת תיקייה שלמה:</span>
-                                    <input type="file" id="adminFolderUpload" webkitdirectory directory multiple accept="image/*" class="w-full text-xs border border-indigo-200 bg-indigo-50/50 rounded-lg p-1.5 cursor-pointer text-indigo-800">
+                                    <span class="text-[10px] font-bold text-amber-400 block mb-1">העלאת תיקייה שלמה:</span>
+                                    <input type="file" id="adminFolderUpload" webkitdirectory directory multiple accept="image/*" class="w-full text-xs rounded-lg p-1.5 cursor-pointer text-amber-400 bg-white/5 border border-amber-500/25">
                                 </label>
                             </div>
 
-                            <div id="adminUploadProgress" class="hidden text-center bg-indigo-50 rounded-lg p-2 border border-indigo-100">
-                                <div class="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-1"></div>
-                                <p class="text-[10px] font-bold text-indigo-900" id="adminUploadProgressText">מעלה לענן...</p>
+                            <div id="adminUploadProgress" class="hidden text-center bg-white/5 rounded-lg p-2 border border-white/10">
+                                <div class="w-4 h-4 border-2 border-amber-400 border-t-transparent rounded-full animate-spin mx-auto mb-1"></div>
+                                <p class="text-[10px] font-bold text-amber-400" id="adminUploadProgressText">מעלה לענן...</p>
                             </div>
 
-                            <button type="submit" id="adminUploadSubmitBtn" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-xl text-xs font-bold transition-all shadow-md">העלה לגלריה הארצית</button>
+                            <button type="submit" id="adminUploadSubmitBtn" class="w-full py-2.5 btn-primary-gold rounded-xl text-xs font-bold">העלה לגלריה הארצית</button>
                         </form>
                     </div>
                 </div>
 
                 <!-- סנכרון Google Drive -->
-                <div class="admin-control-card border border-emerald-200 rounded-2xl overflow-hidden bg-gradient-to-b from-emerald-50/60 to-white/40 shadow-sm">
-                    <button type="button" onclick="toggleAccordion('accDriveSync')" class="w-full hover:bg-emerald-50/60 px-4 py-3 text-xs font-bold text-slate-800 flex items-center justify-between transition-all">
-                        <span class="flex items-center gap-2 text-emerald-700"><i data-lucide="refresh-cw" class="w-4 h-4"></i> סנכרון מ־Google Drive</span>
-                        <i id="accDriveSyncArrow" data-lucide="chevron-down" class="w-4 h-4 text-emerald-500/70"></i>
+                <div class="admin-control-card rounded-2xl overflow-hidden">
+                    <button type="button" onclick="toggleAccordion('accDriveSync')" class="w-full hover:bg-white/5 px-4 py-3 text-xs font-bold text-slate-200 flex items-center justify-between transition-all">
+                        <span class="flex items-center gap-2 text-amber-400"><i data-lucide="refresh-cw" class="w-4 h-4"></i> סנכרון מ־Google Drive</span>
+                        <i id="accDriveSyncArrow" data-lucide="chevron-down" class="w-4 h-4 text-amber-500/70"></i>
                     </button>
                     <div id="accDriveSync" class="accordion-content px-4 space-y-3">
-                        <p class="text-[10px] text-slate-500 leading-relaxed">חבר חשבון Drive, הדבק קישור לתיקייה וסנכרן את התמונות ותיקיות המשנה ישירות לגלריה.</p>
+                        <p class="text-[10px] text-slate-400 leading-relaxed">חבר חשבון Drive, הדבק קישור לתיקייה וסנכרן את התמונות ותיקיות המשנה ישירות לגלריה.</p>
 
-                        <div id="driveConnectionStatus" role="status" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-[10px] font-semibold text-slate-500">
+                        <div id="driveConnectionStatus" role="status" class="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[10px] font-semibold text-slate-400">
                             Google Drive עדיין לא מחובר
                         </div>
 
-                        <button type="button" id="connectDriveBtn" onclick="connectGoogleDrive()" class="w-full py-2.5 bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2">
+                        <button type="button" id="connectDriveBtn" onclick="connectGoogleDrive()" class="w-full py-2.5 btn-secondary-dark rounded-xl text-xs font-bold flex items-center justify-center gap-2">
                             <i data-lucide="cloud" class="w-4 h-4"></i>
                             חבר Google Drive
                         </button>
 
                         <label class="block">
-                            <span class="text-[9px] font-bold text-slate-600 block mb-1">קישור לתיקיית Drive או מזהה תיקייה:</span>
-                            <input type="text" id="driveFolderInput" inputmode="url" autocomplete="off" placeholder="https://drive.google.com/drive/folders/..." class="w-full border border-emerald-200 rounded-xl px-3 py-2 text-xs bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20" dir="ltr">
+                            <span class="text-[9px] font-bold text-slate-400 block mb-1">קישור לתיקיית Drive או מזהה תיקייה:</span>
+                            <input type="text" id="driveFolderInput" inputmode="url" autocomplete="off" placeholder="https://drive.google.com/drive/folders/..." class="w-full rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/20" dir="ltr">
                         </label>
 
-                        <label class="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 cursor-pointer">
-                            <input type="checkbox" id="driveIncludeSubfolders" checked class="rounded text-emerald-600 focus:ring-emerald-500 border-slate-300">
-                            <span class="text-[10px] font-semibold text-slate-600">כלול גם תיקיות משנה</span>
+                        <label class="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 cursor-pointer">
+                            <input type="checkbox" id="driveIncludeSubfolders" checked class="rounded text-amber-500 focus:ring-amber-500 border-white/10">
+                            <span class="text-[10px] font-semibold text-slate-300">כלול גם תיקיות משנה</span>
                         </label>
 
-                        <div id="driveSyncProgress" class="hidden rounded-xl border border-emerald-100 bg-emerald-50/70 p-3" aria-live="polite">
-                            <div class="h-1.5 w-full overflow-hidden rounded-full bg-emerald-100">
-                                <div id="driveSyncProgressBar" class="h-full w-0 rounded-full bg-emerald-600 transition-all duration-300"></div>
+                        <div id="driveSyncProgress" class="hidden rounded-xl border border-white/10 bg-white/5 p-3" aria-live="polite">
+                            <div class="h-1.5 w-full overflow-hidden rounded-full bg-white/5">
+                                <div id="driveSyncProgressBar" class="h-full w-0 rounded-full bg-amber-400 transition-all duration-300"></div>
                             </div>
-                            <p id="driveSyncProgressText" class="mt-2 text-[10px] font-bold text-emerald-800">מתכונן לסנכרון...</p>
+                            <p id="driveSyncProgressText" class="mt-2 text-[10px] font-bold text-amber-400">מתכונן לסנכרון...</p>
                         </div>
 
-                        <button type="button" id="driveSyncBtn" onclick="startGoogleDriveSync()" disabled class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2">
+                        <button type="button" id="driveSyncBtn" onclick="startGoogleDriveSync()" disabled class="w-full py-2.5 btn-primary-gold rounded-xl text-xs font-bold flex items-center justify-center gap-2">
                             <i data-lucide="folder-sync" class="w-4 h-4"></i>
                             סנכרן עכשיו
                         </button>
@@ -1242,21 +1468,21 @@
                 </div>
 
                 <!-- יצירת תיקייה ריקה -->
-                <div class="admin-control-card border border-slate-200 rounded-2xl overflow-hidden bg-white/40 shadow-sm">
-                    <button type="button" onclick="toggleAccordion('accEmptyFolder')" class="w-full hover:bg-slate-50 px-4 py-3 text-xs font-bold text-slate-800 flex items-center justify-between transition-all">
-                        <span class="flex items-center gap-2 text-slate-600"><i data-lucide="folder-plus" class="w-4 h-4"></i> יצירת תיקייה ריקה</span>
-                        <i id="accEmptyFolderArrow" data-lucide="chevron-down" class="w-4 h-4 text-slate-400"></i>
+                <div class="admin-control-card rounded-2xl overflow-hidden">
+                    <button type="button" onclick="toggleAccordion('accEmptyFolder')" class="w-full hover:bg-white/5 px-4 py-3 text-xs font-bold text-slate-200 flex items-center justify-between transition-all">
+                        <span class="flex items-center gap-2 text-amber-400"><i data-lucide="folder-plus" class="w-4 h-4"></i> יצירת תיקייה ריקה</span>
+                        <i id="accEmptyFolderArrow" data-lucide="chevron-down" class="w-4 h-4 text-slate-500/70"></i>
                     </button>
                     <div id="accEmptyFolder" class="accordion-content px-4">
                         <form onsubmit="handleCreateEmptyFolder(event)" class="space-y-3">
-                            <input type="text" id="emptyFolderName" required maxlength="60" placeholder="שם התיקייה..." class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none bg-white text-slate-800">
+                            <input type="text" id="emptyFolderName" required maxlength="60" placeholder="שם התיקייה..." class="w-full rounded-xl px-3 py-2 text-xs focus:outline-none">
                             <div class="grid grid-cols-4 gap-1.5">
-                                <label class="border border-slate-200 rounded-lg p-2 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50"><input type="radio" name="emptyFolderIcon" value="calendar" checked class="sr-only peer"><i data-lucide="calendar" class="w-4 h-4 text-slate-400 peer-checked:text-indigo-600"></i></label>
-                                <label class="border border-slate-200 rounded-lg p-2 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50"><input type="radio" name="emptyFolderIcon" value="compass" class="sr-only peer"><i data-lucide="compass" class="w-4 h-4 text-slate-400 peer-checked:text-indigo-600"></i></label>
-                                <label class="border border-slate-200 rounded-lg p-2 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50"><input type="radio" name="emptyFolderIcon" value="users" class="sr-only peer"><i data-lucide="users" class="w-4 h-4 text-slate-400 peer-checked:text-indigo-600"></i></label>
-                                <label class="border border-slate-200 rounded-lg p-2 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50"><input type="radio" name="emptyFolderIcon" value="award" class="sr-only peer"><i data-lucide="award" class="w-4 h-4 text-slate-400 peer-checked:text-indigo-600"></i></label>
+                                <label class="border border-white/10 rounded-lg p-2 flex flex-col items-center justify-center cursor-pointer hover:bg-white/5"><input type="radio" name="emptyFolderIcon" value="calendar" checked class="sr-only peer"><i data-lucide="calendar" class="w-4 h-4 text-slate-400 peer-checked:text-amber-400"></i></label>
+                                <label class="border border-white/10 rounded-lg p-2 flex flex-col items-center justify-center cursor-pointer hover:bg-white/5"><input type="radio" name="emptyFolderIcon" value="compass" class="sr-only peer"><i data-lucide="compass" class="w-4 h-4 text-slate-400 peer-checked:text-amber-400"></i></label>
+                                <label class="border border-white/10 rounded-lg p-2 flex flex-col items-center justify-center cursor-pointer hover:bg-white/5"><input type="radio" name="emptyFolderIcon" value="users" class="sr-only peer"><i data-lucide="users" class="w-4 h-4 text-slate-400 peer-checked:text-amber-400"></i></label>
+                                <label class="border border-white/10 rounded-lg p-2 flex flex-col items-center justify-center cursor-pointer hover:bg-white/5"><input type="radio" name="emptyFolderIcon" value="award" class="sr-only peer"><i data-lucide="award" class="w-4 h-4 text-slate-400 peer-checked:text-amber-400"></i></label>
                             </div>
-                            <button type="submit" class="w-full py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold transition-all">צור תיקייה בענן</button>
+                            <button type="submit" class="w-full py-2 btn-primary-gold rounded-xl text-xs font-bold">צור תיקייה בענן</button>
                         </form>
                     </div>
                 </div>
@@ -1270,41 +1496,66 @@
     </div>
 
     <!-- USER UPLOAD MODAL -->
-    <div id="userUploadModal" class="fixed inset-0 bg-slate-900/30 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden" role="dialog" aria-modal="true" aria-label="העלאת תמונות">
-        <div class="bg-white/95 backdrop-blur-xl rounded-3xl w-full max-w-md shadow-2xl border border-white overflow-hidden transform transition-all modal-animate-popup">
-            <div class="bg-indigo-600 text-white p-5 flex justify-between items-center">
+    <div id="userUploadModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden" role="dialog" aria-modal="true" aria-label="העלאת תמונות">
+        <div class="rounded-3xl w-full max-w-md overflow-hidden transform transition-all modal-animate-popup">
+            <div class="bg-gradient-to-r from-amber-500/20 to-transparent border-b border-amber-500/30 p-5 flex justify-between items-center text-white">
                 <h3 class="font-bold text-lg flex items-center gap-2"><i data-lucide="cloud-upload" class="w-5 h-5"></i> העלאת תמונות</h3>
-                <button type="button" onclick="closeModal('userUploadModal')" class="hover:text-indigo-200" aria-label="סגירת חלון ההעלאה"><i data-lucide="x" class="w-6 h-6"></i></button>
+                <button type="button" onclick="closeModal('userUploadModal')" class="hover:text-amber-400" aria-label="סגירת חלון ההעלאה"><i data-lucide="x" class="w-6 h-6"></i></button>
             </div>
             <div class="p-6 space-y-5">
-                <p id="userUploadModeText" class="text-[11px] text-slate-600 leading-relaxed bg-indigo-50/50 p-3 rounded-xl border border-indigo-100">בחר תיקיית יעד ולאחר מכן תמונות בודדות או תיקייה שלמה.</p>
-                <div class="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 space-y-2">
-                    <p id="userDriveUploadStatus" class="text-[11px] font-bold text-emerald-800">ראשית יש לחבר את Google Drive.</p>
-                    <button type="button" id="userDriveUploadConnectBtn" onclick="connectDriveForUpload()" class="w-full py-2.5 bg-white hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold transition-all">חבר Drive באותו דף</button>
-                    <p class="text-[9px] text-emerald-700/80">Google יעבור באותה לשונית ויחזיר אותך אוטומטית לאתר.</p>
+                <p id="userUploadModeText" class="text-[11px] text-slate-400 leading-relaxed bg-white/5 p-3 rounded-xl border border-white/5">בחר תיקיית יעד ולאחר מכן תמונות בודדות או תיקייה שלמה.</p>
+                <div class="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 space-y-2">
+                    <p id="userDriveUploadStatus" class="text-[11px] font-bold text-amber-400">ראשית יש לחבר את Google Drive.</p>
+                    <button type="button" id="userDriveUploadConnectBtn" onclick="connectDriveForUpload()" class="w-full py-2.5 btn-secondary-dark rounded-xl text-xs font-bold">חבר Drive באותו דף</button>
+                    <p class="text-[9px] text-amber-500/80">Google יעבור באותה לשונית ויחזיר אותך אוטומטית לאתר.</p>
                 </div>
                 <div class="space-y-3">
                     <label class="block">
-                        <span class="text-[10px] font-bold text-slate-700 mb-1 block">תיקיית יעד בגלריה:</span>
-                        <select id="userTargetFolderSelect" class="w-full text-xs border border-slate-200 rounded-xl py-2 px-3 bg-white text-slate-800 focus:ring-indigo-500"></select>
+                        <span class="text-[10px] font-bold text-slate-300 mb-1 block">תיקיית יעד בגלריה:</span>
+                        <select id="userTargetFolderSelect" class="w-full text-xs rounded-xl py-2 px-3 focus:ring-amber-500"></select>
                     </label>
                     <label class="block">
-                        <span class="text-[10px] font-bold text-slate-700 mb-1 block">1. תמונות בודדות מתוך תיקייה:</span>
-                        <input type="file" id="userMultiFiles" multiple accept="image/*" class="w-full text-xs border border-slate-200 rounded-xl p-2 bg-white cursor-pointer text-slate-600">
+                        <span class="text-[10px] font-bold text-slate-300 mb-1 block">1. תמונות בודדות מתוך תיקייה:</span>
+                        <input type="file" id="userMultiFiles" multiple accept="image/*" class="w-full text-xs rounded-xl p-2 cursor-pointer text-slate-400 bg-white/5 border border-white/10">
                     </label>
-                    <div class="relative py-1"><div class="absolute inset-0 flex items-center"><div class="w-full border-t border-slate-200"></div></div><div class="relative flex justify-center"><span class="bg-white px-2 text-[10px] text-slate-400 font-bold">או</span></div></div>
+                    <div class="relative py-1"><div class="absolute inset-0 flex items-center"><div class="w-full border-t border-white/10"></div></div><div class="relative flex justify-center"><span class="bg-slate-950 px-2 text-[10px] text-slate-500 font-bold">או</span></div></div>
                     <label class="block">
-                        <span class="text-[10px] font-bold text-indigo-700 mb-1 block">2. העלאת תיקייה שלמה (מומלץ):</span>
-                        <input type="file" id="userFolderUpload" webkitdirectory directory multiple accept="image/*" class="w-full text-xs border border-indigo-200 bg-indigo-50/50 rounded-xl p-2 cursor-pointer focus:ring-2 ring-indigo-500 text-slate-600">
+                        <span class="text-[10px] font-bold text-amber-400 mb-1 block">2. העלאת תיקייה שלמה (מומלץ):</span>
+                        <input type="file" id="userFolderUpload" webkitdirectory directory multiple accept="image/*" class="w-full text-xs rounded-xl p-2 cursor-pointer focus:ring-2 ring-amber-500 bg-white/5 border border-amber-500/20 text-slate-400">
                     </label>
                 </div>
-                <div id="userUploadProgress" class="hidden text-center bg-indigo-50 rounded-xl p-3 border border-indigo-100 mt-2">
-                    <div class="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                    <p class="text-[10px] font-bold text-indigo-900" id="userUploadProgressText">מעלה תמונות לענן... נא להמתין</p>
+                <div id="userUploadProgress" class="hidden text-center bg-white/5 rounded-xl p-3 border border-white/10 mt-2">
+                    <div class="w-5 h-5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                    <p class="text-[10px] font-bold text-amber-400" id="userUploadProgressText">מעלה תמונות לענן... נא להמתין</p>
                 </div>
-                <div class="pt-4 flex justify-end gap-2 border-t border-slate-100 mt-4">
-                    <button type="button" onclick="closeModal('userUploadModal')" class="px-5 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-all">ביטול</button>
-                    <button type="button" id="userUploadSubmitBtn" onclick="submitUserUpload()" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-md">העלה לגלריה</button>
+                <div class="pt-4 flex justify-end gap-2 border-t border-white/10 mt-4">
+                    <button type="button" onclick="closeModal('userUploadModal')" class="px-5 py-2 btn-secondary-dark rounded-xl text-xs font-semibold">ביטול</button>
+                    <button type="button" id="userUploadSubmitBtn" onclick="submitUserUpload()" class="px-5 py-2 btn-primary-gold rounded-xl text-xs font-bold">העלה לגלריה</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ADMIN MESSAGING MODAL -->
+    <div id="adminMessageModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden" role="dialog" aria-modal="true" aria-label="שלח הודעה למשתמש">
+        <div class="rounded-3xl w-full max-w-md overflow-hidden transform transition-all modal-animate-popup text-right">
+            <div class="bg-gradient-to-r from-amber-500/20 to-transparent border-b border-amber-500/30 p-5 flex justify-between items-center text-white">
+                <h3 class="font-bold text-lg flex items-center gap-2"><i data-lucide="message-square" class="w-5 h-5 text-amber-400"></i> שלח הודעה למשתמש</h3>
+                <button type="button" onclick="closeModal('adminMessageModal')" class="text-slate-400 hover:text-white transition-all"><i data-lucide="x" class="w-6 h-6"></i></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <span class="text-[10px] font-bold text-slate-400 block">נמען:</span>
+                    <p id="adminMessageRecipient" class="text-sm font-bold text-white"></p>
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-slate-400 block mb-1">תוכן ההודעה האישית:</label>
+                    <textarea id="adminMessageTextarea" class="w-full text-xs p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 h-28" placeholder="הקלד כאן את הודעתך..."></textarea>
+                </div>
+                <div class="pt-4 flex justify-end gap-3">
+                    <button type="button" onclick="closeModal('adminMessageModal')" class="px-5 py-2.5 btn-secondary-dark rounded-xl text-sm font-semibold">ביטול</button>
+                    <button type="button" id="adminMessageSubmitBtn" class="px-5 py-2.5 btn-primary-gold rounded-xl text-sm font-bold">שלח הודעה</button>
                 </div>
             </div>
         </div>
@@ -1312,28 +1563,28 @@
 
     <!-- LIGHTBOX Modal -->
     <div id="lightboxModal" class="fixed inset-0 bg-black/95 backdrop-blur-xl z-50 flex flex-col justify-between p-4 hidden animate-fade-in" role="dialog" aria-modal="true" aria-label="תצוגת תמונה מלאה">
-        <div class="flex justify-between items-center text-slate-900 p-2 bg-white/70 backdrop-blur-md rounded-2xl border border-white/50 shadow-sm">
+        <div class="flex justify-between items-center text-white p-3 bg-slate-950/80 backdrop-blur-md rounded-2xl border border-amber-500/30 shadow-md">
             <div>
-                <h4 id="lightboxTitle" class="font-bold text-lg text-slate-950">שם התמונה</h4>
-                <p id="lightboxDetails" class="text-xs text-slate-500">תאריך • קטגוריה</p>
+                <h4 id="lightboxTitle" class="font-bold text-lg text-white">שם התמונה</h4>
+                <p id="lightboxDetails" class="text-xs text-amber-400">תאריך • קטגוריה</p>
             </div>
             <div class="flex items-center gap-3">
-                <a id="lightboxDownload" href="#" download target="_blank" rel="noopener" title="הורדת תמונה" aria-label="הורדת התמונה" class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-full transition-all border border-slate-200/50">
+                <a id="lightboxDownload" href="#" download target="_blank" rel="noopener" title="הורדת תמונה" aria-label="הורדת התמונה" class="p-2 btn-secondary-dark rounded-full transition-all">
                     <i data-lucide="download" class="w-6 h-6"></i>
                 </a>
-                <button type="button" onclick="closeLightbox()" class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-full transition-all border border-slate-200/50" aria-label="סגירת התצוגה המלאה">
+                <button type="button" onclick="closeLightbox()" class="p-2 btn-secondary-dark rounded-full transition-all" aria-label="סגירת התצוגה המלאה">
                     <i data-lucide="x" class="w-6 h-6"></i>
                 </button>
             </div>
         </div>
         <div class="flex-1 flex items-center justify-between relative max-h-[80vh]">
-            <button type="button" onclick="navigateLightbox(-1)" class="p-3 bg-white/80 hover:bg-white text-slate-800 rounded-full transition-all absolute right-4 z-10 border border-slate-200/40 shadow-sm" aria-label="התמונה הקודמת">
+            <button type="button" onclick="navigateLightbox(-1)" class="p-3 bg-black/50 hover:bg-amber-500/20 text-white rounded-full transition-all absolute right-4 z-10 border border-amber-500/30 shadow-sm" aria-label="התמונה הקודמת">
                 <i data-lucide="chevron-right" class="w-8 h-8"></i>
             </button>
-            <div class="w-full h-full flex items-center justify-center p-4 bg-slate-950/5 rounded-2xl border border-slate-200/20 shadow-inner">
+            <div class="w-full h-full flex items-center justify-center p-4 bg-slate-950/20 rounded-2xl border border-white/5 shadow-inner">
                 <img id="lightboxImage" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" decoding="async" alt="תצוגת תמונה" class="max-w-full max-h-full object-contain rounded-2xl shadow-xl modal-animate-popup animate-fade-in" onerror="handleImageError(this)">
             </div>
-            <button type="button" onclick="navigateLightbox(1)" class="p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all absolute left-4 z-10 backdrop-blur-sm" aria-label="התמונה הבאה">
+            <button type="button" onclick="navigateLightbox(1)" class="p-3 bg-black/50 hover:bg-amber-500/20 text-white rounded-full transition-all absolute left-4 z-10 border border-amber-500/30 shadow-sm" aria-label="התמונה הבאה">
                 <i data-lucide="chevron-left" class="w-8 h-8"></i>
             </button>
         </div>
@@ -1341,16 +1592,16 @@
     </div>
 
     <!-- CUSTOM CONFIRMATION MODAL -->
-    <div id="confirmModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmMessage">
-        <div class="bg-white/90 backdrop-blur-2xl rounded-3xl w-full max-w-md shadow-2xl border border-white/10 overflow-hidden transform transition-all modal-animate-popup">
+    <div id="confirmModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmMessage">
+        <div class="rounded-3xl w-full max-w-md overflow-hidden transform transition-all modal-animate-popup">
             <div class="p-6 space-y-4">
                 <div class="flex items-center gap-3 text-red-400">
                     <div class="bg-red-500/10 p-2 rounded-xl border border-red-500/20"><i data-lucide="alert-triangle" class="w-6 h-6"></i></div>
                     <h3 class="font-bold text-lg" id="confirmTitle">אישור פעולה</h3>
                 </div>
-                <p class="text-sm text-slate-600 leading-relaxed" id="confirmMessage">האם אתה בטוח שברצונך לבצע פעולה זו?</p>
+                <p class="text-sm text-slate-300 leading-relaxed" id="confirmMessage">האם אתה בטוח שברצונך לבצע פעולה זו?</p>
                 <div class="pt-4 flex justify-end gap-3">
-                    <button type="button" id="confirmCancelBtn" class="px-5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all">ביטול</button>
+                    <button type="button" id="confirmCancelBtn" class="px-5 py-2.5 btn-secondary-dark rounded-xl text-sm font-semibold">ביטול</button>
                     <button type="button" id="confirmApproveBtn" class="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-all">אישור</button>
                 </div>
             </div>
@@ -1358,60 +1609,135 @@
     </div>
 
     <!-- CUSTOM FOLDER MOVE MODAL -->
-    <div id="moveFolderModal" class="fixed inset-0 bg-slate-900/30 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden" role="dialog" aria-modal="true" aria-label="העברת תמונה לתיקייה">
-        <div class="bg-white/90 backdrop-blur-2xl rounded-3xl w-full max-w-md shadow-2xl border border-white/10 overflow-hidden transform transition-all modal-animate-popup">
-            <div class="bg-slate-100/90 text-slate-800 p-5 flex justify-between items-center border-b border-slate-200">
+    <div id="moveFolderModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden" role="dialog" aria-modal="true" aria-label="העברת תמונה לתיקייה">
+        <div class="rounded-3xl w-full max-w-md overflow-hidden transform transition-all modal-animate-popup">
+            <div class="bg-gradient-to-r from-amber-500/20 to-transparent border-b border-amber-500/30 p-5 flex justify-between items-center text-white">
                 <h3 class="font-bold text-lg flex items-center gap-2"><i data-lucide="folder-sync" class="w-5 h-5"></i> העברת תמונה לתיקייה</h3>
-                <button type="button" onclick="closeModal('moveFolderModal')" class="text-slate-500 hover:text-slate-800 transition-all" aria-label="סגירת חלון העברת התמונה"><i data-lucide="x" class="w-6 h-6"></i></button>
+                <button type="button" onclick="closeModal('moveFolderModal')" class="text-slate-400 hover:text-white transition-all" aria-label="סגירת חלון העברת התמונה"><i data-lucide="x" class="w-6 h-6"></i></button>
             </div>
             <div class="p-6 space-y-4">
-                <p class="text-sm text-slate-600">בחר את תיקיית היעד עבור התמונה:</p>
-                <select id="moveFolderSelect" class="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 bg-white text-slate-800"></select>
+                <p class="text-sm text-slate-300">בחר את תיקיית היעד עבור התמונה:</p>
+                <select id="moveFolderSelect" class="w-full rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20"></select>
                 <div class="pt-4 flex justify-end gap-3">
-                    <button type="button" onclick="closeModal('moveFolderModal')" class="px-5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all">ביטול</button>
-                    <button type="button" id="moveFolderSubmitBtn" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-all font-bold">העבר בענן</button>
+                    <button type="button" onclick="closeModal('moveFolderModal')" class="px-5 py-2.5 btn-secondary-dark rounded-xl text-sm font-semibold">ביטול</button>
+                    <button type="button" id="moveFolderSubmitBtn" class="px-5 py-2.5 btn-primary-gold rounded-xl text-sm font-bold">העבר בענן</button>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- FACE SEARCH MODAL -->
-    <div id="faceSearchModal" class="fixed inset-0 bg-slate-900/30 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden" role="dialog" aria-modal="true" aria-label="חיפוש תמונות לפי פנים">
-        <div class="bg-white/95 backdrop-blur-xl rounded-3xl w-full max-w-md shadow-2xl border border-white/10 overflow-hidden transform transition-all flex flex-col modal-animate-popup">
-            <div class="bg-slate-950/90 text-white p-5 flex justify-between items-center border-b border-slate-200">
-                <h3 class="font-bold text-lg flex items-center gap-2"><i data-lucide="sparkles" class="w-5 h-5 text-purple-400"></i> חיפוש תמונות לפי פרצוף</h3>
+    <div id="faceSearchModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden" role="dialog" aria-modal="true" aria-label="חיפוש תמונות לפי פנים">
+        <div class="rounded-3xl w-full max-w-md overflow-hidden transform transition-all flex flex-col modal-animate-popup">
+            <div class="bg-gradient-to-r from-amber-500/20 to-transparent border-b border-amber-500/30 p-5 flex justify-between items-center text-white">
+                <h3 class="font-bold text-lg flex items-center gap-2"><i data-lucide="sparkles" class="w-5 h-5 text-amber-400"></i> חיפוש תמונות לפי פרצוף</h3>
                 <button type="button" onclick="closeModal('faceSearchModal')" class="text-white/80 hover:text-white transition-all" aria-label="סגירת חלון חיפוש הפנים"><i data-lucide="x" class="w-6 h-6"></i></button>
             </div>
             <div class="p-6 space-y-4">
-                <p class="text-sm text-slate-600">בחר תמונת פנים, ומנוע הזיהוי המקומי יסרוק את תמונות הגלריה ויציג תוצאות דומות. העיבוד מתבצע בדפדפן.</p>
-                <div class="border-2 border-dashed border-purple-500/30 hover:border-purple-500/60 rounded-2xl p-6 text-center bg-purple-950/20 hover:bg-purple-950/40 transition-all relative cursor-pointer group">
+                <p class="text-sm text-slate-300">בחר תמונת פנים, ומנוע הזיהוי המקומי יסרוק את תמונות הגלריה ויציג תוצאות דומות. העיבוד מתבצע בדפדפן.</p>
+                <div class="border-2 border-dashed border-amber-500/30 hover:border-amber-500/60 rounded-2xl p-6 text-center bg-amber-950/20 hover:bg-amber-950/40 transition-all relative cursor-pointer group">
 
                     <input type="file" id="faceSearchFileInput" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer" onchange="handleFaceSearchFileSelect(event)">
                     <div class="space-y-2 pointer-events-none flex flex-col items-center">
-                        <div class="bg-purple-500/10 text-purple-400 p-3 rounded-full group-hover:scale-110 transition-transform border border-purple-500/20"><i data-lucide="user" class="w-6 h-6"></i></div>
-                        <p class="text-xs font-bold text-slate-700" id="faceSearchFileLabel">בחר תמונת פנים מהמחשב...</p>
+                        <div class="bg-amber-500/10 text-amber-400 p-3 rounded-full group-hover:scale-110 transition-transform border border-amber-500/20"><i data-lucide="user" class="w-6 h-6"></i></div>
+                        <p class="text-xs font-bold text-slate-200" id="faceSearchFileLabel">בחר תמונת פנים מהמחשב...</p>
                         <p class="text-[10px] text-slate-400">תומך בפורמטים: PNG, JPG, JPEG</p>
                     </div>
                 </div>
-                <div class="relative py-1"><div class="absolute inset-0 flex items-center"><div class="w-full border-t border-white/5"></div></div><div class="relative flex justify-center"><span class="bg-white px-2 text-[10px] text-slate-400 font-bold">או</span></div></div>
-                <button type="button" onclick="openFaceCamera()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2"><i data-lucide="camera" class="w-4 h-4"></i> צלם פרצוף מהמצלמה</button>
+                <div class="relative py-1"><div class="absolute inset-0 flex items-center"><div class="w-full border-t border-white/10"></div></div><div class="relative flex justify-center"><span class="bg-slate-950 px-2 text-[10px] text-slate-500 font-bold">או</span></div></div>
+                <button type="button" onclick="openFaceCamera()" class="w-full py-2.5 btn-secondary-dark rounded-xl text-xs font-bold flex items-center justify-center gap-2"><i data-lucide="camera" class="w-4 h-4"></i> צלם פרצוף מהמצלמה</button>
                 <div id="faceSearchPreviewContainer" class="hidden flex flex-col items-center gap-2 pt-2">
                     <p class="text-xs font-bold text-slate-400">הפרצוף לחיפוש:</p>
-                    <img id="faceSearchPreviewImage" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" decoding="async" alt="תמונת פנים שנבחרה לחיפוש" class="w-24 h-24 object-cover rounded-full border-4 border-slate-800 shadow-lg">
+                    <img id="faceSearchPreviewImage" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" decoding="async" alt="תמונת פנים שנבחרה לחיפוש" class="w-24 h-24 object-cover rounded-full border-4 border-slate-850 shadow-lg">
                 </div>
                 <div id="faceSearchStatus" class="hidden bg-slate-950/40 p-4 rounded-xl border border-white/10 space-y-3" role="status" aria-live="polite">
                     <div class="flex items-center gap-3">
-                        <div class="w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
-                        <p class="text-xs font-bold text-indigo-950" id="faceSearchStatusText">מכין את הגלרייה לסריקה...</p>
+                        <div class="w-4 h-4 border-2 border-amber-400 border-t-transparent rounded-full animate-spin"></div>
+                        <p class="text-xs font-bold text-amber-400" id="faceSearchStatusText">מכין את הגלרייה לסריקה...</p>
                     </div>
                     <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                        <div id="faceSearchProgressBar" class="bg-gradient-to-r from-purple-50 to-indigo-50 h-full w-0 transition-all duration-300"></div>
+                        <div id="faceSearchProgressBar" class="bg-gradient-to-r from-amber-300 to-amber-500 h-full w-0 transition-all duration-300"></div>
                     </div>
                 </div>
                 <div class="pt-4 flex justify-end gap-3">
-                    <button type="button" onclick="closeModal('faceSearchModal')" class="px-5 py-2.5 rounded-xl border border-white/10 text-sm font-semibold text-slate-300 hover:bg-white/5 transition-all">ביטול</button>
-                    <button type="button" id="submitFaceSearchBtn" onclick="executeFaceSearch()" disabled class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-sm font-semibold transition-all shadow-md opacity-50 cursor-not-allowed">חפש פרצוף</button>
+                    <button type="button" onclick="closeModal('faceSearchModal')" class="px-5 py-2.5 btn-secondary-dark rounded-xl text-sm font-semibold">ביטול</button>
+                    <button type="button" id="submitFaceSearchBtn" onclick="executeFaceSearch()" disabled class="px-5 py-2.5 btn-primary-gold rounded-xl text-sm font-bold opacity-50 cursor-not-allowed">חפש פרצוף</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- FLOATING PROFILE & NOTIFICATIONS WIDGET -->
+    <div class="floating-profile-container">
+        <!-- Pulse ring for new messages -->
+        <span id="floatingWidgetBadge" class="absolute -top-1.5 -left-1.5 w-5 h-5 bg-red-500 border-2 border-slate-950 rounded-full flex items-center justify-center text-[9px] font-extrabold text-white hidden animate-bounce animate-pulse">0</span>
+        <button type="button" onclick="toggleFloatingProfile()" class="floating-profile-btn group" title="פרופיל גוגל והודעות" aria-label="פרופיל גוגל והודעות">
+            <img id="floatingUserPhoto" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="פרופיל" class="w-full h-full rounded-full object-cover hidden border-2 border-amber-400/50">
+            <div id="floatingUserFallback" class="w-full h-full rounded-full bg-gradient-to-br from-amber-400/10 to-amber-500/20 text-amber-300 flex items-center justify-center group-hover:scale-105 transition-all">
+                <i data-lucide="user-check" class="w-6 h-6"></i>
+            </div>
+        </button>
+    </div>
+
+    <!-- FLOATING PROFILE PANEL -->
+    <div id="floatingProfilePanel" class="floating-profile-panel text-right">
+        <div class="p-4 border-b border-white/10 bg-slate-900/50 flex justify-between items-center flex-shrink-0">
+            <h3 class="font-bold text-sm text-slate-100 flex items-center gap-2">
+                <i data-lucide="google" class="w-4 h-4 text-amber-400"></i>
+                פרופיל Google והתראות
+            </h3>
+            <button type="button" onclick="toggleFloatingProfile()" class="text-slate-400 hover:text-white transition-all"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div class="p-5 flex-1 overflow-y-auto space-y-4">
+            <!-- Signed out view -->
+            <div id="floatingSignedOutView" class="space-y-3">
+                <p class="text-xs text-slate-400 text-center leading-relaxed">התחבר באמצעות Google כדי להגיש בקשת גישה לגלריית שמחת התורה ולקבל התראות אישיות.</p>
+                <button type="button" onclick="signInWithGoogleAccount()" class="w-full py-3 btn-google-login rounded-xl text-xs font-bold flex items-center justify-center gap-2">
+                    <svg aria-hidden="true" class="w-5 h-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.4-.18-2.06H12v3.9h5.38a4.6 4.6 0 0 1-2 3.02v2.53h3.24c1.9-1.75 2.98-4.33 2.98-7.39Z"/><path fill="#34A853" d="M12 22c2.7 0 4.97-.9 6.63-2.38l-3.24-2.53c-.9.6-2.05.96-3.39.96-2.61 0-4.82-1.76-5.61-4.13H3.04v2.61A10 10 0 0 0 12 22Z"/><path fill="#FBBC05" d="M6.39 13.92A6.02 6.02 0 0 1 6.08 12c0-.67.12-1.32.31-1.92V7.47H3.04A10 10 0 0 0 2 12c0 1.61.38 3.13 1.04 4.53l3.35-2.61Z"/><path fill="#EA4335" d="M12 5.95c1.47 0 2.79.5 3.83 1.5l2.87-2.87C16.96 2.96 14.7 2 12 2a10 10 0 0 0-8.96 5.47l3.35 2.61C7.18 7.71 9.39 5.95 12 5.95Z"/></svg>
+                    התחבר באמצעות Google
+                </button>
+            </div>
+
+            <!-- Signed in view -->
+            <div id="floatingSignedInView" class="hidden space-y-4">
+                <div class="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10">
+                    <img id="floatingUserPanelPhoto" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="משתמש" class="w-12 h-12 rounded-full border border-amber-400/30 object-cover hidden">
+                    <div class="min-w-0 flex-1">
+                        <p id="floatingUserPanelName" class="text-xs font-bold text-slate-100 truncate"></p>
+                        <p id="floatingUserPanelEmail" class="text-[10px] text-slate-400 truncate"></p>
+                        <span id="floatingUserPanelBadge" class="inline-flex mt-1 text-[9px] px-2 py-0.5 rounded-full font-bold"></span>
+                    </div>
+                </div>
+
+                <!-- Live Inbox / Message Center -->
+                <div class="space-y-2">
+                    <h4 class="text-xs font-bold text-amber-400 flex items-center gap-1.5 border-b border-white/5 pb-1">
+                        <i data-lucide="mail-open" class="w-4 h-4 text-amber-400"></i>
+                        הודעות אישיות והתראות
+                    </h4>
+                    <div id="floatingInboxList" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                        <p class="text-[10px] text-slate-500 text-center py-4">אין הודעות חדשות מהישיבה.</p>
+                    </div>
+                </div>
+
+                <!-- Custom Request Details (For Pending / Viewer accounts) -->
+                <div id="requestDetailsContainer" class="hidden">
+                    <div class="p-3.5 rounded-xl border border-amber-500/20 bg-amber-500/5 space-y-2.5">
+                        <h4 class="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                            <i data-lucide="edit-3" class="w-3.5 h-3.5 text-amber-400"></i>
+                            פרטי בקשת ההצטרפות שלך
+                        </h4>
+                        <p class="text-[10px] text-slate-400 leading-normal">ספק פרטים שיעזרו למנהל לזהות אותך (שם מלא, שנת מחזור, תפקיד או קשר לישיבה):</p>
+                        <textarea id="requestDetailsTextarea" class="w-full text-[11px] p-2 rounded-lg bg-slate-950 border border-slate-800 text-white placeholder-slate-600 focus:outline-none focus:border-amber-400 h-16 resize-none" placeholder="למשל: אברהם כהן, מחזור תשפ״ב, בוגר הישיבה..."></textarea>
+                        <button type="button" onclick="saveRequestDetails()" class="w-full py-2 btn-primary-gold rounded-lg text-[10px] font-bold flex items-center justify-center gap-1">
+                            <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                            שמור ועדכן פרטים
+                        </button>
+                    </div>
+                </div>
+
+                <button type="button" onclick="signOutGoogleAccount()" class="w-full py-2 btn-secondary-dark rounded-xl text-[10px] font-semibold">התנתק מחשבון Google</button>
             </div>
         </div>
     </div>
@@ -1423,11 +1749,11 @@
     </div>
 
     <!-- CAMERA MODAL (face search) -->
-    <div id="faceCameraModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-md z-[60] flex items-center justify-center p-4 hidden" role="dialog" aria-modal="true" aria-label="צילום פנים לחיפוש">
-        <div class="bg-white/95 backdrop-blur-xl rounded-3xl w-full max-w-md shadow-2xl border border-white/50 overflow-hidden modal-animate-popup">
-            <div class="bg-slate-100 text-slate-800 p-5 flex justify-between items-center border-b border-slate-200">
-                <h3 class="font-bold text-lg flex items-center gap-2"><i data-lucide="camera" class="w-5 h-5 text-indigo-600"></i> צלם פרצוף לחיפוש</h3>
-                <button type="button" onclick="closeFaceCamera()" class="text-slate-500 hover:text-slate-800 transition-all" aria-label="סגירת המצלמה"><i data-lucide="x" class="w-6 h-6"></i></button>
+    <div id="faceCameraModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4 hidden" role="dialog" aria-modal="true" aria-label="צילום פנים לחיפוש">
+        <div class="rounded-3xl w-full max-w-md overflow-hidden modal-animate-popup">
+            <div class="bg-gradient-to-r from-amber-500/20 to-transparent border-b border-amber-500/30 p-5 flex justify-between items-center text-white">
+                <h3 class="font-bold text-lg flex items-center gap-2"><i data-lucide="camera" class="w-5 h-5 text-amber-400"></i> צלם פרצוף לחיפוש</h3>
+                <button type="button" onclick="closeFaceCamera()" class="text-slate-400 hover:text-white transition-all" aria-label="סגירת המצלמה"><i data-lucide="x" class="w-6 h-6"></i></button>
             </div>
             <div class="p-5 space-y-4">
                 <div class="relative bg-black rounded-2xl overflow-hidden aspect-[4/3] flex items-center justify-center">
@@ -1435,8 +1761,8 @@
                     <p id="faceCameraError" class="hidden absolute text-center text-xs text-slate-300 p-4">לא ניתן לגשת למצלמה. ודא שאישרת הרשאת מצלמה בדפדפן, ושאתה באתר מאובטח (https).</p>
                 </div>
                 <div class="flex gap-2">
-                    <button type="button" onclick="flipFaceCamera()" class="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-all flex items-center gap-1.5"><i data-lucide="refresh-cw" class="w-4 h-4"></i> הפוך מצלמה</button>
-                    <button type="button" onclick="captureFacePhoto()" class="flex-1 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 text-white text-sm font-bold transition-all shadow-md flex items-center justify-center gap-2"><i data-lucide="scan-face" class="w-4 h-4"></i> צלם וחפש</button>
+                    <button type="button" onclick="flipFaceCamera()" class="px-4 py-2.5 btn-secondary-dark rounded-xl text-xs font-semibold flex items-center gap-1.5"><i data-lucide="refresh-cw" class="w-4 h-4"></i> הפוך מצלמה</button>
+                    <button type="button" onclick="captureFacePhoto()" class="flex-1 px-5 py-2.5 btn-primary-gold rounded-xl text-sm font-bold flex items-center justify-center gap-2"><i data-lucide="scan-face" class="w-4 h-4"></i> צלם וחפש</button>
                 </div>
             </div>
         </div>
@@ -2218,6 +2544,22 @@
                         }
                         setupFirestoreListeners(user);
                     } else {
+
+                        // Reset Floating Panel signed out state
+                        const floatingUserPhoto = document.getElementById('floatingUserPhoto');
+                        const floatingUserFallback = document.getElementById('floatingUserFallback');
+                        const floatingSignedOutView = document.getElementById('floatingSignedOutView');
+                        const floatingSignedInView = document.getElementById('floatingSignedInView');
+                        const floatingWidgetBadge = document.getElementById('floatingWidgetBadge');
+                        const floatingInboxList = document.getElementById('floatingInboxList');
+
+                        if(floatingUserPhoto) floatingUserPhoto.classList.add('hidden');
+                        if(floatingUserFallback) floatingUserFallback.classList.remove('hidden');
+                        if(floatingSignedOutView) floatingSignedOutView.classList.remove('hidden');
+                        if(floatingSignedInView) floatingSignedInView.classList.add('hidden');
+                        if(floatingWidgetBadge) floatingWidgetBadge.classList.add('hidden');
+                        if(floatingInboxList) floatingInboxList.innerHTML = '<p class="text-[10px] text-slate-500 text-center py-4">התחבר כדי לראות הודעות.</p>';
+
                         clearDriveConnection();
                         window.firestoreUnsubscribers.forEach(unsubscribe => { try { unsubscribe(); } catch (error) {} });
                         window.galleryUnsubscribers.forEach(unsubscribe => { try { unsubscribe(); } catch (error) {} });
@@ -2366,6 +2708,46 @@
         window.descriptorCache = {};
 
         // --- 1.5. UI & Drawer Modal Basic Functions ---
+
+        // --- Floating Profile Widget & Notification Hub Toggles & Actions ---
+        window.toggleFloatingProfile = function() {
+            const panel = document.getElementById('floatingProfilePanel');
+            if (!panel) return;
+            const isOpen = panel.classList.contains('active');
+            if (isOpen) {
+                panel.classList.remove('active');
+            } else {
+                panel.classList.add('active');
+                if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+            }
+        };
+
+        window.saveRequestDetails = async function() {
+            if (!window.db || !window.state.currentUser) {
+                window.showNotification('יש להתחבר תחילה.', false);
+                return;
+            }
+            const textarea = document.getElementById('requestDetailsTextarea');
+            const details = textarea ? textarea.value.trim() : '';
+            if (!details) {
+                window.showNotification('אנא הזן פרטים ליצירת קשר או זיהוי.', false);
+                return;
+            }
+
+            try {
+                window.showNotification('מעדכן פרטים בענן...', true);
+                const { doc, setDoc } = window.firestoreModules;
+                const profileRef = doc(window.db, 'artifacts', window.appId, 'public', 'data', 'userProfiles', window.state.currentUser.uid);
+                await setDoc(profileRef, {
+                    requestDetails: details
+                }, { merge: true });
+                window.showNotification('הפרטים נשמרו בהצלחה! מנהל הישיבה יבדוק אותם כעת.', true);
+            } catch (error) {
+                console.error('Failed to save request details:', error);
+                window.showNotification('שגיאה בשמירת הפרטים. נסה שוב.', false);
+            }
+        };
+
         function openModal(id) {
             const m = document.getElementById(id);
             if (!m) return;
@@ -2375,6 +2757,146 @@
             const firstControl = m.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
             if (firstControl) requestAnimationFrame(() => firstControl.focus({ preventScroll: true }));
         }
+
+        window.renderFloatingInbox = function() {
+            const list = document.getElementById('floatingInboxList');
+            const badge = document.getElementById('floatingWidgetBadge');
+            if (!list) return;
+
+            const profile = window.state.userProfile;
+            const messages = (profile && profile.messages) ? profile.messages : [];
+
+            if (messages.length === 0) {
+                list.innerHTML = '<p class="text-[10px] text-slate-500 text-center py-4">אין הודעות חדשות מהישיבה.</p>';
+                if (badge) badge.classList.add('hidden');
+                return;
+            }
+
+            list.innerHTML = '';
+            let unreadCount = 0;
+            messages.forEach((msg, idx) => {
+                if (!msg.read) unreadCount++;
+                const card = document.createElement('div');
+                card.className = `p-2.5 rounded-lg border text-right transition-all ${msg.read ? 'bg-white/5 border-white/5 opacity-75' : 'bg-amber-500/10 border-amber-500/20'}`;
+
+                const meta = document.createElement('div');
+                meta.className = 'flex justify-between items-center mb-1';
+
+                const sender = document.createElement('span');
+                sender.className = 'text-[9px] font-bold text-amber-400';
+                sender.textContent = msg.sender || 'מנהל שמחת התורה';
+
+                const time = document.createElement('span');
+                time.className = 'text-[8px] text-slate-500';
+                time.textContent = formatDate(msg.sentAt);
+                meta.append(sender, time);
+
+                const text = document.createElement('p');
+                text.className = 'text-[11px] text-slate-200 leading-relaxed';
+                text.textContent = msg.text;
+
+                card.append(meta, text);
+
+                // Clicking message marks as read in Firestore
+                card.onclick = async () => {
+                    if (!msg.read && window.state.currentUser) {
+                        try {
+                            const updatedMessages = [...messages];
+                            updatedMessages[idx] = { ...msg, read: true };
+                            const { doc, setDoc } = window.firestoreModules;
+                            const profileRef = doc(window.db, 'artifacts', window.appId, 'public', 'data', 'userProfiles', window.state.currentUser.uid);
+                            await setDoc(profileRef, { messages: updatedMessages }, { merge: true });
+                        } catch (e) {
+                            console.error('Error marking message read:', e);
+                        }
+                    }
+                };
+                list.appendChild(card);
+            });
+
+            if (badge) {
+                if (unreadCount > 0) {
+                    badge.classList.remove('hidden');
+                    badge.textContent = unreadCount;
+                } else {
+                    badge.classList.add('hidden');
+                }
+            }
+        };
+
+
+        // --- Admin messaging and Email mailto triggers ---
+        window.openAdminMessageModal = function(uid, displayName, email) {
+            const recipientText = document.getElementById('adminMessageRecipient');
+            const textarea = document.getElementById('adminMessageTextarea');
+            const submitBtn = document.getElementById('adminMessageSubmitBtn');
+
+            if (recipientText) {
+                recipientText.textContent = `${displayName || 'משתמש Google'} (${email || ''})`;
+            }
+            if (textarea) textarea.value = '';
+
+            if (submitBtn) {
+                submitBtn.onclick = async () => {
+                    const text = textarea ? textarea.value.trim() : '';
+                    if (!text) {
+                        window.showNotification('אנא הזן תוכן הודעה.', false);
+                        return;
+                    }
+
+                    submitBtn.disabled = true;
+                    try {
+                        // Fetch current profile to append the new message to their messages list
+                        const { doc, getDoc, setDoc } = window.firestoreModules;
+                        const profileRef = doc(window.db, 'artifacts', window.appId, 'public', 'data', 'userProfiles', uid);
+                        const snap = await getDoc(profileRef);
+                        const profile = snap.exists() ? snap.data() : {};
+                        const currentMsgs = profile.messages || [];
+
+                        const newMsg = {
+                            id: crypto.randomUUID(),
+                            text: text,
+                            sender: window.state.currentUser?.displayName || 'מנהל שמחת התורה',
+                            sentAt: new Date().toISOString(),
+                            read: false
+                        };
+
+                        await setDoc(profileRef, {
+                            messages: [newMsg, ...currentMsgs]
+                        }, { merge: true });
+
+                        closeModal('adminMessageModal');
+                        window.showNotification('ההודעה האישית נשלחה למשתמש בהצלחה!', true);
+                    } catch (error) {
+                        console.error('Failed to send admin message:', error);
+                        window.showNotification('הפעולה נכשלה. בדוק את חיבור האינטרנט.', false);
+                    } finally {
+                        submitBtn.disabled = false;
+                    }
+                };
+            }
+            openModal('adminMessageModal');
+            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+        };
+
+        window.sendDirectMail = function(recipientEmail, displayName) {
+            if (!recipientEmail) {
+                window.showNotification('אין כתובת מייל תקינה למשתמש זה.', false);
+                return;
+            }
+
+            const subject = encodeURIComponent('עדכון בנוגע לבקשת הגישה שלך לגלריית שמחת התורה');
+            const body = encodeURIComponent(`שלום ${displayName || 'ידיד הישיבה'},
+
+הבקשה שלך לגישה לגלריית שמחת התורה מעובדת כעת על ידי מנהלי המערכת.
+
+בברכה,
+צוות גלריית שמחת התורה`);
+
+            window.location.href = `mailto:${recipientEmail}?subject=${subject}&body=${body}`;
+            window.showNotification('מפעיל את אפליקציית הדוא"ל שלך לשליחה מהירה...', true);
+        };
+
         window.openModal = openModal;
 
         // שדרוג: סגירת המצלמה בעת סגירת המודאל למניעת דליפת משאבי זיכרון של המצלמה
@@ -2446,6 +2968,8 @@
         window.toggleAccordion = toggleAccordion;
 
         // מציג פופ-אפ הודעות יוקרתי ומעוצב
+
+        // מציג פופ-אפ הודעות יוקרתי ומעוצב כולל פירוט משמעות המשימה והשפעתה על הקהילה
         let notificationTimer = null;
         function showNotification(msg, isSuccess = true, tone = null) {
             const alertEl = document.getElementById('customAlert');
@@ -2453,25 +2977,64 @@
             const msgEl = document.getElementById('customAlertMessage');
             if (!alertEl || !iconEl || !msgEl) return;
 
-            msgEl.textContent = msg;
-            if (tone === 'warning') {
-                iconEl.innerHTML = `<i data-lucide="triangle-alert" class="w-5 h-5 text-amber-300"></i>`;
-                alertEl.className = "fixed bottom-6 left-6 bg-slate-900/95 backdrop-blur-md text-white px-5 py-3.5 rounded-2xl shadow-2xl z-50 flex items-center gap-2.5 transform translate-y-0 opacity-100 transition-all duration-300 border border-amber-400/30";
-            } else if (isSuccess) {
-                iconEl.innerHTML = `<i data-lucide="check-circle" class="w-5 h-5 text-emerald-400"></i>`;
-                alertEl.className = "fixed bottom-6 left-6 bg-slate-900/95 backdrop-blur-md text-white px-5 py-3.5 rounded-2xl shadow-2xl z-50 flex items-center gap-2.5 transform translate-y-0 opacity-100 transition-all duration-300 border border-emerald-500/20";
+            // מיפוי הודעות נפוצות להעשרת תוכן ההסבר והמשמעות הקהילתית של הפעולה (Impact)
+            let enrichedMessage = msg;
+            let impactDesc = "";
+
+            if (msg.includes('התחברת בהצלחה')) {
+                impactDesc = "חיבור בטוח ומאובטח המאפשר צפייה ושמירה על פרטיות זיכרונות הישיבה.";
+            } else if (msg.includes('הועלו') && msg.includes('תמונות')) {
+                impactDesc = "התמונות הועברו לענן בבטחה ומשמרות את הווי הישיבה והשמחה לדורות הבאים.";
+            } else if (msg.includes('נשלחו לאישור')) {
+                impactDesc = "החומרים בבדיקה אצל מנהל כדי לוודא שכל תמונה המוצגת עומדת בסטנדרט של הישיבה.";
+            } else if (msg.includes('נוצרה בענן')) {
+                impactDesc = "תיקייה חדשה מארגנת כעת את הארכיון ומאפשרת למשתמשים למצוא אירועים בקלות.";
+            } else if (msg.includes('עודכן בהצלחה')) {
+                impactDesc = "התמונות סווגו מחדש ויופיעו תחת הקטגוריה המעודכנת בזמן אמת.";
+            } else if (msg.includes('סנכרון Drive הושלם')) {
+                impactDesc = "התמונות בענן ובישיבה סונכרנו באופן מלא! הארכיון כעת שלם ומעודכן לחלוטין.";
+            } else if (msg.includes('בקשת המחיקה')) {
+                impactDesc = "הפריטים הוסרו כדי להבטיח את איכות ודיוק התוכן המוצג לציבור.";
+            } else if (msg.includes('דרגת המשתמש עודכנה')) {
+                impactDesc = "הרשאות המשתמש הותאמו לפעילותו השוטפת לשמירה על סדר וארגון בגלריה.";
+            } else if (msg.includes('ההודעה האישית נשלחה')) {
+                impactDesc = "המשתמש קיבל התראה אישית ישירות לתיבת ההודעות שלו בפרופיל.";
+            } else if (msg.includes('מפעיל את אפליקציית הדוא"ל')) {
+                impactDesc = "יוזם קשר ישיר עם חבר הקהילה לבירור וקידום הבקשה.";
+            } else if (msg.includes('הפרטים נשמרו בהצלחה')) {
+                impactDesc = "פרטי הזיהוי שלך נשלחו למנהל ומקדמים את פתיחת הגלריה האישית עבורך!";
+            } else if (msg.includes('אין לך הרשאה')) {
+                impactDesc = "פעולה זו מוגנת ומיועדת למורשי ניהול בלבד כדי לשמור על הארכיון הקדוש.";
+            }
+
+            if (impactDesc) {
+                msgEl.innerHTML = `<div class="flex flex-col gap-1 text-right">
+                    <span class="font-black text-xs tracking-wide text-white">${escapeHtml(msg)}</span>
+                    <span class="text-[9px] text-amber-300 font-semibold leading-normal opacity-90">${escapeHtml(impactDesc)}</span>
+                </div>`;
             } else {
-                iconEl.innerHTML = `<i data-lucide="alert-circle" class="w-5 h-5 text-red-400"></i>`;
-                alertEl.className = "fixed bottom-6 left-6 bg-slate-900/95 backdrop-blur-md text-white px-5 py-3.5 rounded-2xl shadow-2xl z-50 flex items-center gap-2.5 transform translate-y-0 opacity-100 transition-all duration-300 border border-red-500/20";
+                msgEl.textContent = msg;
+            }
+
+            if (tone === 'warning') {
+                iconEl.innerHTML = `<i data-lucide="triangle-alert" class="w-6 h-6 text-amber-300"></i>`;
+                alertEl.className = "fixed bottom-6 left-6 bg-slate-900/95 backdrop-blur-xl text-white px-5 py-4 rounded-2xl shadow-2xl z-50 flex items-center gap-3.5 transform translate-y-0 opacity-100 transition-all duration-300 border border-amber-400/30 max-w-[340px]";
+            } else if (isSuccess) {
+                iconEl.innerHTML = `<i data-lucide="check-circle" class="w-6 h-6 text-emerald-400"></i>`;
+                alertEl.className = "fixed bottom-6 left-6 bg-slate-900/95 backdrop-blur-xl text-white px-5 py-4 rounded-2xl shadow-2xl z-50 flex items-center gap-3.5 transform translate-y-0 opacity-100 transition-all duration-300 border border-emerald-500/20 max-w-[340px]";
+            } else {
+                iconEl.innerHTML = `<i data-lucide="alert-circle" class="w-6 h-6 text-red-400"></i>`;
+                alertEl.className = "fixed bottom-6 left-6 bg-slate-900/95 backdrop-blur-xl text-white px-5 py-4 rounded-2xl shadow-2xl z-50 flex items-center gap-3.5 transform translate-y-0 opacity-100 transition-all duration-300 border border-red-500/20 max-w-[340px]";
             }
             if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
 
             if (notificationTimer) clearTimeout(notificationTimer);
             notificationTimer = setTimeout(() => {
                 alertEl.className = "fixed bottom-6 left-6 bg-slate-900/95 backdrop-blur-md text-white px-5 py-3.5 rounded-2xl shadow-2xl z-50 flex items-center gap-2.5 transform translate-y-20 opacity-0 transition-all duration-300 border border-white/10";
-            }, 4000);
+            }, 5500);
         }
         window.showNotification = showNotification;
+
 
         // פורמט תאריכים מותאם לישראל
         function formatDate(dateStr) {
@@ -2885,6 +3448,74 @@
                 googleSignedOutView.classList.toggle('hidden', signedInWithGoogle);
                 googleSignedInView.classList.toggle('hidden', !signedInWithGoogle);
                 if (signedInWithGoogle) {
+
+                    // Sync Floating Panel Profiles
+                    const floatingUserPhoto = document.getElementById('floatingUserPhoto');
+                    const floatingUserFallback = document.getElementById('floatingUserFallback');
+                    const floatingUserPanelPhoto = document.getElementById('floatingUserPanelPhoto');
+                    const floatingUserPanelName = document.getElementById('floatingUserPanelName');
+                    const floatingUserPanelEmail = document.getElementById('floatingUserPanelEmail');
+                    const floatingUserPanelBadge = document.getElementById('floatingUserPanelBadge');
+                    const floatingSignedOutView = document.getElementById('floatingSignedOutView');
+                    const floatingSignedInView = document.getElementById('floatingSignedInView');
+                    const requestDetailsContainer = document.getElementById('requestDetailsContainer');
+                    const requestDetailsTextarea = document.getElementById('requestDetailsTextarea');
+
+                    const photoUrl = safeImageUrl(currentUser.photoURL);
+                    if (photoUrl) {
+                        if(floatingUserPhoto) { floatingUserPhoto.src = photoUrl; floatingUserPhoto.classList.remove('hidden'); }
+                        if(floatingUserFallback) floatingUserFallback.classList.add('hidden');
+                        if(floatingUserPanelPhoto) { floatingUserPanelPhoto.src = photoUrl; floatingUserPanelPhoto.classList.remove('hidden'); }
+                    } else {
+                        if(floatingUserPhoto) floatingUserPhoto.classList.add('hidden');
+                        if(floatingUserFallback) floatingUserFallback.classList.remove('hidden');
+                        if(floatingUserPanelPhoto) floatingUserPanelPhoto.classList.add('hidden');
+                    }
+
+                    if(floatingUserPanelName) floatingUserPanelName.textContent = currentUser.displayName || 'משתמש Google';
+                    if(floatingUserPanelEmail) floatingUserPanelEmail.textContent = currentUser.email || '';
+                    if(floatingSignedOutView) floatingSignedOutView.classList.add('hidden');
+                    if(floatingSignedInView) floatingSignedInView.classList.remove('hidden');
+
+                    // Synchronize Request Details Field
+                    if (requestDetailsContainer) {
+                        if (approvalStatus === 'pending' || role === 'viewer') {
+                            requestDetailsContainer.classList.remove('hidden');
+                            if (requestDetailsTextarea && window.state.userProfile && window.state.userProfile.requestDetails) {
+                                requestDetailsTextarea.value = window.state.userProfile.requestDetails;
+                            }
+                        } else {
+                            requestDetailsContainer.classList.add('hidden');
+                        }
+                    }
+
+                    // Floating Panel badge styles based on roles
+                    if (floatingUserPanelBadge) {
+                        floatingUserPanelBadge.className = 'inline-flex mt-1 text-[9px] px-2 py-0.5 rounded-full font-bold border';
+                        if (approvalStatus === 'pending') {
+                            floatingUserPanelBadge.className += ' bg-amber-500/10 text-amber-400 border-amber-500/20';
+                            floatingUserPanelBadge.textContent = 'ממתין לאישור מנהל';
+                        } else if (approvalStatus === 'blocked') {
+                            floatingUserPanelBadge.className += ' bg-red-500/10 text-red-400 border-red-500/20';
+                            floatingUserPanelBadge.textContent = 'חשבון חסום';
+                        } else if (role === 'super_admin') {
+                            floatingUserPanelBadge.className += ' bg-purple-500/10 text-purple-400 border-purple-500/20';
+                            floatingUserPanelBadge.textContent = 'דרגה 4 — מנהל־על';
+                        } else if (role === 'admin') {
+                            floatingUserPanelBadge.className += ' bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+                            floatingUserPanelBadge.textContent = 'דרגה 3 — מנהל';
+                        } else if (role === 'uploader') {
+                            floatingUserPanelBadge.className += ' bg-amber-500/10 text-amber-400 border-amber-500/20';
+                            floatingUserPanelBadge.textContent = 'דרגה 2 — מעלה תמונות';
+                        } else {
+                            floatingUserPanelBadge.className += ' bg-white/5 text-slate-300 border-white/10';
+                            floatingUserPanelBadge.textContent = 'דרגה 1 — צופה רגיל';
+                        }
+                    }
+
+                    // Render floating inbox messages
+                    window.renderFloatingInbox();
+
                     if (googleUserName) googleUserName.textContent = currentUser.displayName || 'משתמש Google';
                     if (googleUserEmail) googleUserEmail.textContent = currentUser.email || '';
                     if (googleUserPhoto) {
@@ -2895,19 +3526,19 @@
 
                     if (googleUserRoleBadge && googleUserApprovalText) {
                         if (approvalStatus === 'pending') {
-                            googleUserRoleBadge.className = 'inline-flex mt-1 text-[9px] px-2 py-0.5 rounded-full font-bold bg-amber-100 text-amber-800';
+                            googleUserRoleBadge.className = 'inline-flex mt-1 text-[9px] px-2 py-0.5 rounded-full font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20';
                             googleUserRoleBadge.textContent = 'ממתין לאישור';
                             googleUserApprovalText.textContent = 'בקשת ההצטרפות שלך נשלחה וממתינה לבחירת דרגה על ידי מנהל.';
                         } else if (approvalStatus === 'rejected') {
-                            googleUserRoleBadge.className = 'inline-flex mt-1 text-[9px] px-2 py-0.5 rounded-full font-bold bg-red-100 text-red-700';
+                            googleUserRoleBadge.className = 'inline-flex mt-1 text-[9px] px-2 py-0.5 rounded-full font-bold bg-red-500/10 text-red-400 border border-red-500/20';
                             googleUserRoleBadge.textContent = 'הבקשה לא אושרה';
                             googleUserApprovalText.textContent = 'בקשת ההצטרפות לא אושרה. ניתן לפנות למנהל האתר.';
                         } else if (approvalStatus === 'blocked') {
-                            googleUserRoleBadge.className = 'inline-flex mt-1 text-[9px] px-2 py-0.5 rounded-full font-bold bg-red-100 text-red-700';
+                            googleUserRoleBadge.className = 'inline-flex mt-1 text-[9px] px-2 py-0.5 rounded-full font-bold bg-red-500/10 text-red-400 border border-red-500/20';
                             googleUserRoleBadge.textContent = 'חשבון חסום';
                             googleUserApprovalText.textContent = 'הגישה לחשבון נחסמה על ידי מנהל־העל.';
                         } else if (role === 'uploader') {
-                            googleUserRoleBadge.className = 'inline-flex mt-1 text-[9px] px-2 py-0.5 rounded-full font-bold bg-indigo-100 text-indigo-700';
+                            googleUserRoleBadge.className = 'inline-flex mt-1 text-[9px] px-2 py-0.5 rounded-full font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20';
                             googleUserRoleBadge.textContent = 'דרגה 2 — מעלה תמונות';
                             googleUserApprovalText.textContent = 'החשבון מאושר ויכול להעלות תמונות ישירות לגלריה.';
                             if (uploadCard) uploadCard.classList.remove('hidden');
@@ -2916,15 +3547,15 @@
                             if (uploadModeText) uploadModeText.textContent = 'התמונות יעלו ישירות לגלריה ללא אישור נוסף.';
                             if (uploadSubmitButton) uploadSubmitButton.textContent = 'העלה לגלריה';
                         } else if (role === 'super_admin') {
-                            googleUserRoleBadge.className = 'inline-flex mt-1 text-[9px] px-2 py-0.5 rounded-full font-bold bg-purple-100 text-purple-700';
+                            googleUserRoleBadge.className = 'inline-flex mt-1 text-[9px] px-2 py-0.5 rounded-full font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20';
                             googleUserRoleBadge.textContent = 'דרגה 4 — מנהל־על';
                             googleUserApprovalText.textContent = 'לחשבון יש הרשאות ניהול מלאות.';
                         } else if (role === 'admin') {
-                            googleUserRoleBadge.className = 'inline-flex mt-1 text-[9px] px-2 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-700';
+                            googleUserRoleBadge.className = 'inline-flex mt-1 text-[9px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
                             googleUserRoleBadge.textContent = 'דרגה 3 — מנהל';
                             googleUserApprovalText.textContent = 'החשבון מאושר כמנהל המערכת.';
                         } else {
-                            googleUserRoleBadge.className = 'inline-flex mt-1 text-[9px] px-2 py-0.5 rounded-full font-bold bg-slate-100 text-slate-700';
+                            googleUserRoleBadge.className = 'inline-flex mt-1 text-[9px] px-2 py-0.5 rounded-full font-bold bg-white/5 text-slate-350 border border-white/10';
                             googleUserRoleBadge.textContent = 'דרגה 1 — צופה רגיל';
                             googleUserApprovalText.textContent = 'החשבון מאושר לצפייה ולהגשת תמונות לאישור.';
                             if (uploadCard) uploadCard.classList.remove('hidden');
@@ -2939,7 +3570,7 @@
 
             if (window.state.isAdminLoggedIn) {
                 if (adminPanel) adminPanel.classList.remove('hidden');
-                statusBadge.className = "text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800 border border-emerald-200/50";
+                statusBadge.className = "text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
                 statusBadge.innerText = window.state.isSuperAdmin ? "ניהול־על פעיל" : "ניהול פעיל";
                 const adminName = document.getElementById('adminCurrentUserName');
                 const adminEmail = document.getElementById('adminCurrentUserEmail');
@@ -2957,8 +3588,8 @@
                 if (adminGrade) {
                     adminGrade.textContent = window.state.isSuperAdmin ? 'דרגה 4 — מנהל־על' : 'דרגה 3 — מנהל';
                     adminGrade.className = window.state.isSuperAdmin
-                        ? 'text-[9px] px-2 py-1 rounded-full font-bold bg-purple-500/15 text-purple-300'
-                        : 'text-[9px] px-2 py-1 rounded-full font-bold bg-emerald-500/15 text-emerald-300';
+                        ? 'text-[9px] px-2 py-1 rounded-full font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20'
+                        : 'text-[9px] px-2 py-1 rounded-full font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
                 }
                 if (window.state.isSuperAdmin) {
                     if (superAdminUsersCard) superAdminUsersCard.classList.remove('hidden');
@@ -2975,23 +3606,23 @@
                 if (userArea) userArea.classList.remove('hidden');
                 if (window.state.isGoogleUser) {
                     if (approvalStatus === 'approved' && role === 'uploader') {
-                        statusBadge.className = "text-[10px] px-2 py-0.5 rounded-full font-bold bg-indigo-100 text-indigo-800 border border-indigo-200/50";
+                        statusBadge.className = "text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20";
                         statusBadge.innerText = "הרשאת העלאה";
                     } else if (approvalStatus === 'approved') {
-                        statusBadge.className = "text-[10px] px-2 py-0.5 rounded-full font-bold bg-blue-100 text-blue-800 border border-blue-200/50";
+                        statusBadge.className = "text-[10px] px-2 py-0.5 rounded-full font-bold bg-white/5 text-slate-300 border border-white/10";
                         statusBadge.innerText = "צופה מאושר";
                     } else if (approvalStatus === 'blocked') {
-                        statusBadge.className = "text-[10px] px-2 py-0.5 rounded-full font-bold bg-red-100 text-red-700 border border-red-200/50";
+                        statusBadge.className = "text-[10px] px-2 py-0.5 rounded-full font-bold bg-red-500/10 text-red-400 border border-red-500/20";
                         statusBadge.innerText = "חשבון חסום";
                     } else if (approvalStatus === 'rejected') {
-                        statusBadge.className = "text-[10px] px-2 py-0.5 rounded-full font-bold bg-red-100 text-red-700 border border-red-200/50";
+                        statusBadge.className = "text-[10px] px-2 py-0.5 rounded-full font-bold bg-red-500/10 text-red-400 border border-red-500/20";
                         statusBadge.innerText = "לא אושר";
                     } else {
-                        statusBadge.className = "text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-100 text-amber-800 border border-amber-200/50";
+                        statusBadge.className = "text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20";
                         statusBadge.innerText = "ממתין לאישור";
                     }
                 } else {
-                    statusBadge.className = "text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-100 text-amber-800 border border-amber-200/50";
+                    statusBadge.className = "text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20";
                     statusBadge.innerText = "מצב אורח";
                 }
             }
@@ -3019,19 +3650,19 @@
 
             const searchBanner = document.getElementById('tempSearchBanner');
             if(searchBanner) {
-                searchBanner.className = "bg-gradient-to-r from-indigo-950/40 to-slate-900/40 border border-white/10 rounded-2xl p-4 flex justify-between items-center shadow-md animate-fade-in transition-all backdrop-blur-xl";
+                searchBanner.className = "bg-gradient-to-r from-amber-500/10 to-transparent border border-white/10 rounded-2xl p-4 flex justify-between items-center shadow-md animate-fade-in transition-all backdrop-blur-xl";
                 searchBanner.innerHTML = '';
 
                 const leftDiv = document.createElement('div');
                 leftDiv.className = "flex items-center gap-3";
-                leftDiv.innerHTML = `<div class="bg-indigo-50 border border-indigo-100 p-2.5 rounded-xl text-indigo-600"><i data-lucide="bell" class="w-5 h-5"></i></div>`;
+                leftDiv.innerHTML = `<div class="bg-amber-500/10 border border-amber-500/20 p-2.5 rounded-xl text-amber-400"><i data-lucide="bell" class="w-5 h-5"></i></div>`;
 
                 const textDiv = document.createElement('div');
                 const title = document.createElement('h4');
-                title.className = "font-bold text-slate-800 text-sm";
+                title.className = "font-bold text-white text-sm";
                 title.textContent = "עדכונים אחרונים";
                 const desc = document.createElement('p');
-                desc.className = "text-xs text-indigo-600";
+                desc.className = "text-xs text-amber-400";
                 desc.textContent = "תמונות מהשבוע האחרון";
                 textDiv.appendChild(title);
                 textDiv.appendChild(desc);
@@ -3040,7 +3671,7 @@
                 const returnBtn = document.createElement('button');
                 returnBtn.type = "button";
                 returnBtn.onclick = clearTempSearchFilter;
-                returnBtn.className = "text-xs font-bold text-indigo-300 hover:text-indigo-200 bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-2 rounded-xl shadow-sm hover:shadow transition-all";
+                returnBtn.className = "text-xs font-bold btn-secondary-dark px-4 py-2 rounded-xl shadow-sm hover:shadow transition-all";
                 returnBtn.textContent = "חזור לגלריה";
 
                 searchBanner.appendChild(leftDiv);
@@ -3137,10 +3768,10 @@
         window.populateFolderSelects = function() {
             ['pendingTargetFolder', 'moveFolderSelect', 'adminTargetFolderSelect', 'userTargetFolderSelect'].forEach(id => {
                 const s = document.getElementById(id); if (!s) return;
-                s.innerHTML = id === 'pendingTargetFolder' || id === 'adminTargetFolderSelect' ? '<option value="auto" class="font-bold text-indigo-700 bg-white">יצירה וחלוקה אוטומטית לפי תיקיות משנה</option>' : '';
+                s.innerHTML = id === 'pendingTargetFolder' || id === 'adminTargetFolderSelect' ? '<option value="auto" class="font-bold text-amber-400 bg-slate-950">יצירה וחלוקה אוטומטית לפי תיקיות משנה</option>' : '';
                 window.state.folders.filter(f => f.id !== 'all').forEach(f => {
                     const folderId = safeRecordId(f.id);
-                    if (folderId) s.insertAdjacentHTML('beforeend', `<option value="${folderId}" class="bg-white text-slate-800">${escapeHtml(f.name)}</option>`);
+                    if (folderId) s.insertAdjacentHTML('beforeend', `<option value="${folderId}" class="bg-slate-950 text-white">${escapeHtml(f.name)}</option>`);
                 });
             });
         }
@@ -3502,6 +4133,7 @@
             window.showNotification(approved ? 'בקשת המחיקה אושרה ובוצעה.' : 'בקשת המחיקה נדחתה.');
         };
 
+
         window.renderPendingUsers = function() {
             const list = document.getElementById('pendingUsersList');
             if (!list) return;
@@ -3518,7 +4150,7 @@
 
             pendingUsers.forEach(profile => {
                 const card = document.createElement('div');
-                card.className = 'bg-white border border-cyan-100 rounded-xl p-3 shadow-sm space-y-2.5';
+                card.className = 'bg-white/5 border border-white/10 rounded-xl p-3 shadow-sm space-y-2.5';
 
                 const header = document.createElement('div');
                 header.className = 'flex items-center gap-2.5';
@@ -3528,12 +4160,12 @@
                     const photo = document.createElement('img');
                     photo.src = photoUrl;
                     photo.alt = '';
-                    photo.className = 'w-9 h-9 rounded-full object-cover border border-slate-200';
+                    photo.className = 'w-9 h-9 rounded-full object-cover border border-slate-700';
                     photo.onerror = () => handleImageError(photo);
                     header.appendChild(photo);
                 } else {
                     const icon = document.createElement('div');
-                    icon.className = 'w-9 h-9 rounded-full bg-cyan-50 text-cyan-700 flex items-center justify-center border border-cyan-100';
+                    icon.className = 'w-9 h-9 rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center border border-amber-500/25';
                     icon.innerHTML = '<i data-lucide="user" class="w-4 h-4"></i>';
                     header.appendChild(icon);
                 }
@@ -3541,16 +4173,26 @@
                 const identity = document.createElement('div');
                 identity.className = 'min-w-0 flex-1';
                 const name = document.createElement('p');
-                name.className = 'text-[11px] font-bold text-slate-800 truncate';
+                name.className = 'text-[11px] font-bold text-white truncate';
                 name.textContent = profile.displayName || 'משתמש Google';
                 const email = document.createElement('p');
-                email.className = 'text-[9px] text-slate-500 truncate';
+                email.className = 'text-[9px] text-slate-400 truncate';
                 email.textContent = profile.email || '';
                 identity.append(name, email);
                 header.appendChild(identity);
 
+                card.appendChild(header);
+
+                // Show submitted details if available
+                if (profile.requestDetails) {
+                    const detailsBox = document.createElement('div');
+                    detailsBox.className = 'p-2.5 rounded-lg bg-amber-500/5 border border-amber-500/20 text-[10px] text-slate-300 leading-relaxed';
+                    detailsBox.innerHTML = `<strong>פרטי בקשה:</strong> ${escapeHtml(profile.requestDetails)}`;
+                    card.appendChild(detailsBox);
+                }
+
                 const roleSelect = document.createElement('select');
-                roleSelect.className = 'w-full text-[10px] border border-slate-200 rounded-lg py-2 px-2 bg-white text-slate-800';
+                roleSelect.className = 'w-full text-[10px] border border-white/10 rounded-lg py-2 px-2 bg-slate-950 text-white';
                 [
                     ['viewer', 'דרגה 1 — העלאה לאחר אישור'],
                     ['uploader', 'דרגה 2 — העלאת תמונות ללא אישור'],
@@ -3562,28 +4204,44 @@
                     option.textContent = label;
                     roleSelect.appendChild(option);
                 });
+                card.appendChild(roleSelect);
 
+                // Action triggers
                 const actions = document.createElement('div');
-                actions.className = 'flex gap-2';
+                actions.className = 'flex gap-1.5';
+
                 const approve = document.createElement('button');
                 approve.type = 'button';
                 approve.className = 'flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] py-2 rounded-lg font-bold';
-                approve.textContent = 'אשר בדרגה שנבחרה';
+                approve.textContent = 'אשר';
                 approve.onclick = () => window.approveUserAccess(profile.uid, roleSelect.value);
 
                 const reject = document.createElement('button');
                 reject.type = 'button';
-                reject.className = 'px-3 bg-red-50 hover:bg-red-100 text-red-600 text-[10px] py-2 rounded-lg font-bold border border-red-200';
+                reject.className = 'px-2.5 btn-secondary-dark text-[10px] py-2 rounded-lg font-bold';
                 reject.textContent = 'דחה';
                 reject.onclick = () => window.rejectUserAccess(profile.uid);
 
-                actions.append(approve, reject);
-                card.append(header, roleSelect, actions);
+                const msgBtn = document.createElement('button');
+                msgBtn.type = 'button';
+                msgBtn.className = 'px-2.5 btn-secondary-dark text-[10px] py-2 rounded-lg font-bold';
+                msgBtn.innerHTML = '<i data-lucide="message-square" class="w-3.5 h-3.5"></i>';
+                msgBtn.onclick = () => window.openAdminMessageModal(profile.uid, profile.displayName, profile.email);
+
+                const emailBtn = document.createElement('button');
+                emailBtn.type = 'button';
+                emailBtn.className = 'px-2.5 btn-secondary-dark text-[10px] py-2 rounded-lg font-bold';
+                emailBtn.innerHTML = '<i data-lucide="mail" class="w-3.5 h-3.5"></i>';
+                emailBtn.onclick = () => window.sendDirectMail(profile.email, profile.displayName);
+
+                actions.append(approve, msgBtn, emailBtn, reject);
+                card.appendChild(actions);
                 list.appendChild(card);
             });
 
             if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
         };
+
 
         window.updateAdminOverview = function() {
             const values = {
@@ -4093,19 +4751,19 @@
         function showFaceResultBanner(count) {
             const banner = document.getElementById('tempSearchBanner');
             if (!banner) return;
-            banner.className = "bg-gradient-to-r from-indigo-950/10 to-slate-900/10 border border-slate-200/50 rounded-2xl p-4 flex justify-between items-center shadow-md animate-fade-in transition-all backdrop-blur-xl";
+            banner.className = "bg-gradient-to-r from-amber-500/10 to-transparent border border-white/10 rounded-2xl p-4 flex justify-between items-center shadow-md animate-fade-in transition-all backdrop-blur-xl";
             banner.innerHTML = '';
 
             const rightContainer = document.createElement('div');
             rightContainer.className = "flex items-center gap-3";
-            rightContainer.innerHTML = `<div class="bg-indigo-50 border border-indigo-100 p-2.5 rounded-xl text-indigo-600"><i data-lucide="sparkles" class="w-5 h-5"></i></div>`;
+            rightContainer.innerHTML = `<div class="bg-amber-500/10 border border-amber-500/20 p-2.5 rounded-xl text-amber-400"><i data-lucide="sparkles" class="w-5 h-5"></i></div>`;
 
             const textContainer = document.createElement('div');
             const title = document.createElement('h4');
-            title.className = "font-bold text-slate-800 text-sm";
+            title.className = "font-bold text-white text-sm";
             title.textContent = "תוצאות חיפוש פרצוף";
             const sub = document.createElement('p');
-            sub.className = "text-xs text-indigo-600 font-semibold";
+            sub.className = "text-xs text-amber-400 font-semibold";
             sub.textContent = `${count} תמונות תואמות`;
             textContainer.appendChild(title);
             textContainer.appendChild(sub);
@@ -4114,7 +4772,7 @@
             const btn = document.createElement('button');
             btn.type = "button";
             btn.onclick = clearTempSearchFilter;
-            btn.className = "text-xs font-bold text-indigo-600 hover:text-indigo-500 bg-white border border-indigo-200 px-4 py-2 rounded-xl shadow-sm hover:shadow transition-all";
+            btn.className = "text-xs font-bold btn-secondary-dark px-4 py-2 rounded-xl shadow-sm hover:shadow transition-all";
             btn.textContent = "חזור לגלריה";
 
             banner.appendChild(rightContainer);
