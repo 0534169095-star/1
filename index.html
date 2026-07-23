@@ -3101,7 +3101,7 @@
 
         // --- אחסון תמונות ב-Cloudflare R2 דרך ה-Worker ---
         // עדכן לכתובת ה-Worker שלך, למשל: https://simchas-gallery-api.<subdomain>.workers.dev
-        const R2_WORKER_BASE_URL = 'simchas-gallery-api.0534169095.workers.dev';
+        const R2_WORKER_BASE_URL = 'https://simchas-gallery-api.0534169095.workers.dev';
 
         async function r2Request(path, options = {}) {
             const token = await window.getFirebaseIdToken();
