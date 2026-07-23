@@ -1390,10 +1390,6 @@
                     <div id="accAddSmart" class="accordion-content px-4 space-y-3">
                         <p class="text-[10px] text-slate-400 leading-tight">בחר היכן למקם את הקבצים, או תן למערכת ליצור אוטומטית תת-תיקיות בענן לפי שם התיקייה מהמחשב!</p>
                         <form onsubmit="handleAddPhotoAdmin(event)" class="space-y-3">
-                            <div class="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 space-y-2">
-                                <p id="adminDriveUploadStatus" class="text-[10px] font-bold text-amber-400">יש לחבר את Google Drive לפני בחירת התמונות.</p>
-                                <button type="button" id="adminDriveUploadConnectBtn" onclick="connectDriveForUpload()" class="w-full py-2 btn-secondary-dark rounded-lg text-[10px] font-bold">חבר Drive באותו דף</button>
-                            </div>
                             <div>
                                 <label class="text-[9px] font-bold text-slate-400 block mb-1">תיקיית יעד:</label>
                                 <select id="adminTargetFolderSelect" class="w-full text-xs rounded-xl py-2 px-2 focus:ring-amber-500">
@@ -1502,11 +1498,6 @@
             </div>
             <div class="p-6 space-y-5">
                 <p id="userUploadModeText" class="text-[11px] text-slate-400 leading-relaxed bg-white/5 p-3 rounded-xl border border-white/5">בחר תיקיית יעד ולאחר מכן תמונות בודדות או תיקייה שלמה.</p>
-                <div class="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 space-y-2">
-                    <p id="userDriveUploadStatus" class="text-[11px] font-bold text-amber-400">ראשית יש לחבר את Google Drive.</p>
-                    <button type="button" id="userDriveUploadConnectBtn" onclick="connectDriveForUpload()" class="w-full py-2.5 btn-secondary-dark rounded-xl text-xs font-bold">חבר Drive באותו דף</button>
-                    <p class="text-[9px] text-amber-500/80">Google יעבור באותה לשונית ויחזיר אותך אוטומטית לאתר.</p>
-                </div>
                 <div class="space-y-3">
                     <label class="block">
                         <span class="text-[10px] font-bold text-slate-300 mb-1 block">תיקיית יעד בגלריה:</span>
@@ -1813,15 +1804,11 @@
 
         let auth = null;
         let driveAccessToken = null;
-        window.driveUploadAccessToken = null;
-        window.driveUploadFolderId = null;
-        window.driveUploadFolderPromise = null;
         let oneTapInitialized = false;
         let oneTapPromptRequested = false;
         const GOOGLE_ONE_TAP_CLIENT_ID = '601586229891-giorl13mdpu7kfbeb6h2aj6qjpkphmmo.apps.googleusercontent.com';
         const DRIVE_OAUTH_REDIRECT_URI = 'https://0534169095-star.github.io/1/';
-        const DRIVE_UPLOAD_SCOPE = 'https://www.googleapis.com/auth/drive.file';
-        const DRIVE_SYNC_SCOPE = `${DRIVE_UPLOAD_SCOPE} https://www.googleapis.com/auth/drive.readonly`;
+        const DRIVE_SYNC_SCOPE = 'https://www.googleapis.com/auth/drive.readonly';
         const DRIVE_OAUTH_STATE_KEY = 'simchas_drive_oauth_state';
         const DRIVE_OAUTH_INTENT_KEY = 'simchas_drive_redirect_intent';
         // נשמרות רק טביעות SHA-256 של חשבון מנהל-העל, לא הכתובת או המזהה עצמם.
@@ -1926,47 +1913,13 @@
                     : '<i data-lucide="cloud" class="w-4 h-4"></i> חבר Google Drive';
             }
             if (syncButton) syncButton.disabled = !connected;
-            updateDriveUploadUI();
             if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
         }
 
-        function updateDriveUploadUI() {
-            const connected = Boolean(window.driveUploadAccessToken);
-            const statusText = connected
-                ? 'Google Drive מחובר. אפשר לבחור ולהעלות תמונות.'
-                : 'ראשית יש לחבר את Google Drive לפני בחירת התמונות.';
-            ['userDriveUploadStatus', 'adminDriveUploadStatus'].forEach(id => {
-                const status = document.getElementById(id);
-                if (status) status.textContent = statusText;
-            });
-            ['userDriveUploadConnectBtn', 'adminDriveUploadConnectBtn'].forEach(id => {
-                const button = document.getElementById(id);
-                if (button) button.textContent = connected ? 'החלף חשבון Drive' : 'חבר Drive באותו דף';
-            });
-            ['userMultiFiles', 'userFolderUpload', 'adminMultiFiles', 'adminFolderUpload'].forEach(id => {
-                const input = document.getElementById(id);
-                if (input) input.disabled = !connected;
-            });
-            ['userUploadSubmitBtn', 'adminUploadSubmitBtn'].forEach(id => {
-                const button = document.getElementById(id);
-                if (button) button.disabled = !connected;
-            });
-        }
-        window.updateDriveUploadUI = updateDriveUploadUI;
-
         function clearDriveConnection() {
             driveAccessToken = null;
-            window.driveUploadAccessToken = null;
-            window.driveUploadFolderId = null;
-            window.driveUploadFolderPromise = null;
             setDriveConnectionUI();
         }
-
-        async function requestDriveUploadAccess() {
-            if (window.driveUploadAccessToken) return window.driveUploadAccessToken;
-            throw new Error('Google Drive עדיין לא מחובר. לחץ תחילה על „חבר Drive באותו דף”.');
-        }
-        window.requestDriveUploadAccess = requestDriveUploadAccess;
 
         function createDriveOAuthState() {
             if (window.crypto?.randomUUID) return window.crypto.randomUUID();
@@ -2022,25 +1975,9 @@
             const accessToken = hashParams.get('access_token');
             if (!accessToken) throw new Error('לא התקבל אישור גישה ל־Google Drive.');
 
-            window.driveUploadAccessToken = accessToken;
-            window.driveUploadFolderId = null;
-            window.driveUploadFolderPromise = null;
-            if (intent === 'sync') driveAccessToken = accessToken;
+            driveAccessToken = accessToken;
             return intent;
         }
-
-        window.connectDriveForUpload = function() {
-            if (!window.state?.currentUser || window.state.userApprovalStatus !== 'approved') {
-                window.showNotification('יש להתחבר באמצעות חשבון Google מאושר לפני חיבור Drive.', false);
-                return;
-            }
-            try {
-                startDriveOAuthRedirect(DRIVE_UPLOAD_SCOPE, 'upload');
-            } catch (error) {
-                console.error('Drive redirect failed:', error);
-                window.showNotification(error.message || 'לא ניתן היה לעבור לחיבור Google Drive.', false);
-            }
-        };
 
         window.connectGoogleDrive = function() {
             if (!window.checkAdminPermission?.()) return;
@@ -2491,6 +2428,12 @@
 
                 const app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
+                // מאפשר לסקריפט הרגיל לקבל טוקן Firebase עבור קריאות ל-Worker של R2
+                window.getFirebaseIdToken = async function(forceRefresh = false) {
+                    const user = auth?.currentUser;
+                    if (!user) throw new Error('יש להתחבר עם חשבון Google לפני העלאת תמונות.');
+                    return user.getIdToken(forceRefresh);
+                };
                 auth.useDeviceLanguage();
                 try {
                     const redirectResult = await getRedirectResult(auth);
@@ -2502,9 +2445,10 @@
 
                 try {
                     const driveIntent = consumeDriveOAuthRedirect();
-                    if (driveIntent === 'sync') setDriveConnectionUI();
-                    else updateDriveUploadUI();
-                    if (driveIntent) window.showNotification('Google Drive חובר בהצלחה. אפשר לבחור ולהעלות תמונות.', true);
+                    if (driveIntent) {
+                        setDriveConnectionUI();
+                        window.showNotification('Google Drive חובר בהצלחה. אפשר לסנכרן תיקייה.', true);
+                    }
                 } catch (error) {
                     console.error('Google Drive OAuth redirect error:', error);
                     clearDriveConnection();
@@ -3155,124 +3099,55 @@
             return new Blob([bytes], { type: mimeMatch[1] || 'image/jpeg' });
         }
 
-        async function driveUploadRequest(url, options = {}) {
-            const token = await requestDriveUploadAccess();
+        // --- אחסון תמונות ב-Cloudflare R2 דרך ה-Worker ---
+        // עדכן לכתובת ה-Worker שלך, למשל: https://simchas-gallery-api.<subdomain>.workers.dev
+        const R2_WORKER_BASE_URL = 'https://simchas-gallery-api.workers.dev';
+
+        async function r2Request(path, options = {}) {
+            const token = await window.getFirebaseIdToken();
             const headers = new Headers(options.headers || {});
             headers.set('Authorization', `Bearer ${token}`);
-            const response = await fetch(url, { ...options, headers });
-            if (response.ok) return response;
+            const response = await fetch(`${R2_WORKER_BASE_URL}${path}`, { ...options, headers });
 
-            let apiMessage = '';
-            try {
-                const payload = await response.json();
-                apiMessage = payload?.error?.message || '';
-            } catch (error) {}
-
-            if (response.status === 401) {
-                window.driveUploadAccessToken = null;
-                window.driveUploadFolderId = null;
-                window.driveUploadFolderPromise = null;
-                updateDriveUploadUI();
-                throw new Error('תוקף החיבור ל־Google Drive הסתיים. התחבר מחדש ונסה שוב.');
+            let payload = null;
+            try { payload = await response.json(); } catch (error) {}
+            if (!response.ok) {
+                throw new Error(payload?.error || `שגיאת שרת האחסון (${response.status}).`);
             }
-            if (response.status === 403) {
-                throw new Error('אין הרשאת העלאה ל־Google Drive. ודא שממשק Drive API מופעל ואשר את בקשת הגישה.');
-            }
-            throw new Error(apiMessage || `שגיאת Google Drive (${response.status}).`);
+            return payload;
         }
 
-        async function ensureDriveUploadFolder() {
-            await requestDriveUploadAccess();
-            if (window.driveUploadFolderId) return window.driveUploadFolderId;
-            if (window.driveUploadFolderPromise) return window.driveUploadFolderPromise;
-
-            window.driveUploadFolderPromise = (async () => {
-                const query = "trashed = false and mimeType = 'application/vnd.google-apps.folder' and appProperties has { key='simchasGallery' and value='uploads' }";
-                const params = new URLSearchParams({
-                    q: query,
-                    spaces: 'drive',
-                    pageSize: '1',
-                    fields: 'files(id,name)'
-                });
-                const searchResponse = await driveUploadRequest(`https://www.googleapis.com/drive/v3/files?${params.toString()}`);
-                const searchData = await searchResponse.json();
-                const existingFolder = searchData.files?.[0];
-                if (existingFolder?.id) return existingFolder.id;
-
-                const createResponse = await driveUploadRequest('https://www.googleapis.com/drive/v3/files?fields=id,name', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        name: 'גלריית שמחת התורה - העלאות',
-                        mimeType: 'application/vnd.google-apps.folder',
-                        appProperties: { simchasGallery: 'uploads' }
-                    })
-                });
-                const folder = await createResponse.json();
-                if (!folder?.id) throw new Error('לא ניתן היה ליצור תיקיית העלאות ב־Google Drive.');
-                return folder.id;
-            })();
-
-            try {
-                window.driveUploadFolderId = await window.driveUploadFolderPromise;
-                return window.driveUploadFolderId;
-            } finally {
-                window.driveUploadFolderPromise = null;
-            }
-        }
-
-        window.uploadImageToDrive = async function(base64Data, imgId, title = 'תמונה') {
-            const folderId = await ensureDriveUploadFolder();
+        window.uploadImageToR2 = async function(base64Data, imgId, title = 'תמונה') {
             const imageBlob = dataUrlToBlob(base64Data);
             const cleanTitle = String(title || 'תמונה').replace(/[\\/:*?"<>|]+/g, '-').trim().slice(0, 100) || 'תמונה';
-            const metadataResponse = await driveUploadRequest('https://www.googleapis.com/drive/v3/files?fields=id,name', {
+            const result = await r2Request('/upload', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    name: `${cleanTitle}-${String(imgId).slice(-8)}.jpg`,
-                    mimeType: imageBlob.type || 'image/jpeg',
-                    parents: [folderId],
-                    appProperties: { simchasGalleryImageId: String(imgId) }
-                })
+                headers: {
+                    'Content-Type': imageBlob.type || 'image/jpeg',
+                    'X-Image-Title': encodeURIComponent(cleanTitle)
+                },
+                body: imageBlob
             });
-            const fileData = await metadataResponse.json();
-            if (!fileData?.id) throw new Error('Google Drive לא החזיר מזהה לתמונה.');
-
-            try {
-                await driveUploadRequest(`https://www.googleapis.com/upload/drive/v3/files/${encodeURIComponent(fileData.id)}?uploadType=media`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': imageBlob.type || 'image/jpeg' },
-                    body: imageBlob
-                });
-                await driveUploadRequest(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileData.id)}/permissions?fields=id`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ type: 'anyone', role: 'reader', allowFileDiscovery: false })
-                });
-            } catch (error) {
-                try {
-                    await driveUploadRequest(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileData.id)}`, { method: 'DELETE' });
-                } catch (cleanupError) {}
-                throw error;
-            }
-
+            if (!result?.url || !result?.key) throw new Error('שרת האחסון לא החזיר כתובת לתמונה.');
             return {
-                url: `https://lh3.googleusercontent.com/d/${encodeURIComponent(fileData.id)}=w1600`,
-                driveFileId: fileData.id,
-                driveOwnerUid: window.state.currentUser?.uid || '',
-                driveStored: true
+                url: result.url,
+                r2Key: result.key,
+                r2OwnerUid: window.state.currentUser?.uid || '',
+                r2Stored: true
             };
         };
 
-        window.deleteImageFromDrive = async function(imageRecord) {
-            const fileId = String(imageRecord?.driveFileId || '').trim();
-            if (!fileId || !window.driveUploadAccessToken) return;
-            const ownerUid = String(imageRecord?.driveOwnerUid || '');
-            if (ownerUid && ownerUid !== String(window.state.currentUser?.uid || '')) return;
+        window.deleteImageFromR2 = async function(imageRecord) {
+            const key = String(imageRecord?.r2Key || '').trim();
+            if (!key) return;
             try {
-                await driveUploadRequest(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}`, { method: 'DELETE' });
+                await r2Request('/delete', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key })
+                });
             } catch (error) {
-                console.warn('Could not remove the source file from Google Drive:', error);
+                console.warn('לא ניתן היה למחוק את הקובץ מ-R2:', error);
             }
         };
 
@@ -3308,11 +3183,11 @@
 
             if (imageRecord.url && imageRecord.url.startsWith('data:')) {
                 try {
-                    const driveImage = await window.uploadImageToDrive(imageRecord.url, imageId, imageRecord.title);
-                    Object.assign(imageRecord, driveImage);
+                    const storedImage = await window.uploadImageToR2(imageRecord.url, imageId, imageRecord.title);
+                    Object.assign(imageRecord, storedImage);
                 } catch(e) {
-                    console.error('Google Drive upload failed:', e);
-                    throw new Error(e.message || 'העלאת התמונה ל־Google Drive נכשלה.');
+                    console.error('R2 upload failed:', e);
+                    throw new Error(e.message || 'העלאת התמונה לאחסון נכשלה.');
                 }
             }
 
@@ -3320,7 +3195,7 @@
             await setDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'images', imageId), imageRecord);
         };
 
-        // מחיקת רשומת הגלריה; קובץ Drive נמחק רק כשהחשבון המחובר הוא בעל הקובץ.
+        // מחיקת רשומת הגלריה; הקובץ נמחק גם מ-R2.
         window.deleteImageCloud = async function(id) {
             if (!window.db) throw new Error('החיבור לענן עדיין לא מוכן. נסה שוב בעוד רגע.');
             if (!window.state.isSuperAdmin) throw new Error('מחיקת תמונה דורשת אישור מנהל־על.');
@@ -3328,9 +3203,9 @@
             if (!imageId) throw new Error('מזהה התמונה אינו תקין.');
             try {
                 const img = window.state.images.find(i => safeRecordId(i.id) === imageId);
-                if (img) await window.deleteImageFromDrive(img);
+                if (img) await window.deleteImageFromR2(img);
             } catch (e) {
-                console.warn('Drive deletion failed or skipped during cloud delete:', e);
+                console.warn('R2 deletion failed or skipped during cloud delete:', e);
             }
             const { doc, deleteDoc } = window.firestoreModules;
             await deleteDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'images', imageId));
@@ -3354,11 +3229,11 @@
 
             if (imageRecord.url && imageRecord.url.startsWith('data:')) {
                 try {
-                    const driveImage = await window.uploadImageToDrive(imageRecord.url, imageId, imageRecord.title);
-                    Object.assign(imageRecord, driveImage);
+                    const storedImage = await window.uploadImageToR2(imageRecord.url, imageId, imageRecord.title);
+                    Object.assign(imageRecord, storedImage);
                 } catch(e) {
-                    console.error('Google Drive upload failed:', e);
-                    throw new Error(e.message || 'העלאת התמונה ל־Google Drive נכשלה.');
+                    console.error('R2 upload failed:', e);
+                    throw new Error(e.message || 'העלאת התמונה לאחסון נכשלה.');
                 }
             }
 
@@ -3366,7 +3241,7 @@
             await setDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'pendingImages', imageId), imageRecord);
         };
 
-        // מחיקת בקשה ממתינה; קובץ Drive נמחק רק כשהחשבון המחובר הוא בעל הקובץ.
+        // מחיקת בקשה ממתינה; הקובץ נמחק גם מ-R2.
         window.deletePendingImageCloud = async function(id) {
             if (!window.db) throw new Error('החיבור לענן עדיין לא מוכן. נסה שוב בעוד רגע.');
             if (!window.state.isSuperAdmin) throw new Error('מחיקת תמונה ממתינה דורשת אישור מנהל־על.');
@@ -3374,9 +3249,9 @@
             if (!imageId) throw new Error('מזהה התמונה אינו תקין.');
             try {
                 const img = window.state.pendingImages.find(i => safeRecordId(i.id) === imageId);
-                if (img) await window.deleteImageFromDrive(img);
+                if (img) await window.deleteImageFromR2(img);
             } catch (e) {
-                console.warn('Drive deletion failed or skipped during pending delete:', e);
+                console.warn('R2 deletion failed or skipped during pending delete:', e);
             }
             const { doc, deleteDoc } = window.firestoreModules;
             await deleteDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'pendingImages', imageId));
@@ -3829,12 +3704,11 @@
             const pText = document.getElementById('adminUploadProgressText');
 
             try {
-                if(pText) pText.innerText = 'מתחבר ל־Google Drive...';
-                await requestDriveUploadAccess();
+                if(pText) pText.innerText = 'מכין את הקבצים להעלאה...';
                 const newImages = await processFilesWithFolders(allFiles, targetFolderId, true);
                 if (newImages.length === 0) throw new Error('לא נמצאו קובצי תמונה תקינים.');
                 for (let index = 0; index < newImages.length; index++) {
-                    if(pText) pText.innerText = `מעלה ל־Google Drive: ${index + 1} מתוך ${newImages.length}`;
+                    if(pText) pText.innerText = `מעלה לאחסון: ${index + 1} מתוך ${newImages.length}`;
                     await window.saveImageToCloud(newImages[index]);
                 }
                 if(filesInput) filesInput.value = '';
@@ -3878,8 +3752,7 @@
             const pText = document.getElementById('userUploadProgressText');
 
             try {
-                if(pText) pText.innerText = 'מתחבר ל־Google Drive...';
-                await requestDriveUploadAccess();
+                if(pText) pText.innerText = 'מכין את הקבצים להעלאה...';
                 const newImages = await processFilesWithFolders(allFiles, targetFolderId, false);
                 if (newImages.length === 0) throw new Error('לא נמצאו קובצי תמונה תקינים.');
                 for (let index = 0; index < newImages.length; index++) {
@@ -3899,7 +3772,7 @@
                 window.showNotification(error.message || 'העלאת התמונות נכשלה. נסה שוב.', false);
             } finally {
                 if(progressContainer) progressContainer.classList.add('hidden');
-                if(btn) btn.disabled = !window.driveUploadAccessToken;
+                if(btn) btn.disabled = false;
             }
         }
 
