@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta name="theme-color" content="#090b10">
+    <title>ניהול הודעות | גלריית שמחת התורה</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { color-scheme: dark; }
+        * { box-sizing: border-box; }
+        body {
+            font-family: "Assistant", sans-serif;
+            min-height: 100vh;
+            margin: 0;
+            color: #f8fafc;
+            background:
+                radial-gradient(circle at 85% 8%, rgba(245, 158, 11, .16), transparent 28rem),
+                radial-gradient(circle at 12% 90%, rgba(14, 165, 233, .12), transparent 30rem),
+                #090b10;
+        }
+        .glass {
+            background: rgba(15, 18, 25, .86);
+            border: 1px solid rgba(255,255,255,.09);
+            box-shadow: 0 24px 80px rgba(0,0,0,.36);
+            backdrop-filter: blur(18px);
+        }
+        .gold-button {
+            color: #111827;
+            background: linear-gradient(135deg, #fde68a, #f59e0b);
+            box-shadow: 0 10px 30px rgba(245,158,11,.2);
+        }
+        .gold-button:hover { filter: brightness(1.06); transform: translateY(-1px); }
+        .gold-button:disabled { filter: grayscale(.8); opacity: .5; cursor: not-allowed; transform: none; }
+        .user-card { transition: border-color .2s ease, background-color .2s ease, transform .2s ease; }
+        .user-card:hover { transform: translateY(-1px); border-color: rgba(245,158,11,.35); }
+        .user-card.selected { border-color: rgba(245,158,11,.7); background: rgba(245,158,11,.08); }
+        input, textarea { color-scheme: dark; }
+        ::-webkit-scrollbar { width: 7px; }
+        ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.28); border-radius: 999px; }
+    </style>
+</head>
+<body>
+    <main class="max-w-7xl mx-auto px-4 py-6 md:py-10">
+        <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-7">
+            <div>
+                <p class="text-amber-400 text-xs font-extrabold tracking-[.22em]">SIMCHAT TORAH · ADMIN</p>
+                <h1 class="text-3xl md:text-5xl font-extrabold mt-2">מרכז הודעות אישיות</h1>
+                <p class="text-slate-400 text-sm mt-2">שליחת הודעות מהניהול ישירות לאזור האישי של המשתמשים.</p>
+            </div>
+            <div class="flex gap-2">
+                <a href="./" class="px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-sm font-bold hover:bg-white/10 flex items-center gap-2">
+                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    חזרה לגלריה
+                </a>
+                <button id="signOutBtn" type="button" class="hidden px-4 py-3 rounded-xl border border-red-500/20 text-red-300 bg-red-500/5 text-sm font-bold">התנתק</button>
+            </div>
+        </header>
+
+        <section id="authCard" class="glass rounded-3xl p-7 md:p-10 max-w-xl mx-auto text-center">
+            <div class="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center mx-auto mb-5">
+                <i data-lucide="shield-check" class="w-8 h-8"></i>
+            </div>
+            <h2 class="text-2xl font-extrabold">כניסת מנהל</h2>
+            <p class="text-slate-400 text-sm leading-7 mt-2">יש להתחבר בחשבון Google שמוגדר כמנהל או כמנהל־על באתר.</p>
+            <button id="googleLoginBtn" type="button" class="gold-button w-full mt-6 py-3.5 rounded-xl font-extrabold flex items-center justify-center gap-2">
+                <i data-lucide="log-in" class="w-5 h-5"></i>
+                התחבר באמצעות Google
+            </button>
+            <p id="authStatus" class="text-xs text-slate-500 mt-4" aria-live="polite"></p>
+        </section>
+
+        <section id="adminApp" class="hidden grid lg:grid-cols-[minmax(0,1fr)_420px] gap-6 items-start">
+            <div class="glass rounded-3xl overflow-hidden">
+                <div class="p-5 md:p-6 border-b border-white/10 space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                            <h2 class="text-xl font-extrabold">משתמשים</h2>
+                            <p id="usersSummary" class="text-xs text-slate-400 mt-1">טוען משתמשים…</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button id="selectVisibleBtn" type="button" class="px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-xs font-bold">בחר מוצגים</button>
+                            <button id="clearSelectionBtn" type="button" class="px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-xs font-bold">נקה בחירה</button>
+                        </div>
+                    </div>
+                    <label class="relative block">
+                        <i data-lucide="search" class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500"></i>
+                        <input id="userSearch" type="search" autocomplete="off" placeholder="חיפוש לפי שם, מייל או דרגה…" class="w-full bg-black/20 border border-white/10 rounded-xl py-3 pr-10 pl-3 text-sm outline-none focus:border-amber-400/60">
+                    </label>
+                    <div class="flex flex-wrap gap-2" id="statusFilters">
+                        <button type="button" data-filter="all" class="filter-btn px-3 py-1.5 rounded-full text-xs font-bold bg-amber-400 text-slate-950">הכול</button>
+                        <button type="button" data-filter="approved" class="filter-btn px-3 py-1.5 rounded-full text-xs font-bold bg-white/5 border border-white/10">פעילים</button>
+                        <button type="button" data-filter="pending" class="filter-btn px-3 py-1.5 rounded-full text-xs font-bold bg-white/5 border border-white/10">ממתינים</button>
+                        <button type="button" data-filter="blocked" class="filter-btn px-3 py-1.5 rounded-full text-xs font-bold bg-white/5 border border-white/10">חסומים</button>
+                    </div>
+                </div>
+                <div id="usersList" class="p-4 md:p-5 grid md:grid-cols-2 gap-3 max-h-[68vh] overflow-y-auto">
+                    <p class="text-sm text-slate-500 text-center py-10 md:col-span-2">מתחבר למסד הנתונים…</p>
+                </div>
+            </div>
+
+            <aside class="glass rounded-3xl p-5 md:p-6 lg:sticky lg:top-6">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <h2 class="text-xl font-extrabold">כתיבת הודעה</h2>
+                        <p id="selectedSummary" class="text-xs text-amber-400 mt-1">לא נבחרו נמענים</p>
+                    </div>
+                    <div class="w-11 h-11 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center">
+                        <i data-lucide="send" class="w-5 h-5"></i>
+                    </div>
+                </div>
+
+                <label class="block mt-5">
+                    <span class="text-xs font-bold text-slate-300">תוכן ההודעה</span>
+                    <textarea id="messageText" maxlength="1500" rows="9" placeholder="כתוב כאן את ההודעה שתופיע באזור האישי…" class="w-full mt-2 bg-black/25 border border-white/10 rounded-2xl p-4 text-sm leading-7 resize-y outline-none focus:border-amber-400/60"></textarea>
+                </label>
+                <div class="flex justify-between text-[11px] text-slate-500 mt-1">
+                    <span>ההודעה נשמרת במרכז ההודעות האישי</span>
+                    <span id="characterCount">0/1500</span>
+                </div>
+
+                <button id="sendBtn" type="button" disabled class="gold-button w-full mt-5 py-3.5 rounded-xl font-extrabold flex items-center justify-center gap-2">
+                    <i data-lucide="send-horizontal" class="w-5 h-5"></i>
+                    <span id="sendBtnText">שלח הודעה</span>
+                </button>
+                <div id="sendProgress" class="hidden mt-4 rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-slate-300" aria-live="polite"></div>
+                <div class="mt-5 border-t border-white/10 pt-4 text-[11px] text-slate-500 leading-6">
+                    ההודעה תופיע אצל הנמען עם סימון "חדשה". לחיצה שלו על ההודעה תסמן אותה כנקראה.
+                </div>
+            </aside>
+        </section>
+    </main>
+
+    <div id="toast" class="fixed left-4 bottom-4 z-50 hidden max-w-sm rounded-2xl border border-white/10 bg-slate-900/95 px-5 py-4 shadow-2xl text-sm font-bold" role="status" aria-live="polite"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import {
+            getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup,
+            signInWithRedirect, getRedirectResult, signOut
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import {
+            getFirestore, collection, doc, getDoc, getDocs, setDoc
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-lite.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCELVhy_L5dkGAVsY5in57Yv6-wdM3wHY4",
+            authDomain: "simchas-bb35c.firebaseapp.com",
+            projectId: "simchas-bb35c",
+            storageBucket: "simchas-bb35c.firebasestorage.app",
+            messagingSenderId: "601586229891",
+            appId: "1:601586229891:web:c2a599a58e876496fc31b6"
+        };
+        const APP_ID = 'org-gallery';
+        const PROFILE_SEGMENTS = ['artifacts', APP_ID, 'public', 'data', 'userProfiles'];
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        auth.useDeviceLanguage();
+
+        const state = {
+            currentUser: null,
+            users: [],
+            selected: new Set(),
+            search: '',
+            filter: 'all',
+            loading: false
+        };
+
+        const el = id => document.getElementById(id);
+        const roleLabels = {
+            viewer: 'דרגה 1 — צופה',
+            uploader: 'דרגה 2 — מעלה תמונות',
+            admin: 'דרגה 3 — מנהל',
+            super_admin: 'דרגה 4 — מנהל־על'
+        };
+        const statusLabels = {
+            approved: 'פעיל', pending: 'ממתין', blocked: 'חסום', rejected: 'נדחה'
+        };
+
+        function profileRef(uid) {
+            return doc(db, ...PROFILE_SEGMENTS, uid);
+        }
+
+        function profilesCollection() {
+            return collection(db, ...PROFILE_SEGMENTS);
+        }
+
+        function notify(message, success = true) {
+            const toast = el('toast');
+            toast.textContent = message;
+            toast.className = `fixed left-4 bottom-4 z-50 max-w-sm rounded-2xl border px-5 py-4 shadow-2xl text-sm font-bold ${success ? 'border-emerald-500/30 bg-emerald-950/95 text-emerald-200' : 'border-red-500/30 bg-red-950/95 text-red-200'}`;
+            toast.classList.remove('hidden');
+            window.clearTimeout(notify.timer);
+            notify.timer = window.setTimeout(() => toast.classList.add('hidden'), 4500);
+        }
+
+        function formatDate(value) {
+            if (!value) return 'לא ידוע';
+            const date = new Date(value);
+            return Number.isNaN(date.getTime()) ? 'לא ידוע' : date.toLocaleDateString('he-IL');
+        }
+
+        function filteredUsers() {
+            const query = state.search.trim().toLowerCase();
+            return state.users.filter(user => {
+                const matchesFilter = state.filter === 'all' || user.status === state.filter;
+                const haystack = `${user.displayName || ''} ${user.email || ''} ${user.role || ''} ${roleLabels[user.role] || ''}`.toLowerCase();
+                return matchesFilter && (!query || haystack.includes(query));
+            });
+        }
+
+        function updateSelectionUI() {
+            const count = state.selected.size;
+            el('selectedSummary').textContent = count ? `${count} נמענים נבחרו` : 'לא נבחרו נמענים';
+            el('sendBtnText').textContent = count > 1 ? `שלח ל־${count} משתמשים` : 'שלח הודעה';
+            el('sendBtn').disabled = !count || !el('messageText').value.trim() || state.loading;
+            document.querySelectorAll('[data-user-card]').forEach(card => {
+                const selected = state.selected.has(card.dataset.userCard);
+                card.classList.toggle('selected', selected);
+                const checkbox = card.querySelector('input[type="checkbox"]');
+                if (checkbox) checkbox.checked = selected;
+            });
+        }
+
+        function createUserCard(user) {
+            const card = document.createElement('label');
+            card.dataset.userCard = user.uid;
+            card.className = 'user-card cursor-pointer rounded-2xl border border-white/10 bg-white/[.025] p-4 flex gap-3 items-start';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.className = 'mt-1 accent-amber-400 w-4 h-4 shrink-0';
+            checkbox.checked = state.selected.has(user.uid);
+            checkbox.addEventListener('change', () => {
+                if (checkbox.checked) state.selected.add(user.uid);
+                else state.selected.delete(user.uid);
+                updateSelectionUI();
+            });
+
+            const body = document.createElement('div');
+            body.className = 'min-w-0 flex-1';
+            const top = document.createElement('div');
+            top.className = 'flex items-start justify-between gap-2';
+            const identity = document.createElement('div');
+            identity.className = 'min-w-0';
+            const name = document.createElement('p');
+            name.className = 'font-extrabold text-sm truncate';
+            name.textContent = user.displayName || 'משתמש Google';
+            const email = document.createElement('p');
+            email.className = 'text-[11px] text-slate-400 truncate mt-0.5';
+            email.textContent = user.email || 'ללא כתובת מייל';
+            identity.append(name, email);
+
+            const status = document.createElement('span');
+            const isBlocked = user.status === 'blocked' || user.status === 'rejected';
+            status.className = `shrink-0 text-[10px] px-2 py-1 rounded-full font-bold border ${isBlocked ? 'text-red-300 border-red-500/20 bg-red-500/10' : user.status === 'pending' ? 'text-amber-300 border-amber-500/20 bg-amber-500/10' : 'text-emerald-300 border-emerald-500/20 bg-emerald-500/10'}`;
+            status.textContent = statusLabels[user.status] || user.status || 'לא ידוע';
+            top.append(identity, status);
+
+            const messages = Array.isArray(user.messages) ? user.messages : [];
+            const unread = messages.filter(message => !message.read).length;
+            const meta = document.createElement('div');
+            meta.className = 'flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-slate-500 mt-3';
+            const role = document.createElement('span');
+            role.textContent = roleLabels[user.role] || 'ללא דרגה';
+            const inbox = document.createElement('span');
+            inbox.textContent = `${messages.length} הודעות · ${unread} לא נקראו`;
+            const seen = document.createElement('span');
+            seen.textContent = `פעילות: ${formatDate(user.lastSeenAt || user.lastLoginAt)}`;
+            meta.append(role, inbox, seen);
+
+            body.append(top, meta);
+            card.append(checkbox, body);
+            return card;
+        }
+
+        function renderUsers() {
+            const users = filteredUsers();
+            const list = el('usersList');
+            list.replaceChildren();
+            el('usersSummary').textContent = `${users.length} מוצגים מתוך ${state.users.length} משתמשים · ${state.selected.size} נבחרו`;
+            if (!users.length) {
+                const empty = document.createElement('p');
+                empty.className = 'text-sm text-slate-500 text-center py-10 md:col-span-2';
+                empty.textContent = 'לא נמצאו משתמשים התואמים לחיפוש.';
+                list.appendChild(empty);
+                return;
+            }
+            users.forEach(user => list.appendChild(createUserCard(user)));
+            updateSelectionUI();
+            if (window.lucide?.createIcons) window.lucide.createIcons();
+        }
+
+        async function loadUsers() {
+            el('usersSummary').textContent = 'טוען משתמשים…';
+            const snapshot = await getDocs(profilesCollection());
+            state.users = snapshot.docs.map(item => ({ uid: item.id, ...item.data() }))
+                .sort((a, b) => String(a.displayName || a.email || '').localeCompare(String(b.displayName || b.email || ''), 'he'));
+            renderUsers();
+        }
+
+        async function sendMessageToUser(user, text) {
+            const ref = profileRef(user.uid);
+            const snapshot = await getDoc(ref);
+            if (!snapshot.exists()) throw new Error('פרופיל המשתמש לא נמצא');
+            const data = snapshot.data();
+            const currentMessages = Array.isArray(data.messages) ? data.messages : [];
+            const message = {
+                id: window.crypto?.randomUUID?.() || `msg_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`,
+                text,
+                sender: state.currentUser?.displayName || 'מנהל שמחת התורה',
+                senderUid: state.currentUser?.uid || '',
+                recipientUid: user.uid,
+                sentAt: Date.now(),
+                read: false
+            };
+            await setDoc(ref, { messages: [message, ...currentMessages].slice(0, 100) }, { merge: true });
+        }
+
+        async function sendSelectedMessages() {
+            const text = el('messageText').value.trim();
+            const recipients = state.users.filter(user => state.selected.has(user.uid));
+            if (!text || !recipients.length || state.loading) return;
+
+            state.loading = true;
+            updateSelectionUI();
+            const progress = el('sendProgress');
+            progress.classList.remove('hidden');
+            let completed = 0;
+            let succeeded = 0;
+            const failed = [];
+
+            for (const user of recipients) {
+                progress.textContent = `שולח ${completed + 1} מתוך ${recipients.length}: ${user.displayName || user.email || 'משתמש'}…`;
+                try {
+                    await sendMessageToUser(user, text);
+                    succeeded++;
+                } catch (error) {
+                    console.error('Message send failed:', user.uid, error);
+                    failed.push(user.displayName || user.email || user.uid);
+                }
+                completed++;
+            }
+
+            state.loading = false;
+            if (succeeded) {
+                el('messageText').value = '';
+                el('characterCount').textContent = '0/1500';
+                state.selected.clear();
+                await loadUsers();
+            }
+            updateSelectionUI();
+            if (!failed.length) {
+                progress.textContent = `השליחה הושלמה בהצלחה ל־${succeeded} משתמשים.`;
+                notify(`ההודעה נשלחה בהצלחה ל־${succeeded} משתמשים.`);
+            } else {
+                progress.textContent = `נשלחו ${succeeded}; נכשלו ${failed.length}: ${failed.join(', ')}`;
+                notify(`חלק מההודעות לא נשלחו (${failed.length}).`, false);
+            }
+        }
+
+        el('googleLoginBtn').addEventListener('click', async () => {
+            el('authStatus').textContent = 'פותח התחברות מאובטחת…';
+            const provider = new GoogleAuthProvider();
+            provider.setCustomParameters({ prompt: 'select_account' });
+            try {
+                await signInWithPopup(auth, provider);
+            } catch (error) {
+                if (['auth/popup-blocked', 'auth/cancelled-popup-request', 'auth/operation-not-supported-in-this-environment'].includes(error.code)) {
+                    await signInWithRedirect(auth, provider);
+                    return;
+                }
+                el('authStatus').textContent = error.message || 'ההתחברות נכשלה.';
+                notify('ההתחברות לחשבון Google נכשלה.', false);
+            }
+        });
+
+        el('signOutBtn').addEventListener('click', () => signOut(auth));
+        el('userSearch').addEventListener('input', event => {
+            state.search = event.target.value;
+            renderUsers();
+        });
+        el('messageText').addEventListener('input', event => {
+            el('characterCount').textContent = `${event.target.value.length}/1500`;
+            updateSelectionUI();
+        });
+        el('sendBtn').addEventListener('click', sendSelectedMessages);
+        el('selectVisibleBtn').addEventListener('click', () => {
+            filteredUsers().forEach(user => state.selected.add(user.uid));
+            renderUsers();
+        });
+        el('clearSelectionBtn').addEventListener('click', () => {
+            state.selected.clear();
+            renderUsers();
+        });
+        document.querySelectorAll('.filter-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                state.filter = button.dataset.filter;
+                document.querySelectorAll('.filter-btn').forEach(item => {
+                    const active = item === button;
+                    item.className = `filter-btn px-3 py-1.5 rounded-full text-xs font-bold ${active ? 'bg-amber-400 text-slate-950' : 'bg-white/5 border border-white/10'}`;
+                });
+                renderUsers();
+            });
+        });
+
+        try { await getRedirectResult(auth); } catch (error) { console.error('Redirect auth error:', error); }
+
+        onAuthStateChanged(auth, async user => {
+            state.currentUser = user;
+            if (!user || user.isAnonymous) {
+                state.users = [];
+                state.selected.clear();
+                el('authCard').classList.remove('hidden');
+                el('adminApp').classList.add('hidden');
+                el('signOutBtn').classList.add('hidden');
+                el('authStatus').textContent = '';
+                return;
+            }
+
+            el('authStatus').textContent = 'בודק הרשאת ניהול…';
+            try {
+                // שאילתת כל הפרופילים מותרת לפי כללי Firestore רק למנהל.
+                await loadUsers();
+                el('authCard').classList.add('hidden');
+                el('adminApp').classList.remove('hidden');
+                el('signOutBtn').classList.remove('hidden');
+                notify(`שלום ${user.displayName || 'מנהל'}, מרכז ההודעות מוכן.`);
+            } catch (error) {
+                console.error('Admin authorization failed:', error);
+                el('authCard').classList.remove('hidden');
+                el('adminApp').classList.add('hidden');
+                el('signOutBtn').classList.remove('hidden');
+                el('authStatus').textContent = 'החשבון מחובר, אך אין לו הרשאת מנהל לקריאת רשימת המשתמשים.';
+                notify('אין לחשבון הזה הרשאת מנהל.', false);
+            }
+            if (window.lucide?.createIcons) window.lucide.createIcons();
+        });
+
+        if (window.lucide?.createIcons) window.lucide.createIcons();
+    </script>
+</body>
+</html>
