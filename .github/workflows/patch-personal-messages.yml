@@ -1,16 +1,17 @@
 name: Patch personal messaging
 
 on:
-  issues:
-    types: [opened]
+  push:
+    branches: [main]
+    paths:
+      - '.github/personal-messages.trigger'
 
 permissions:
   contents: write
-  issues: write
 
 jobs:
   patch:
-    if: github.event.issue.title == '[automation] Patch personal messages' && github.actor != 'github-actions[bot]'
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout main
@@ -20,14 +21,9 @@ jobs:
           fetch-depth: 0
 
       - name: Patch messaging code and rules
-        env:
-          GH_TOKEN: ${{ github.token }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
         shell: bash
         run: |
           set -Eeuo pipefail
-          trap 'gh issue comment "$ISSUE_NUMBER" --body "❌ תיקון מנגנון ההודעות נכשל בשלב האוטומטי. יש לבדוק את יומן הפעולה."' ERR
-
           python - <<'PY'
           from pathlib import Path
 
@@ -191,6 +187,7 @@ jobs:
           )
           rules_path.write_text(rules, encoding='utf-8')
 
+          Path('.github/personal-messages.trigger').unlink(missing_ok=True)
           Path('.github/workflows/patch-personal-messages.yml').unlink(missing_ok=True)
           PY
 
@@ -199,5 +196,3 @@ jobs:
           git add -A
           git commit -m "Fix personal message delivery"
           git push origin main
-          gh issue comment "$ISSUE_NUMBER" --body "✅ מנגנון ההודעות תוקן ונכתב ל־main. כפתור הודעה נוסף למשתמשים מאושרים, השמירה חוזקה, וסימון כנקראה הותר בכללי Firestore."
-          gh issue close "$ISSUE_NUMBER" --reason completed
