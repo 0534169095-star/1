@@ -1,27 +1,29 @@
 name: Patch personal messaging
 
 on:
-  push:
+  pull_request:
     branches: [main]
     paths:
-      - '.github/personal-messages.trigger'
+      - '.github/personal-messages-pr.trigger'
 
 permissions:
   contents: write
 
 jobs:
   patch:
-    if: github.actor != 'github-actions[bot]'
+    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout main
+      - name: Checkout repair branch
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
 
       - name: Patch messaging code and rules
         shell: bash
+        env:
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
         run: |
           set -Eeuo pipefail
           python - <<'PY'
@@ -176,17 +178,19 @@ jobs:
 
           rules_path = Path('firestore.rules')
           rules = rules_path.read_text(encoding='utf-8')
-          rules = replace_once(
-              rules,
-              """          'fullName', 'className', 'phone', 'reference', 'details', 'updatedAt'
+          if "'messages'" not in rules:
+              rules = replace_once(
+                  rules,
+                  """          'fullName', 'className', 'phone', 'reference', 'details', 'updatedAt'
 """,
-              """          'fullName', 'className', 'phone', 'reference', 'details', 'updatedAt',
+                  """          'fullName', 'className', 'phone', 'reference', 'details', 'updatedAt',
           'messages'
 """,
-              'allow owner to mark personal messages as read'
-          )
-          rules_path.write_text(rules, encoding='utf-8')
+                  'allow owner to mark personal messages as read'
+              )
+              rules_path.write_text(rules, encoding='utf-8')
 
+          Path('.github/personal-messages-pr.trigger').unlink(missing_ok=True)
           Path('.github/personal-messages.trigger').unlink(missing_ok=True)
           Path('.github/workflows/patch-personal-messages.yml').unlink(missing_ok=True)
           PY
@@ -195,4 +199,4 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
           git commit -m "Fix personal message delivery"
-          git push origin main
+          git push origin "HEAD:${HEAD_BRANCH}"
