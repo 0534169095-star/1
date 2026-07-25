@@ -1,0 +1,197 @@
+name: Patch personal messaging
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Patch messaging code and rules
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(text: str, old: str, new: str, label: str) -> str:
+              if old not in text:
+                  raise SystemExit(f'Could not find expected block: {label}')
+              return text.replace(old, new, 1)
+
+          index_path = Path('index.html')
+          html = index_path.read_text(encoding='utf-8')
+
+          html = replace_once(
+              html,
+              """            const profile = window.state.userProfile;
+            const messages = (profile && profile.messages) ? profile.messages : [];
+""",
+              """            const profile = window.state.userProfile;
+            const messages = Array.isArray(profile?.messages)
+                ? [...profile.messages].sort((a, b) => new Date(b.sentAt || 0) - new Date(a.sentAt || 0))
+                : [];
+""",
+              'defensive inbox message list'
+          )
+
+          html = replace_once(
+              html,
+              """                            await setDoc(profileRef, { messages: updatedMessages }, { merge: true });
+""",
+              """                            await setDoc(profileRef, {
+                                messages: updatedMessages,
+                                lastSeenAt: Date.now()
+                            }, { merge: true });
+""",
+              'mark message as read'
+          )
+
+          html = replace_once(
+              html,
+              """        window.openAdminMessageModal = function(uid, displayName, email) {
+            const recipientText = document.getElementById('adminMessageRecipient');
+""",
+              """        window.openAdminMessageModal = function(uid, displayName, email) {
+            if (!window.state.isAdminLoggedIn || !uid) {
+                window.showNotification('אין הרשאה לשלוח הודעה למשתמש זה.', false);
+                return;
+            }
+
+            const recipientText = document.getElementById('adminMessageRecipient');
+""",
+              'admin messaging permission guard'
+          )
+
+          html = replace_once(
+              html,
+              """                        const profile = snap.exists() ? snap.data() : {};
+                        const currentMsgs = profile.messages || [];
+""",
+              """                        const profile = snap.exists() ? snap.data() : {};
+                        const currentMsgs = Array.isArray(profile.messages) ? profile.messages : [];
+""",
+              'defensive admin message history'
+          )
+
+          html = replace_once(
+              html,
+              """                        const newMsg = {
+                            id: crypto.randomUUID(),
+                            text: text,
+                            sender: window.state.currentUser?.displayName || 'מנהל שמחת התורה',
+                            sentAt: new Date().toISOString(),
+                            read: false
+                        };
+""",
+              """                        const newMsg = {
+                            id: window.crypto?.randomUUID?.() || `msg_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`,
+                            text,
+                            sender: window.state.currentUser?.displayName || 'מנהל שמחת התורה',
+                            senderUid: window.state.currentUser?.uid || '',
+                            recipientUid: uid,
+                            sentAt: Date.now(),
+                            read: false
+                        };
+""",
+              'message payload'
+          )
+
+          html = replace_once(
+              html,
+              """                        await setDoc(profileRef, {
+                            messages: [newMsg, ...currentMsgs]
+                        }, { merge: true });
+""",
+              """                        await setDoc(profileRef, {
+                            messages: [newMsg, ...currentMsgs].slice(0, 100)
+                        }, { merge: true });
+""",
+              'bounded message history'
+          )
+
+          html = replace_once(
+              html,
+              """                    } catch (error) {
+                        console.error('Failed to send admin message:', error);
+                        window.showNotification('הפעולה נכשלה. בדוק את חיבור האינטרנט.', false);
+""",
+              """                    } catch (error) {
+                        console.error('Failed to send admin message:', error);
+                        const errorMessage = error?.code === 'permission-denied'
+                            ? 'שליחת ההודעה נחסמה בהרשאות Firebase. יש לפרסם את כללי Firestore המעודכנים.'
+                            : 'שליחת ההודעה נכשלה. נסה שוב.';
+                        window.showNotification(errorMessage, false);
+""",
+              'admin message error feedback'
+          )
+
+          html = replace_once(
+              html,
+              """                const block = document.createElement('button');
+                block.type = 'button';
+                block.className = profile.status === 'blocked'
+                    ? 'px-3 rounded-lg border border-emerald-500/30 text-emerald-300 text-[10px] font-bold'
+                    : 'px-3 rounded-lg border border-red-500/30 text-red-300 text-[10px] font-bold';
+                block.textContent = profile.status === 'blocked' ? 'בטל חסימה' : 'חסום';
+                block.disabled = isCurrentUser;
+                block.onclick = () => window.toggleUserBlock(profile.uid);
+                controls.append(roleSelect, save, block);
+""",
+              """                const message = document.createElement('button');
+                message.type = 'button';
+                message.className = 'px-3 rounded-lg border border-amber-500/30 text-amber-300 text-[10px] font-bold flex items-center gap-1';
+                message.innerHTML = '<i data-lucide=\"message-square\" class=\"w-3.5 h-3.5\"></i><span>הודעה</span>';
+                message.onclick = () => window.openAdminMessageModal(profile.uid, profile.displayName, profile.email);
+
+                const block = document.createElement('button');
+                block.type = 'button';
+                block.className = profile.status === 'blocked'
+                    ? 'px-3 rounded-lg border border-emerald-500/30 text-emerald-300 text-[10px] font-bold'
+                    : 'px-3 rounded-lg border border-red-500/30 text-red-300 text-[10px] font-bold';
+                block.textContent = profile.status === 'blocked' ? 'בטל חסימה' : 'חסום';
+                block.disabled = isCurrentUser;
+                block.onclick = () => window.toggleUserBlock(profile.uid);
+                controls.append(roleSelect, save, message, block);
+""",
+              'message button for approved users'
+          )
+
+          index_path.write_text(html, encoding='utf-8')
+
+          rules_path = Path('firestore.rules')
+          rules = rules_path.read_text(encoding='utf-8')
+          rules = replace_once(
+              rules,
+              """          'fullName', 'className', 'phone', 'reference', 'details', 'updatedAt'
+""",
+              """          'fullName', 'className', 'phone', 'reference', 'details', 'updatedAt',
+          'messages'
+""",
+              'allow owner to mark personal messages as read'
+          )
+          rules_path.write_text(rules, encoding='utf-8')
+
+          workflow_path = Path('.github/workflows/patch-personal-messages.yml')
+          workflow_path.unlink()
+          PY
+
+      - name: Commit patched files
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Fix personal message delivery"
+          git push origin main
