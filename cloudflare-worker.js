@@ -3,6 +3,7 @@ const DEFAULT_FIREBASE_PROJECT_ID = "simchas-bb35c";
 const DEFAULT_FIREBASE_APP_ID = "org-gallery";
 const INITIAL_SUPER_ADMIN_EMAIL_SHA256 = "d2632af59d29239eef52f10e1cfbf38e27c65c55470b355134b1cd1fb4f809d6";
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
 const OPENAI_VISION_MODEL = "gpt-5.4-mini";
 const FACE_API_VERSION = "1.7.15";
@@ -29,6 +30,11 @@ const ALLOWED_IMAGE_TYPES = new Map([
   ["image/png", "png"],
   ["image/webp", "webp"],
   ["image/gif", "gif"]
+]);
+
+const ALLOWED_VIDEO_TYPES = new Map([
+  ["video/mp4", "mp4"],
+  ["video/webm", "webm"]
 ]);
 
 function corsHeaders(request) {
@@ -205,12 +211,14 @@ async function uploadImage(request, env) {
   }
 
   const mimeType = String(file.type || "").toLowerCase();
-  const extension = ALLOWED_IMAGE_TYPES.get(mimeType);
+  const isVideo = ALLOWED_VIDEO_TYPES.has(mimeType);
+  const extension = ALLOWED_IMAGE_TYPES.get(mimeType) || ALLOWED_VIDEO_TYPES.get(mimeType);
   if (!extension) {
-    throw apiError("סוג הקובץ אינו נתמך. אפשר להעלות JPG, PNG, WEBP או GIF.", 415, "unsupported_file_type");
+    throw apiError("סוג הקובץ אינו נתמך. אפשר להעלות JPG, PNG, WEBP, GIF, MP4 או WEBM.", 415, "unsupported_file_type");
   }
-  if (!Number.isFinite(file.size) || file.size <= 0 || file.size > MAX_IMAGE_BYTES) {
-    throw apiError("גודל התמונה חייב להיות עד 10MB.", 413, "file_too_large");
+  const maximumBytes = isVideo ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES;
+  if (!Number.isFinite(file.size) || file.size <= 0 || file.size > maximumBytes) {
+    throw apiError(isVideo ? "גודל הסרטון חייב להיות עד 100MB." : "גודל התמונה חייב להיות עד 10MB.", 413, "file_too_large");
   }
 
   const imageId = safeImageId(form.get("imageId"));
@@ -225,6 +233,7 @@ async function uploadImage(request, env) {
       uploaderRole: user.role,
       imageId,
       title,
+      mediaType: isVideo ? "video" : "image",
       state,
       uploadedAt: new Date().toISOString()
     }
@@ -234,6 +243,8 @@ async function uploadImage(request, env) {
     success: true,
     key,
     state,
+    mediaType: isVideo ? "video" : "image",
+    mimeType,
     url: mediaUrl(request, key)
   }, 201);
 }
@@ -249,28 +260,51 @@ async function serveImage(request, env, pathname) {
     }
   }
 
-  const object = await env.GALLERY_BUCKET.get(key);
-  if (!object) throw apiError("התמונה לא נמצאה.", 404, "not_found");
+  const rangeHeader = request.headers.get("Range");
+  const objectHead = rangeHeader ? await env.GALLERY_BUCKET.head(key) : null;
+  let requestedRange = null;
+  if (rangeHeader && objectHead) {
+    const match = rangeHeader.match(/^bytes=(\d*)-(\d*)$/i);
+    if (match) {
+      const size = objectHead.size;
+      let start = match[1] ? Number(match[1]) : Math.max(0, size - Number(match[2] || 0));
+      let end = match[2] ? Number(match[2]) : size - 1;
+      if (Number.isFinite(start) && Number.isFinite(end) && start >= 0 && start <= end && start < size) {
+        end = Math.min(end, size - 1);
+        requestedRange = { offset: start, length: end - start + 1, total: size };
+      }
+    }
+  }
+  const object = await env.GALLERY_BUCKET.get(
+    key,
+    requestedRange ? { range: { offset: requestedRange.offset, length: requestedRange.length } } : undefined
+  );
+  if (!object) throw apiError("קובץ המדיה לא נמצא.", 404, "not_found");
 
   const headers = new Headers(corsHeaders(request));
   object.writeHttpMetadata(headers);
   headers.set("ETag", object.httpEtag);
   headers.set("X-Content-Type-Options", "nosniff");
+  headers.set("Accept-Ranges", "bytes");
+  if (requestedRange) {
+    headers.set("Content-Range", `bytes ${requestedRange.offset}-${requestedRange.offset + requestedRange.length - 1}/${requestedRange.total}`);
+    headers.set("Content-Length", String(requestedRange.length));
+  }
   headers.set(
     "Cache-Control",
     key.startsWith("approved/")
       ? "public, max-age=3600, s-maxage=86400"
       : "private, no-store"
   );
-  return new Response(object.body, { headers });
+  return new Response(object.body, { headers, status: requestedRange ? 206 : 200 });
 }
 
 async function approveImage(request, env) {
   const user = await requireUser(request, env, ["admin", "super_admin"]);
   const payload = await request.json().catch(() => ({}));
   const key = String(payload.key || "");
-  if (!/^pending\/[a-zA-Z0-9_-]+\/[a-zA-Z0-9_-]+\.(jpg|png|webp|gif)$/.test(key)) {
-    throw apiError("מזהה התמונה הממתינה אינו תקין.", 400, "invalid_object_key");
+  if (!/^pending\/[a-zA-Z0-9_-]+\/[a-zA-Z0-9_-]+\.(jpg|png|webp|gif|mp4|webm)$/.test(key)) {
+    throw apiError("מזהה קובץ המדיה הממתין אינו תקין.", 400, "invalid_object_key");
   }
 
   const approvedKey = `approved/${key.slice("pending/".length)}`;
@@ -285,7 +319,7 @@ async function approveImage(request, env) {
         url: mediaUrl(request, approvedKey)
       });
     }
-    throw apiError("התמונה הממתינה לא נמצאה.", 404, "not_found");
+    throw apiError("קובץ המדיה הממתין לא נמצא.", 404, "not_found");
   }
 
   await env.GALLERY_BUCKET.put(approvedKey, source.body, {
