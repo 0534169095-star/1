@@ -52,7 +52,7 @@ service cloud.firestore {
         admin() &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'uid', 'displayName', 'email', 'photoURL', 'lastSeenAt', 'lastLoginAt',
-          'fullName', 'className', 'phone', 'reference', 'details', 'updatedAt',
+          'fullName', 'className', 'phone', 'reference', 'details', 'requestDetails', 'updatedAt',
           'status', 'role'
         ])
       ) || (
@@ -61,7 +61,7 @@ service cloud.firestore {
         request.resource.data.role == resource.data.role &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'uid', 'displayName', 'email', 'photoURL', 'lastSeenAt', 'lastLoginAt',
-          'fullName', 'className', 'phone', 'reference', 'details', 'updatedAt',
+          'fullName', 'className', 'phone', 'reference', 'details', 'requestDetails', 'updatedAt',
           'messages'
         ])
       );
