@@ -1916,7 +1916,7 @@
     </div>
 
     <!-- CUSTOM CONFIRMATION MODAL -->
-    <div id="confirmModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmMessage">
+    <div id="confirmModal" class="fixed inset-0 z-[130] flex items-center justify-center p-4 hidden" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmMessage">
         <div class="rounded-3xl w-full max-w-md overflow-hidden transform transition-all modal-animate-popup">
             <div class="p-6 space-y-4">
                 <div class="flex items-center gap-3 text-red-400">
@@ -2424,8 +2424,16 @@
             return intent;
         }
 
-        window.connectGoogleDrive = function() {
+        window.connectGoogleDrive = function(confirmed = false) {
             if (!window.checkAdminPermission?.()) return;
+            if (!confirmed) {
+                window.showConfirm(
+                    'חיבור Google Drive',
+                    'להמשיך למסך Google ולאשר לאתר גישה לקריאת התמונות והתיקיות שבחרת לסנכרון?',
+                    () => window.connectGoogleDrive(true)
+                );
+                return;
+            }
 
             const button = document.getElementById('connectDriveBtn');
             if (button) button.disabled = true;
@@ -2565,7 +2573,7 @@
             return compressed;
         }
 
-        window.startGoogleDriveSync = async function() {
+        window.startGoogleDriveSync = async function(confirmed = false) {
             if (!window.checkAdminPermission?.()) return;
             if (!driveAccessToken) {
                 window.showNotification('יש לחבר חשבון Google Drive לפני הסנכרון.', false);
@@ -2581,6 +2589,14 @@
             }
 
             const includeSubfolders = document.getElementById('driveIncludeSubfolders')?.checked !== false;
+            if (!confirmed) {
+                window.showConfirm(
+                    'התחלת סנכרון Drive',
+                    `המערכת תייבא תמונות מהתיקייה שבחרת${includeSubfolders ? ' וגם מתיקיות המשנה' : ''}. להמשיך?`,
+                    () => window.startGoogleDriveSync(true)
+                );
+                return;
+            }
             const syncButton = document.getElementById('driveSyncBtn');
             const connectButton = document.getElementById('connectDriveBtn');
             if (syncButton) syncButton.disabled = true;
@@ -2681,8 +2697,16 @@
             }
         };
 
-        window.signOutGoogleAccount = async function() {
+        window.signOutGoogleAccount = async function(confirmed = false) {
             if (!auth) return;
+            if (!confirmed) {
+                window.showConfirm(
+                    'התנתקות מהחשבון',
+                    'להתנתק מחשבון Google? לאחר מכן יהיה צורך להתחבר מחדש כדי לגשת לאזור האישי.',
+                    () => window.signOutGoogleAccount(true)
+                );
+                return;
+            }
             try {
                 window.google?.accounts?.id?.disableAutoSelect();
                 clearDriveConnection();
@@ -2694,8 +2718,16 @@
             }
         };
 
-        window.lockGalleryImmediatelySidebar = async function() {
+        window.lockGalleryImmediatelySidebar = async function(confirmed = false) {
             if (!auth) return;
+            if (!confirmed) {
+                window.showConfirm(
+                    'יציאה ממצב ניהול',
+                    'לצאת ממצב הניהול ולהתנתק מהחשבון? פעולות שלא נשמרו בחלונות פתוחים יאבדו.',
+                    () => window.lockGalleryImmediatelySidebar(true)
+                );
+                return;
+            }
             try {
                 window.showNotification("מתנתק ממצב ניהול...", true);
                 clearDriveConnection();
@@ -3109,7 +3141,7 @@
             }
         };
 
-        window.saveRequestDetails = async function() {
+        window.saveRequestDetails = async function(confirmed = false) {
             if (!window.db || !window.state.currentUser) {
                 window.showNotification('יש להתחבר תחילה.', false);
                 return;
@@ -3118,6 +3150,14 @@
             const details = textarea ? textarea.value.trim() : '';
             if (!details) {
                 window.showNotification('אנא הזן פרטים ליצירת קשר או זיהוי.', false);
+                return;
+            }
+            if (!confirmed) {
+                window.showConfirm(
+                    'שמירת פרטי הבקשה',
+                    'לשמור את הפרטים שהזנת ולשלוח אותם לעיון מנהל הגלריה?',
+                    () => window.saveRequestDetails(true)
+                );
                 return;
             }
             
@@ -3252,13 +3292,21 @@
             window.renderAdminMessageUsers();
         };
 
-        window.sendAdminBulkMessages = async function() {
+        window.sendAdminBulkMessages = async function(confirmed = false) {
             if (!checkSuperAdminPermission() || adminMessageSending) return;
             const textarea = document.getElementById('adminBulkMessageText');
             const progress = document.getElementById('adminBulkMessageProgress');
             const text = String(textarea?.value || '').trim();
             const recipients = (window.state.allUsers || []).filter(user => adminMessageRecipients.has(safeRecordId(user.uid)));
             if (!text || !recipients.length) return;
+            if (!confirmed) {
+                showConfirm(
+                    'שליחת הודעה',
+                    `לשלוח את ההודעה ל־${recipients.length} משתמשים? ההודעה תופיע מיד באזור האישי שלהם.`,
+                    () => window.sendAdminBulkMessages(true)
+                );
+                return;
+            }
 
             adminMessageSending = true;
             if (progress) {
@@ -3358,10 +3406,16 @@
             localStorage.setItem(personalMessageStorageKey(uid), JSON.stringify([...dismissed].slice(-500)));
         }
 
-        window.deletePersonalMessage = async function(messageId, fallbackIndex) {
+        window.deletePersonalMessage = async function(messageId, fallbackIndex, confirmed = false) {
             if (!window.state.currentUser || !window.state.userProfile) return;
-            const shouldDelete = window.confirm('למחוק את ההודעה? לאחר המחיקה היא לא תופיע שוב.');
-            if (!shouldDelete) return;
+            if (!confirmed) {
+                showConfirm(
+                    'מחיקת הודעה',
+                    'למחוק את ההודעה? לאחר המחיקה היא לא תופיע שוב באזור האישי.',
+                    () => window.deletePersonalMessage(messageId, fallbackIndex, true)
+                );
+                return;
+            }
 
             const messages = Array.isArray(window.state.userProfile.messages)
                 ? window.state.userProfile.messages
@@ -3488,51 +3542,66 @@
             if (textarea) textarea.value = '';
             
             if (submitBtn) {
-                submitBtn.onclick = async () => {
+                submitBtn.onclick = () => {
                     const text = textarea ? textarea.value.trim() : '';
                     if (!text) {
                         window.showNotification('אנא הזן תוכן הודעה.', false);
                         return;
                     }
-                    
-                    submitBtn.disabled = true;
-                    try {
-                        // Fetch current profile to append the new message to their messages list
-                        const { doc, getDoc, setDoc } = window.firestoreModules;
-                        const profileRef = doc(window.db, 'artifacts', window.appId, 'public', 'data', 'userProfiles', uid);
-                        const snap = await getDoc(profileRef);
-                        const profile = snap.exists() ? snap.data() : {};
-                        const currentMsgs = profile.messages || [];
-                        
-                        const newMsg = {
-                            id: crypto.randomUUID(),
-                            text: text,
-                            sender: window.state.currentUser?.displayName || 'מנהל שמחת התורה',
-                            sentAt: new Date().toISOString(),
-                            read: false
-                        };
-                        
-                        await setDoc(profileRef, {
-                            messages: [newMsg, ...currentMsgs]
-                        }, { merge: true });
-                        
-                        closeModal('adminMessageModal');
-                        window.showNotification('ההודעה האישית נשלחה למשתמש בהצלחה!', true);
-                    } catch (error) {
-                        console.error('Failed to send admin message:', error);
-                        window.showNotification('הפעולה נכשלה. בדוק את חיבור האינטרנט.', false);
-                    } finally {
-                        submitBtn.disabled = false;
-                    }
+
+                    showConfirm(
+                        'שליחת הודעה אישית',
+                        `לשלוח את ההודעה אל ${displayName || email || 'המשתמש'}? היא תופיע מיד באזור האישי.`,
+                        async () => {
+                            submitBtn.disabled = true;
+                            try {
+                                // Fetch current profile to append the new message to their messages list
+                                const { doc, getDoc, setDoc } = window.firestoreModules;
+                                const profileRef = doc(window.db, 'artifacts', window.appId, 'public', 'data', 'userProfiles', uid);
+                                const snap = await getDoc(profileRef);
+                                const profile = snap.exists() ? snap.data() : {};
+                                const currentMsgs = profile.messages || [];
+
+                                const newMsg = {
+                                    id: crypto.randomUUID(),
+                                    text,
+                                    sender: window.state.currentUser?.displayName || 'מנהל שמחת התורה',
+                                    sentAt: new Date().toISOString(),
+                                    read: false
+                                };
+
+                                await setDoc(profileRef, {
+                                    messages: [newMsg, ...currentMsgs]
+                                }, { merge: true });
+
+                                closeModal('adminMessageModal');
+                                window.showNotification('ההודעה האישית נשלחה למשתמש בהצלחה!', true);
+                            } catch (error) {
+                                console.error('Failed to send admin message:', error);
+                                window.showNotification('הפעולה נכשלה. בדוק את חיבור האינטרנט.', false);
+                                throw error;
+                            } finally {
+                                submitBtn.disabled = false;
+                            }
+                        }
+                    );
                 };
             }
             openModal('adminMessageModal');
             if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
         };
 
-        window.sendDirectMail = function(recipientEmail, displayName) {
+        window.sendDirectMail = function(recipientEmail, displayName, confirmed = false) {
             if (!recipientEmail) {
                 window.showNotification('אין כתובת מייל תקינה למשתמש זה.', false);
+                return;
+            }
+            if (!confirmed) {
+                showConfirm(
+                    'פתיחת הודעת דוא״ל',
+                    `לפתוח הודעת דוא״ל חדשה אל ${displayName || recipientEmail}? השליחה עצמה תתבצע באפליקציית הדוא״ל.`,
+                    () => window.sendDirectMail(recipientEmail, displayName, true)
+                );
                 return;
             }
             
@@ -4501,8 +4570,8 @@
             return newImages;
         }
 
-        async function handleAddPhotoAdmin(event) {
-            event.preventDefault(); if (!checkAdminPermission()) return;
+        async function handleAddPhotoAdmin(event, confirmed = false) {
+            event?.preventDefault(); if (!checkAdminPermission()) return;
             const filesInput = document.getElementById('adminMultiFiles'); const folderInput = document.getElementById('adminFolderUpload');
             const targetFolderId = document.getElementById('adminTargetFolderSelect').value;
             let allFiles = [];
@@ -4511,6 +4580,14 @@
             allFiles = allFiles.filter(isSupportedImageFile);
 
             if (allFiles.length === 0) { window.showNotification('נא לבחור תמונות/תיקיות', false); return; }
+            if (!confirmed) {
+                showConfirm(
+                    'העלאת קבצים לגלריה',
+                    `להעלות ${allFiles.length} קבצים לגלריה? הקבצים יעובדו ויישמרו בענן.`,
+                    () => handleAddPhotoAdmin(null, true)
+                );
+                return;
+            }
 
             const progressContainer = document.getElementById('adminUploadProgress');
             if(progressContainer) progressContainer.classList.remove('hidden');
@@ -4536,7 +4613,7 @@
             }
         }
 
-        async function submitUserUpload() {
+        async function submitUserUpload(confirmed = false) {
             const approved = window.state.userApprovalStatus === 'approved';
             const canUploadDirectly = approved && window.state.userRole === 'uploader';
             const canSubmitForApproval = approved && window.state.userRole === 'viewer';
@@ -4557,6 +4634,16 @@
             allFiles = allFiles.filter(isSupportedImageFile);
 
             if (allFiles.length === 0) { window.showNotification('נא לבחור תמונות', false); return; }
+            if (!confirmed) {
+                showConfirm(
+                    canUploadDirectly ? 'העלאת תמונות לגלריה' : 'שליחת תמונות לאישור',
+                    canUploadDirectly
+                        ? `להעלות ${allFiles.length} תמונות ישירות לגלריה?`
+                        : `לשלוח ${allFiles.length} תמונות לאישור מנהל?`,
+                    () => submitUserUpload(true)
+                );
+                return;
+            }
             const btn = document.getElementById('userUploadSubmitBtn');
             if(btn) btn.disabled = true;
 
@@ -4589,8 +4676,8 @@
             }
         }
 
-        async function handleCreateEmptyFolder(event) {
-            event.preventDefault(); if (!checkAdminPermission()) return;
+        async function handleCreateEmptyFolder(event, confirmed = false) {
+            event?.preventDefault(); if (!checkAdminPermission()) return;
             const nameEl = document.getElementById('emptyFolderName');
             const name = nameEl ? nameEl.value.trim() : '';
             const iconEl = document.querySelector('input[name="emptyFolderIcon"]:checked');
@@ -4598,6 +4685,14 @@
             if (!name) return;
             if (window.state.folders.some(folder => String(folder.name || '').trim().toLowerCase() === name.toLowerCase())) {
                 window.showNotification('כבר קיימת תיקייה בשם הזה.', false);
+                return;
+            }
+            if (!confirmed) {
+                showConfirm(
+                    'יצירת תיקייה חדשה',
+                    `ליצור בגלריה תיקייה חדשה בשם "${name}"?`,
+                    () => handleCreateEmptyFolder(null, true)
+                );
                 return;
             }
             const newFolder = { id: 'folder_' + crypto.randomUUID(), name, icon, isDefault: false };
@@ -4637,10 +4732,20 @@
             });
         };
 
-        window.changeUserRole = async function(uid, role) {
+        window.changeUserRole = async function(uid, role, confirmed = false) {
             if (!checkSuperAdminPermission()) return;
             const allowedRoles = ['viewer', 'uploader', 'admin', 'super_admin'];
             if (!allowedRoles.includes(role) || !uid || uid === window.state.currentUser?.uid) return;
+            const profile = (window.state.allUsers || []).find(user => user.uid === uid);
+            const roleLabels = { viewer: 'דרגה 1', uploader: 'דרגה 2', admin: 'דרגה 3', super_admin: 'דרגה 4' };
+            if (!confirmed) {
+                showConfirm(
+                    'שינוי דרגת משתמש',
+                    `לשנות את הדרגה של ${profile?.displayName || profile?.email || 'המשתמש'} ל־${roleLabels[role]}?`,
+                    () => window.changeUserRole(uid, role, true)
+                );
+                return;
+            }
             const { doc, setDoc } = window.firestoreModules;
             await setDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'userProfiles', uid), {
                 status: 'approved',
@@ -4651,7 +4756,7 @@
             window.showNotification('דרגת המשתמש עודכנה בהצלחה.');
         };
 
-        window.toggleUserBlock = async function(uid) {
+        window.toggleUserBlock = async function(uid, confirmed = false) {
             if (!checkSuperAdminPermission()) return;
             if (!uid || uid === window.state.currentUser?.uid) {
                 window.showNotification('לא ניתן לחסום את חשבון מנהל־העל הפעיל.', false);
@@ -4660,6 +4765,16 @@
             const profile = (window.state.allUsers || []).find(user => user.uid === uid);
             if (!profile) return;
             const isBlocked = profile.status === 'blocked';
+            if (!confirmed) {
+                showConfirm(
+                    isBlocked ? 'הסרת חסימה' : 'חסימת משתמש',
+                    isBlocked
+                        ? `להחזיר ל־${profile.displayName || profile.email || 'המשתמש'} את הגישה לגלריה?`
+                        : `לחסום את ${profile.displayName || profile.email || 'המשתמש'}? הגישה שלו לגלריה תופסק.`,
+                    () => window.toggleUserBlock(uid, true)
+                );
+                return;
+            }
             const { doc, setDoc } = window.firestoreModules;
             await setDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'userProfiles', uid), isBlocked ? {
                 status: 'approved',
@@ -4946,11 +5061,20 @@
             window.updateAdminOverview();
         };
 
-        window.approveUserAccess = async function(uid, role) {
+        window.approveUserAccess = async function(uid, role, confirmed = false) {
             if (!checkSuperAdminPermission()) return;
             const allowedRoles = ['viewer', 'uploader', 'admin', 'super_admin'];
             const profile = window.state.pendingUsers.find(item => item.uid === uid);
             if (!profile || !allowedRoles.includes(role)) return;
+            const roleLabels = { viewer: 'דרגה 1', uploader: 'דרגה 2', admin: 'דרגה 3', super_admin: 'דרגה 4' };
+            if (!confirmed) {
+                showConfirm(
+                    'אישור משתמש',
+                    `לאשר את ${profile.displayName || profile.email || 'המשתמש'} בתור ${roleLabels[role]}? ההרשאה תיכנס לתוקף מיד.`,
+                    () => window.approveUserAccess(uid, role, true)
+                );
+                return;
+            }
 
             try {
                 const { doc, setDoc } = window.firestoreModules;
@@ -4961,7 +5085,6 @@
                     approvedAt: Date.now(),
                     approvedBy: window.state.currentUser?.uid || 'system-admin'
                 }, { merge: true });
-                const roleLabels = { viewer: 'דרגה 1', uploader: 'דרגה 2', admin: 'דרגה 3', super_admin: 'דרגה 4' };
                 window.showNotification(`${profile.displayName || 'המשתמש'} אושר בתור ${roleLabels[role]}.`);
             } catch (error) {
                 console.error('Approving user failed:', error);
@@ -5017,12 +5140,20 @@
             checkboxes.forEach(cb => cb.checked = anyUnchecked);
         }
 
-        async function approveSelectedPending() {
+        async function approveSelectedPending(confirmed = false) {
             if (!checkAdminPermission()) return;
             const checkboxes = document.querySelectorAll('input[name="pendingImgCheck"]:checked');
             if (checkboxes.length === 0) { window.showNotification('לא נבחרו תמונות לאישור', false); return; }
             const targetFolderEl = document.getElementById('pendingTargetFolder');
             const targetFolderId = targetFolderEl ? targetFolderEl.value : 'auto';
+            if (!confirmed) {
+                showConfirm(
+                    'אישור תמונות',
+                    `לאשר ${checkboxes.length} תמונות ולהעביר אותן לגלריה הפעילה?`,
+                    () => approveSelectedPending(true)
+                );
+                return;
+            }
             let approvedCount = 0;
 
             for(let cb of checkboxes) {
@@ -5133,18 +5264,26 @@
             });
             const moveBtn = document.getElementById('moveFolderSubmitBtn');
             if(moveBtn) {
-                moveBtn.onclick = async () => {
+                moveBtn.onclick = () => {
                     const targetFolderId = safeRecordId(s.value);
                     if (!window.state.folders.some(folder => safeRecordId(folder.id) === targetFolderId)) return;
-                    try {
-                        img.folderId = targetFolderId;
-                        await window.saveImageToCloud(img);
-                        closeModal('moveFolderModal');
-                        window.showNotification("עודכן בהצלחה");
-                    } catch (error) {
-                        console.error('Move image failed:', error);
-                        window.showNotification('העברת התמונה נכשלה.', false);
-                    }
+                    const targetFolder = window.state.folders.find(folder => safeRecordId(folder.id) === targetFolderId);
+                    showConfirm(
+                        'העברת תמונה',
+                        `להעביר את התמונה "${img.title || 'תמונה'}" לתיקייה "${targetFolder?.name || 'התיקייה שנבחרה'}"?`,
+                        async () => {
+                            try {
+                                img.folderId = targetFolderId;
+                                await window.saveImageToCloud(img);
+                                closeModal('moveFolderModal');
+                                window.showNotification("עודכן בהצלחה");
+                            } catch (error) {
+                                console.error('Move image failed:', error);
+                                window.showNotification('העברת התמונה נכשלה.', false);
+                                throw error;
+                            }
+                        }
+                    );
                 };
             }
             openModal('moveFolderModal');
@@ -5208,7 +5347,12 @@
             }
             if (e.key !== 'Escape') return;
 
-            const openModals = Array.from(document.querySelectorAll('[id$="Modal"]:not(.hidden)'));
+            const openModals = Array.from(document.querySelectorAll('[id$="Modal"]:not(.hidden)'))
+                .sort((first, second) => {
+                    const firstZ = Number.parseInt(getComputedStyle(first).zIndex, 10) || 0;
+                    const secondZ = Number.parseInt(getComputedStyle(second).zIndex, 10) || 0;
+                    return firstZ - secondZ;
+                });
             const topModal = openModals.at(-1);
             if (topModal) {
                 if (topModal.id === 'faceCameraModal') closeFaceCamera();
