@@ -1,1 +1,66 @@
-# 1
+# גלריית שמחת התורה
+
+אתר גלריה פרטי המבוסס על GitHub Pages, Firebase ו־Cloudflare Workers/R2.
+
+## רכיבי המערכת
+
+- `index.html` — ממשק הגלריה, ניהול משתמשים, העלאות וחיפוש תמונות.
+- `admin-messages.html` — מרכז שליחת הודעות למנהל־העל.
+- `cloudflare-worker.js` — אימות משתמשים, אחסון R2, חיפוש AI ומטמון נכסי זיהוי פנים.
+- `firestore.rules` — הרשאות מסד הנתונים.
+- `storage.rules` — הרשאות Firebase Storage.
+
+## פריסת האתר
+
+האתר מתפרסם אוטומטית מ־GitHub Pages לאחר עדכון ענף `main`.
+
+## פריסת Cloudflare Worker
+
+1. פתח את ה־Worker בשם `simchas-gallery-api`.
+2. בחר **עריכת קוד** והחלף את `worker.js` בתוכן של `cloudflare-worker.js`.
+3. לחץ **פרוס**.
+4. תחת **הגדרות > משתנים וסודות** הגדר:
+
+| שם | סוג | שימוש |
+|---|---|---|
+| `OPENAI_API_KEY` | Secret | חיפוש תמונות לפי תיאור |
+| `FIREBASE_PROJECT_ID` | Text | מזהה פרויקט Firebase |
+| `FIREBASE_APP_ID` | Text | מזהה האפליקציה, ברירת מחדל `org-gallery` |
+| `FIREBASE_API_KEY` | Text | מפתח התצורה הציבורי של Firebase |
+
+יש לחבר לדלי R2 משתנה Binding בשם `GALLERY_BUCKET`.
+
+## נכסי זיהוי פנים
+
+הדפדפן טוען את `face-api.js` ואת שלושת המודלים דרך הנתיב
+`/face-assets/` של ה־Worker. בהפעלה הראשונה ה־Worker מוריד רק את
+הקבצים המורשים מגרסה קבועה של החבילה ושומר אותם במטמון R2. לאחר מכן
+הדפדפן אינו תלוי בגישה ישירה ל־CDN.
+
+## פריסת כללי Firebase
+
+ב־Firebase Console:
+
+1. פתח **Firestore > Rules**.
+2. החלף את התוכן בקובץ `firestore.rules`.
+3. לחץ **Publish**.
+4. פתח **Storage > Rules**, החלף בתוכן `storage.rules` ולחץ **Publish**.
+
+אפשר גם לפרוס דרך Firebase CLI:
+
+```bash
+firebase deploy --only firestore:rules,storage
+```
+
+## דומיינים מורשים
+
+תחת **Firebase Authentication > Settings > Authorized domains** יש לוודא שקיימים:
+
+- `0534169095-star.github.io`
+- הדומיין המותאם אישית הפעיל
+
+## אבטחה
+
+- אין לשמור את `OPENAI_API_KEY` בקוד או ב־GitHub.
+- מפתח Firebase של אפליקציית Web הוא מזהה תצורה ציבורי; ההגנה בפועל מתבצעת באמצעות Authentication וכללי Firebase.
+- שינוי הרשאות מנהל־על חייב להתבצע יחד ב־Client, ב־Worker ובכללי Firebase.
