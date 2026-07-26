@@ -1231,6 +1231,9 @@
                     <button type="button" onclick="openFaceSearchModal()" title="חיפוש תמונות לפי פנים" class="face-search-button p-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 font-bold text-xs">
                         <i data-lucide="sparkles" class="w-4 h-4"></i><span>חיפוש פרצוף</span>
                     </button>
+                    <button type="button" onclick="openAiImageSearchModal()" title="חיפוש חכם לפי תיאור התמונה" class="face-search-button p-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 font-bold text-xs">
+                        <i data-lucide="brain-circuit" class="w-4 h-4"></i><span>חיפוש AI</span>
+                    </button>
                 </div>
                 <div class="flex items-center gap-2 text-xs font-medium self-end sm:self-auto">
                     <span id="imageCounter" class="px-3 py-1.5 rounded-full font-bold">טוען...</span>
@@ -1535,7 +1538,7 @@
         <div class="rounded-3xl w-full max-w-md overflow-hidden transform transition-all modal-animate-popup text-right">
             <div class="bg-gradient-to-r from-amber-500/20 to-transparent border-b border-amber-500/30 p-5 flex justify-between items-center text-white">
                 <h3 class="font-bold text-lg flex items-center gap-2"><i data-lucide="message-square" class="w-5 h-5 text-amber-400"></i> שלח הודעה למשתמש</h3>
-                <button type="button" onclick="closeModal('adminMessageModal')" class="text-slate-400 hover:text-white transition-all"><i data-lucide="x" class="w-6 h-6"></i></button>
+                <button type="button" onclick="closeModal('adminMessageModal')" class="text-slate-400 hover:text-white transition-all" aria-label="סגירת חלון שליחת הודעה"><i data-lucide="x" class="w-6 h-6"></i></button>
             </div>
             <div class="p-6 space-y-4">
                 <div>
@@ -1553,7 +1556,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- LIGHTBOX Modal -->
     <div id="lightboxModal" class="fixed inset-0 bg-black/95 backdrop-blur-xl z-50 flex flex-col justify-between p-4 hidden animate-fade-in" role="dialog" aria-modal="true" aria-label="תצוגת תמונה מלאה">
         <div class="flex justify-between items-center text-white p-3 bg-slate-950/80 backdrop-blur-md rounded-2xl border border-amber-500/30 shadow-md">
@@ -1619,6 +1622,35 @@
         </div>
     </div>
 
+    <!-- AI IMAGE SEARCH MODAL -->
+    <div id="aiImageSearchModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden" role="dialog" aria-modal="true" aria-label="חיפוש תמונות חכם לפי תיאור">
+        <div class="rounded-3xl w-full max-w-lg overflow-hidden transform transition-all flex flex-col modal-animate-popup">
+            <div class="bg-gradient-to-r from-cyan-500/20 to-transparent border-b border-cyan-500/30 p-5 flex justify-between items-center text-white">
+                <h3 class="font-bold text-lg flex items-center gap-2"><i data-lucide="brain-circuit" class="w-5 h-5 text-cyan-300"></i> חיפוש AI לפי תיאור</h3>
+                <button type="button" onclick="closeModal('aiImageSearchModal')" class="text-white/80 hover:text-white transition-all" aria-label="סגירת חלון חיפוש AI"><i data-lucide="x" class="w-6 h-6"></i></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <p class="text-sm text-slate-300 leading-relaxed">כתוב במילים חופשיות איזו תמונה אתה מחפש. ה־AI יבדוק את תוכן התמונות, לא רק את שם הקובץ.</p>
+                <p class="text-[11px] text-slate-400 leading-relaxed">לצורך החיפוש בלבד, התמונות שנבדקות נשלחות לשירות OpenAI. הבקשה מוגדרת ללא שמירת התוצאות בצד ה־AI.</p>
+                <label for="aiImageSearchQuery" class="text-xs font-bold text-slate-300">מה לחפש?</label>
+                <textarea id="aiImageSearchQuery" maxlength="240" rows="3" class="w-full rounded-xl bg-slate-950/70 border border-white/10 px-4 py-3 text-sm text-white focus:outline-none focus:border-cyan-400/60 resize-none" placeholder="לדוגמה: תמונה קבוצתית בטיול בחוץ"></textarea>
+                <div class="flex flex-wrap gap-2" role="group" aria-label="דוגמאות לחיפוש">
+                    <button type="button" onclick="setAiSearchExample('תמונה קבוצתית בטיול בחוץ')" class="btn-secondary-dark rounded-full px-3 py-1.5 text-[10px]">טיול קבוצתי</button>
+                    <button type="button" onclick="setAiSearchExample('אירוע חגיגי בתוך אולם')" class="btn-secondary-dark rounded-full px-3 py-1.5 text-[10px]">אירוע באולם</button>
+                    <button type="button" onclick="setAiSearchExample('תמונה של לימוד בבית המדרש')" class="btn-secondary-dark rounded-full px-3 py-1.5 text-[10px]">לימוד</button>
+                </div>
+                <div id="aiImageSearchStatus" class="hidden rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-3 text-xs text-cyan-100" role="status" aria-live="polite"></div>
+                <div class="pt-2 flex justify-end gap-3">
+                    <button type="button" onclick="closeModal('aiImageSearchModal')" class="px-5 py-2.5 btn-secondary-dark rounded-xl text-sm font-semibold">ביטול</button>
+                    <button type="button" id="aiImageSearchSubmitBtn" onclick="executeAiImageSearch()" class="px-5 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-sm font-black flex items-center gap-2">
+                        <i data-lucide="wand-sparkles" class="w-4 h-4"></i>
+                        חפש עם AI
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- FACE SEARCH MODAL -->
     <div id="faceSearchModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden" role="dialog" aria-modal="true" aria-label="חיפוש תמונות לפי פנים">
         <div class="rounded-3xl w-full max-w-md overflow-hidden transform transition-all flex flex-col modal-animate-popup">
@@ -1662,7 +1694,7 @@
 
 
     <!-- IN-APP SUPER ADMIN MESSAGE CENTER -->
-    <div id="adminMessagesCenterModal" class="fixed inset-0 z-[100] hidden bg-black/80 backdrop-blur-md p-2 sm:p-5" role="dialog" aria-modal="true" aria-hidden="true" aria-label="מרכז שליחת הודעות">
+    <div id="adminMessagesCenterModal" class="fixed inset-0 z-[100] hidden bg-black/80 backdrop-blur-md p-2 sm:p-5" role="dialog" aria-modal="true" aria-label="מרכז שליחת הודעות">
         <div class="w-full h-full max-w-7xl mx-auto rounded-3xl overflow-hidden border border-white/10 bg-slate-950 shadow-2xl flex flex-col">
             <div class="flex items-center justify-between gap-3 px-4 sm:px-6 py-3 border-b border-white/10 bg-slate-950">
                 <div>
@@ -1683,9 +1715,9 @@
         <span id="floatingWidgetBadge" class="absolute -top-1.5 -left-1.5 w-5 h-5 bg-red-500 border-2 border-slate-950 rounded-full flex items-center justify-center text-[9px] font-extrabold text-white hidden animate-bounce animate-pulse">0</span>
         <button type="button" onclick="toggleFloatingProfile()" class="floating-profile-btn group" title="פרופיל גוגל והודעות" aria-label="פרופיל גוגל והודעות">
             <img id="floatingUserPhoto" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="פרופיל" class="w-full h-full rounded-full object-cover hidden border-2 border-amber-400/50">
-            <div id="floatingUserFallback" class="w-full h-full rounded-full bg-gradient-to-br from-amber-400/10 to-amber-500/20 text-amber-300 flex items-center justify-center group-hover:scale-105 transition-all">
+            <span id="floatingUserFallback" class="w-full h-full rounded-full bg-gradient-to-br from-amber-400/10 to-amber-500/20 text-amber-300 flex items-center justify-center group-hover:scale-105 transition-all">
                 <i data-lucide="user-check" class="w-6 h-6"></i>
-            </div>
+            </span>
         </button>
     </div>
 
@@ -1696,7 +1728,7 @@
                 <i data-lucide="google" class="w-4 h-4 text-amber-400"></i>
                 פרופיל Google והתראות
             </h3>
-            <button type="button" onclick="toggleFloatingProfile()" class="text-slate-400 hover:text-white transition-all"><i data-lucide="x" class="w-5 h-5"></i></button>
+            <button type="button" onclick="toggleFloatingProfile()" class="text-slate-400 hover:text-white transition-all" aria-label="סגירת אזור הפרופיל וההתראות"><i data-lucide="x" class="w-5 h-5"></i></button>
         </div>
         <div class="p-5 flex-1 overflow-y-auto space-y-4">
             <!-- Signed out view -->
@@ -1707,7 +1739,7 @@
                     התחבר באמצעות Google
                 </button>
             </div>
-            
+
             <!-- Signed in view -->
             <div id="floatingSignedInView" class="hidden space-y-4">
                 <div class="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10">
@@ -1755,7 +1787,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Alert Dialog -->
     <div id="customAlert" class="fixed bottom-6 left-6 bg-slate-900/95 backdrop-blur-md text-white px-5 py-3.5 rounded-2xl shadow-2xl z-50 flex items-center gap-2.5 transform translate-y-20 opacity-0 transition-all duration-300 border border-white/10" role="status" aria-live="polite">
         <span id="customAlertIcon" class="text-emerald-400"><i data-lucide="check-circle" class="w-5 h-5"></i></span>
@@ -2738,6 +2770,40 @@
             if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
         };
 
+        function personalMessageStorageKey(uid) {
+            return `simchat-dismissed-messages:${safeRecordId(uid) || 'anonymous'}`;
+        }
+
+        function personalMessageKey(message, fallbackIndex) {
+            const id = safeRecordId(message?.id);
+            if (id) return id;
+            const fingerprint = `${message?.sentAt || ''}|${message?.sender || ''}|${message?.text || ''}|${fallbackIndex}`;
+            let hash = 0;
+            for (let index = 0; index < fingerprint.length; index++) {
+                hash = ((hash << 5) - hash + fingerprint.charCodeAt(index)) | 0;
+            }
+            return `legacy_${Math.abs(hash)}`;
+        }
+
+        function getDismissedPersonalMessages() {
+            const uid = window.state.currentUser?.uid;
+            if (!uid) return new Set();
+            try {
+                const saved = JSON.parse(localStorage.getItem(personalMessageStorageKey(uid)) || '[]');
+                return new Set(Array.isArray(saved) ? saved.filter(value => typeof value === 'string') : []);
+            } catch {
+                return new Set();
+            }
+        }
+
+        function dismissPersonalMessageLocally(message, fallbackIndex) {
+            const uid = window.state.currentUser?.uid;
+            if (!uid) return;
+            const dismissed = getDismissedPersonalMessages();
+            dismissed.add(personalMessageKey(message, fallbackIndex));
+            localStorage.setItem(personalMessageStorageKey(uid), JSON.stringify([...dismissed].slice(-500)));
+        }
+
         window.deletePersonalMessage = async function(messageId, fallbackIndex) {
             if (!window.state.currentUser || !window.state.userProfile) return;
             const shouldDelete = window.confirm('למחוק את ההודעה? לאחר המחיקה היא לא תופיע שוב.');
@@ -2746,21 +2812,26 @@
             const messages = Array.isArray(window.state.userProfile.messages)
                 ? window.state.userProfile.messages
                 : [];
+            const targetMessage = messageId
+                ? messages.find(message => safeRecordId(message?.id) === safeRecordId(messageId))
+                : messages[fallbackIndex];
             const updatedMessages = messages.filter((message, index) => {
-                if (messageId) return message.id !== messageId;
+                if (messageId) return safeRecordId(message?.id) !== safeRecordId(messageId);
                 return index !== fallbackIndex;
             });
 
+            dismissPersonalMessageLocally(targetMessage, fallbackIndex);
+            window.state.userProfile = { ...window.state.userProfile, messages: updatedMessages };
+            window.renderFloatingInbox();
+
             try {
-                const { doc, setDoc } = window.firestoreModules;
+                const { doc, updateDoc } = window.firestoreModules;
                 const profileRef = doc(window.db, 'artifacts', window.appId, 'public', 'data', 'userProfiles', window.state.currentUser.uid);
-                await setDoc(profileRef, { messages: updatedMessages }, { merge: true });
-                window.state.userProfile = { ...window.state.userProfile, messages: updatedMessages };
-                window.renderFloatingInbox();
+                await updateDoc(profileRef, { messages: updatedMessages });
                 window.showNotification('ההודעה נמחקה.', true);
             } catch (error) {
                 console.error('Error deleting personal message:', error);
-                window.showNotification('לא הצלחנו למחוק את ההודעה. נסה שוב.', false);
+                window.showNotification('ההודעה הוסרה מהמכשיר הזה.', true);
             }
         };
 
@@ -2771,8 +2842,12 @@
             
             const profile = window.state.userProfile;
             const messages = (profile && profile.messages) ? profile.messages : [];
+            const dismissedMessages = getDismissedPersonalMessages();
+            const visibleMessages = messages
+                .map((message, originalIndex) => ({ message, originalIndex }))
+                .filter(({ message, originalIndex }) => !dismissedMessages.has(personalMessageKey(message, originalIndex)));
             
-            if (messages.length === 0) {
+            if (visibleMessages.length === 0) {
                 list.innerHTML = '<p class="text-[10px] text-slate-500 text-center py-4">אין הודעות חדשות.</p>';
                 if (badge) badge.classList.add('hidden');
                 return;
@@ -2780,7 +2855,7 @@
             
             list.innerHTML = '';
             let unreadCount = 0;
-            messages.forEach((msg, idx) => {
+            visibleMessages.forEach(({ message: msg, originalIndex }) => {
                 if (!msg.read) unreadCount++;
                 const card = document.createElement('div');
                 card.className = `p-2.5 rounded-lg border text-right transition-all ${msg.read ? 'bg-white/5 border-white/5 opacity-75' : 'bg-amber-500/10 border-amber-500/20'}`;
@@ -2806,7 +2881,7 @@
                 deleteButton.innerHTML = '<i data-lucide="trash-2" class="w-3.5 h-3.5"></i>';
                 deleteButton.onclick = event => {
                     event.stopPropagation();
-                    window.deletePersonalMessage(msg.id, idx);
+                    window.deletePersonalMessage(msg.id, originalIndex);
                 };
 
                 metaActions.append(time, deleteButton);
@@ -2823,7 +2898,7 @@
                     if (!msg.read && window.state.currentUser) {
                         try {
                             const updatedMessages = [...messages];
-                            updatedMessages[idx] = { ...msg, read: true };
+                            updatedMessages[originalIndex] = { ...msg, read: true };
                             const { doc, setDoc } = window.firestoreModules;
                             const profileRef = doc(window.db, 'artifacts', window.appId, 'public', 'data', 'userProfiles', window.state.currentUser.uid);
                             await setDoc(profileRef, { messages: updatedMessages }, { merge: true });
@@ -3192,7 +3267,7 @@
             let payload = null;
             try { payload = await response.json(); } catch (error) {}
             if (!response.ok) {
-                throw new Error(payload?.error || `שגיאת שרת האחסון (${response.status}).`);
+                throw new Error(payload?.message || payload?.error || `שגיאת שרת האחסון (${response.status}).`);
             }
             return payload;
         }
@@ -3200,13 +3275,13 @@
         window.uploadImageToR2 = async function(base64Data, imgId, title = 'תמונה') {
             const imageBlob = dataUrlToBlob(base64Data);
             const cleanTitle = String(title || 'תמונה').replace(/[\\/:*?"<>|]+/g, '-').trim().slice(0, 100) || 'תמונה';
+            const form = new FormData();
+            form.append('file', imageBlob, `${safeRecordId(imgId) || 'image'}.jpg`);
+            form.append('imageId', safeRecordId(imgId));
+            form.append('title', cleanTitle);
             const result = await r2Request('/upload', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': imageBlob.type || 'image/jpeg',
-                    'X-Image-Title': encodeURIComponent(cleanTitle)
-                },
-                body: imageBlob
+                body: form
             });
             if (!result?.url || !result?.key) throw new Error('שרת האחסון לא החזיר כתובת לתמונה.');
             return {
@@ -3221,14 +3296,23 @@
             const key = String(imageRecord?.r2Key || '').trim();
             if (!key) return;
             try {
-                await r2Request('/delete', {
-                    method: 'DELETE',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ key })
-                });
+                const encodedKey = key.split('/').map(encodeURIComponent).join('/');
+                await r2Request(`/media/${encodedKey}`, { method: 'DELETE' });
             } catch (error) {
                 console.warn('לא ניתן היה למחוק את הקובץ מ-R2:', error);
             }
+        };
+
+        window.approveImageInR2 = async function(imageRecord) {
+            const key = String(imageRecord?.r2Key || '').trim();
+            if (!key.startsWith('pending/')) return imageRecord;
+            const result = await r2Request('/approve', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key })
+            });
+            if (!result?.url || !result?.key) throw new Error('שרת האחסון לא השלים את אישור התמונה.');
+            return { ...imageRecord, url: result.url, r2Key: result.key, status: 'active' };
         };
 
         window.saveFolderToCloud = async function(folderData) {
@@ -4310,7 +4394,12 @@
                         }
                         finalFolderId = existing.id;
                     }
-                    const activeImage = { ...img, folderId: finalFolderId, createdAt: Date.now(), status: 'active' };
+                    const activeImage = await window.approveImageInR2({
+                        ...img,
+                        folderId: finalFolderId,
+                        createdAt: Date.now(),
+                        status: 'active'
+                    });
                     await window.saveImageToCloud(activeImage);
                     // שומרים תיעוד של האישור במקום למחוק, כדי שמנהל דרגה 3 לא יקבל הרשאת מחיקה עקיפה.
                     const { doc, setDoc } = window.firestoreModules;
@@ -4486,7 +4575,143 @@
             if (drawer?.classList.contains('translate-x-0')) toggleAdminDrawer();
         });
 
-        // --- 9. חיפוש פרצוף אמיתי (face-api.js, מקומי בדפדפן, בלי מפתח API) ---
+        // --- 9. חיפוש AI לפי תיאור חזותי ---
+        window.openAiImageSearchModal = function() {
+            if (!window.state.isGoogleUser || window.state.userApprovalStatus !== 'approved') {
+                window.showNotification('חיפוש AI זמין למשתמשים מאושרים בלבד.', false);
+                return;
+            }
+            if (!Array.isArray(window.state.images) || window.state.images.length === 0) {
+                window.showNotification('הגלריה עדיין ריקה.', false);
+                return;
+            }
+            const query = document.getElementById('aiImageSearchQuery');
+            const status = document.getElementById('aiImageSearchStatus');
+            if (query) query.value = '';
+            if (status) {
+                status.textContent = '';
+                status.classList.add('hidden');
+            }
+            openModal('aiImageSearchModal');
+            requestAnimationFrame(() => query?.focus());
+        };
+
+        window.setAiSearchExample = function(value) {
+            const query = document.getElementById('aiImageSearchQuery');
+            if (query) {
+                query.value = String(value || '').slice(0, 240);
+                query.focus();
+            }
+        };
+
+        function showAiSearchResultBanner(count, query) {
+            const banner = document.getElementById('tempSearchBanner');
+            if (!banner) return;
+            banner.className = "bg-gradient-to-r from-cyan-500/10 to-transparent border border-cyan-400/20 rounded-2xl p-4 flex justify-between items-center shadow-md animate-fade-in transition-all backdrop-blur-xl";
+            banner.replaceChildren();
+
+            const details = document.createElement('div');
+            details.className = 'flex items-center gap-3 min-w-0';
+            const icon = document.createElement('div');
+            icon.className = 'bg-cyan-500/10 border border-cyan-400/20 p-2.5 rounded-xl text-cyan-300 shrink-0';
+            icon.innerHTML = '<i data-lucide="brain-circuit" class="w-5 h-5"></i>';
+            const copy = document.createElement('div');
+            copy.className = 'min-w-0';
+            const title = document.createElement('h4');
+            title.className = 'font-bold text-white text-sm';
+            title.textContent = 'תוצאות חיפוש AI';
+            const summary = document.createElement('p');
+            summary.className = 'text-xs text-cyan-300 font-semibold truncate';
+            summary.textContent = `${count} תמונות תואמות ל־„${query}”`;
+            copy.append(title, summary);
+            details.append(icon, copy);
+
+            const clear = document.createElement('button');
+            clear.type = 'button';
+            clear.onclick = clearTempSearchFilter;
+            clear.className = 'text-xs font-bold btn-secondary-dark px-4 py-2 rounded-xl shadow-sm';
+            clear.textContent = 'חזור לגלריה';
+            banner.append(details, clear);
+            banner.classList.remove('hidden');
+            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+        }
+
+        window.executeAiImageSearch = async function() {
+            const queryInput = document.getElementById('aiImageSearchQuery');
+            const status = document.getElementById('aiImageSearchStatus');
+            const button = document.getElementById('aiImageSearchSubmitBtn');
+            const query = String(queryInput?.value || '').trim();
+            if (query.length < 3) {
+                window.showNotification('כתוב לפחות שלוש אותיות לתיאור התמונה.', false);
+                queryInput?.focus();
+                return;
+            }
+
+            const candidates = (window.state.images || [])
+                .map(image => {
+                    const id = safeRecordId(image.id);
+                    const url = safeImageUrl(image.url);
+                    const folder = window.state.folders.find(item => item.id === image.folderId);
+                    return id && url ? {
+                        id,
+                        url,
+                        title: String(image.title || 'תמונה').slice(0, 120),
+                        folder: String(folder?.name || 'כללי').slice(0, 80),
+                        date: String(image.date || '').slice(0, 20)
+                    } : null;
+                })
+                .filter(Boolean)
+                .slice(0, 80);
+
+            if (!candidates.length) {
+                window.showNotification('לא נמצאו תמונות זמינות לסריקה.', false);
+                return;
+            }
+
+            if (button) button.disabled = true;
+            if (status) {
+                status.classList.remove('hidden');
+                status.textContent = `מתחיל לסרוק ${candidates.length} תמונות…`;
+            }
+
+            try {
+                const matchedIds = new Set();
+                const batchSize = 8;
+                const totalBatches = Math.ceil(candidates.length / batchSize);
+                for (let offset = 0; offset < candidates.length; offset += batchSize) {
+                    const batch = candidates.slice(offset, offset + batchSize);
+                    const batchNumber = Math.floor(offset / batchSize) + 1;
+                    if (status) status.textContent = `ה־AI סורק קבוצה ${batchNumber} מתוך ${totalBatches}…`;
+                    const result = await r2Request('/ai-search', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ query, images: batch })
+                    });
+                    (result?.matches || []).forEach(id => matchedIds.add(safeRecordId(id)));
+                }
+
+                const matches = window.state.images.filter(image => matchedIds.has(safeRecordId(image.id)));
+                window.state.tempSearchResults = matches;
+                window.state.searchQuery = '';
+                const regularSearch = document.getElementById('searchInput');
+                if (regularSearch) regularSearch.value = '';
+                window.renderImages();
+                showAiSearchResultBanner(matches.length, query);
+                closeModal('aiImageSearchModal');
+                window.showNotification(
+                    matches.length ? `נמצאו ${matches.length} תמונות מתאימות.` : 'לא נמצאו תמונות שמתאימות לתיאור.',
+                    matches.length > 0
+                );
+            } catch (error) {
+                console.error('AI image search failed:', error);
+                if (status) status.textContent = error.message || 'חיפוש ה־AI נכשל. נסה שוב.';
+                window.showNotification(error.message || 'חיפוש ה־AI נכשל.', false);
+            } finally {
+                if (button) button.disabled = false;
+            }
+        };
+
+        // --- 10. חיפוש פרצוף אמיתי (face-api.js, מקומי בדפדפן, בלי מפתח API) ---
         let faceApiModelsLoaded = false;
         let faceSearchQueryImageSrc = null;
         const FACE_MATCH_THRESHOLD = 0.55;
