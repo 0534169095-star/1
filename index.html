@@ -1984,6 +1984,10 @@
                     <label class="text-[10px] font-bold text-slate-400 block mb-1">תוכן ההודעה האישית:</label>
                     <textarea id="adminMessageTextarea" class="w-full text-xs p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 h-28" placeholder="הקלד כאן את הודעתך..."></textarea>
                 </div>
+                <label class="flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/5 p-3 cursor-pointer">
+                    <input id="adminMessageAllowReply" type="checkbox" checked class="w-4 h-4 accent-amber-400">
+                    <span class="text-[10px] font-bold text-slate-300">אפשר למשתמש להשיב להודעה</span>
+                </label>
                 <div class="pt-4 flex justify-end gap-3">
                     <button type="button" onclick="closeModal('adminMessageModal')" class="px-5 py-2.5 btn-secondary-dark rounded-xl text-sm font-semibold">ביטול</button>
                     <button type="button" id="adminMessageSubmitBtn" class="px-5 py-2.5 btn-primary-gold rounded-xl text-sm font-bold">שלח הודעה</button>
@@ -2190,6 +2194,13 @@
                         <span class="text-xs font-bold text-slate-300">תוכן ההודעה</span>
                         <textarea id="adminBulkMessageText" maxlength="1500" rows="9" oninput="updateAdminMessageCenterUI()" placeholder="כתוב כאן את ההודעה שתופיע באזור האישי…" class="w-full mt-2 rounded-2xl p-4 text-sm leading-7 resize-y"></textarea>
                     </label>
+                    <label class="mt-3 flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3 cursor-pointer">
+                        <input id="adminBulkAllowReply" type="checkbox" checked class="w-4 h-4 accent-amber-400">
+                        <span>
+                            <strong class="block text-xs text-slate-200">אפשר למשתמשים להשיב</strong>
+                            <small class="block text-[10px] text-slate-500 mt-0.5">התשובות יופיעו כאן במרכז ההודעות</small>
+                        </span>
+                    </label>
                     <div class="flex justify-between text-[10px] text-slate-500 mt-1">
                         <span>ההודעה תופיע באזור האישי</span>
                         <span id="adminBulkMessageCharacterCount">0/1500</span>
@@ -2199,6 +2210,18 @@
                         <span id="adminBulkMessageSendText">שלח הודעה</span>
                     </button>
                     <div id="adminBulkMessageProgress" class="hidden mt-4 rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-slate-300" aria-live="polite"></div>
+                    <section class="mt-6 pt-5 border-t border-white/10" aria-label="תשובות ממשתמשים">
+                        <div class="flex items-center justify-between gap-3">
+                            <h4 class="text-sm font-extrabold text-white flex items-center gap-2">
+                                <i data-lucide="reply" class="w-4 h-4 text-cyan-300"></i>
+                                תשובות ממשתמשים
+                            </h4>
+                            <span id="adminMessageRepliesCount" class="text-[10px] px-2 py-1 rounded-full bg-cyan-500/10 text-cyan-300">0</span>
+                        </div>
+                        <div id="adminMessageRepliesList" class="mt-3 space-y-2 max-h-72 overflow-y-auto pr-1">
+                            <p class="text-[10px] text-slate-500 text-center py-5">עדיין לא התקבלו תשובות.</p>
+                        </div>
+                    </section>
                 </aside>
             </div>
         </div>
@@ -2259,22 +2282,6 @@
                     </h4>
                     <div id="floatingInboxList" class="space-y-2 max-h-48 overflow-y-auto pr-1">
                         <p class="text-[10px] text-slate-500 text-center py-4">אין הודעות חדשות.</p>
-                    </div>
-                </div>
-
-                <!-- Custom Request Details (For Pending / Viewer accounts) -->
-                <div id="requestDetailsContainer" class="hidden">
-                    <div class="p-3.5 rounded-xl border border-amber-500/20 bg-amber-500/5 space-y-2.5">
-                        <h4 class="text-xs font-bold text-amber-400 flex items-center gap-1.5">
-                            <i data-lucide="edit-3" class="w-3.5 h-3.5 text-amber-400"></i>
-                            פרטי בקשת ההצטרפות שלך
-                        </h4>
-                        <p class="text-[10px] text-slate-400 leading-normal">ספק פרטים שיעזרו למנהל לזהות אותך (שם מלא, שנת מחזור, תפקיד או קשר לישיבה):</p>
-                        <textarea id="requestDetailsTextarea" class="w-full text-[11px] p-2 rounded-lg bg-slate-950 border border-slate-800 text-white placeholder-slate-600 focus:outline-none focus:border-amber-400 h-16 resize-none" placeholder="למשל: אברהם כהן, מחזור תשפ״ב, בוגר הישיבה..."></textarea>
-                        <button type="button" onclick="saveRequestDetails()" class="w-full py-2 btn-primary-gold rounded-lg text-[10px] font-bold flex items-center justify-center gap-1">
-                            <i data-lucide="check" class="w-3.5 h-3.5"></i>
-                            שמור ועדכן פרטים
-                        </button>
                     </div>
                 </div>
 
@@ -2900,6 +2907,8 @@
                 window.state.pendingUsers = pending;
                 window.renderPendingUsers();
                 window.renderManagedUsers();
+                window.renderAdminMessageUsers?.();
+                window.renderAdminMessageReplies?.();
                 window.updatePendingUsersBadge();
 
                 if (newRequests.length > 0) {
@@ -3248,40 +3257,6 @@
             }
         };
 
-        window.saveRequestDetails = async function(confirmed = false) {
-            if (!window.db || !window.state.currentUser) {
-                window.showNotification('יש להתחבר תחילה.', false);
-                return;
-            }
-            const textarea = document.getElementById('requestDetailsTextarea');
-            const details = textarea ? textarea.value.trim() : '';
-            if (!details) {
-                window.showNotification('אנא הזן פרטים ליצירת קשר או זיהוי.', false);
-                return;
-            }
-            if (!confirmed) {
-                window.showConfirm(
-                    'שמירת פרטי הבקשה',
-                    'לשמור את הפרטים שהזנת ולשלוח אותם לעיון מנהל הגלריה?',
-                    () => window.saveRequestDetails(true)
-                );
-                return;
-            }
-            
-            try {
-                window.showNotification('מעדכן פרטים בענן...', true);
-                const { doc, setDoc } = window.firestoreModules;
-                const profileRef = doc(window.db, 'artifacts', window.appId, 'public', 'data', 'userProfiles', window.state.currentUser.uid);
-                await setDoc(profileRef, {
-                    requestDetails: details
-                }, { merge: true });
-                window.showNotification('הפרטים נשמרו בהצלחה! מנהל הישיבה יבדוק אותם כעת.', true);
-            } catch (error) {
-                console.error('Failed to save request details:', error);
-                window.showNotification('שגיאה בשמירת הפרטים. נסה שוב.', false);
-            }
-        };
-    
         function openModal(id) {
             const m = document.getElementById(id);
             if (!m) return;
@@ -3404,6 +3379,7 @@
             const textarea = document.getElementById('adminBulkMessageText');
             const progress = document.getElementById('adminBulkMessageProgress');
             const text = String(textarea?.value || '').trim();
+            const allowReply = document.getElementById('adminBulkAllowReply')?.checked === true;
             const recipients = (window.state.allUsers || []).filter(user => adminMessageRecipients.has(safeRecordId(user.uid)));
             if (!text || !recipients.length) return;
             if (!confirmed) {
@@ -3440,7 +3416,9 @@
                         senderUid: window.state.currentUser?.uid || '',
                         recipientUid: user.uid,
                         sentAt: Date.now(),
-                        read: false
+                        read: false,
+                        allowReply,
+                        reply: null
                     };
                     await setDoc(profileRef, { messages: [message, ...existingMessages].slice(0, 100) }, { merge: true });
                     succeeded++;
@@ -3454,6 +3432,7 @@
             if (succeeded && textarea) textarea.value = '';
             if (succeeded) adminMessageRecipients.clear();
             window.renderAdminMessageUsers();
+            window.renderAdminMessageReplies();
             if (progress) {
                 progress.textContent = failed.length
                     ? `נשלחו ${succeeded} הודעות; ${failed.length} נכשלו.`
@@ -3463,6 +3442,108 @@
                 failed.length ? `חלק מההודעות לא נשלחו (${failed.length}).` : `ההודעה נשלחה בהצלחה ל־${succeeded} משתמשים.`,
                 !failed.length
             );
+        };
+
+        function collectAdminMessageReplies() {
+            const replies = [];
+            (window.state.allUsers || []).forEach(user => {
+                const uid = safeRecordId(user?.uid);
+                if (!uid) return;
+                const messages = Array.isArray(user.messages) ? user.messages : [];
+                messages.forEach((message, messageIndex) => {
+                    const reply = message?.reply;
+                    if (!reply || !String(reply.text || '').trim()) return;
+                    replies.push({ user, uid, message, messageIndex, reply });
+                });
+            });
+            return replies.sort((a, b) => Number(b.reply.sentAt || 0) - Number(a.reply.sentAt || 0));
+        }
+
+        window.renderAdminMessageReplies = function() {
+            const list = document.getElementById('adminMessageRepliesList');
+            const count = document.getElementById('adminMessageRepliesCount');
+            if (!list) return;
+            const replies = collectAdminMessageReplies();
+            const unreadCount = replies.filter(item => item.reply.readByAdmin !== true).length;
+            if (count) {
+                count.textContent = unreadCount ? `${unreadCount} חדשות` : String(replies.length);
+                count.classList.toggle('animate-pulse', unreadCount > 0);
+            }
+            list.replaceChildren();
+            if (!replies.length) {
+                const empty = document.createElement('p');
+                empty.className = 'text-[10px] text-slate-500 text-center py-5';
+                empty.textContent = 'עדיין לא התקבלו תשובות.';
+                list.appendChild(empty);
+                return;
+            }
+
+            replies.forEach(({ user, uid, message, reply }) => {
+                const card = document.createElement('article');
+                card.className = `rounded-xl border p-3 space-y-2 ${reply.readByAdmin === true ? 'border-white/10 bg-white/5' : 'border-cyan-400/25 bg-cyan-400/10'}`;
+
+                const header = document.createElement('div');
+                header.className = 'flex items-center justify-between gap-2';
+                const name = document.createElement('strong');
+                name.className = 'text-[11px] text-white truncate';
+                name.textContent = user.displayName || user.email || 'משתמש';
+                const time = document.createElement('span');
+                time.className = 'text-[9px] text-slate-500 shrink-0';
+                time.textContent = formatDate(reply.sentAt);
+                header.append(name, time);
+
+                const original = document.createElement('p');
+                original.className = 'text-[9px] text-slate-500 line-clamp-2';
+                original.textContent = `בתגובה להודעה: ${message.text || ''}`;
+                const replyText = document.createElement('p');
+                replyText.className = 'text-[11px] text-cyan-100 leading-relaxed whitespace-pre-wrap';
+                replyText.textContent = reply.text;
+                card.append(header, original, replyText);
+
+                if (reply.readByAdmin !== true) {
+                    const readButton = document.createElement('button');
+                    readButton.type = 'button';
+                    readButton.className = 'w-full py-2 rounded-lg btn-secondary-dark text-[10px] font-bold';
+                    readButton.textContent = 'סמן שקראתי';
+                    readButton.onclick = () => window.markAdminReplyRead(uid, message.id);
+                    card.appendChild(readButton);
+                }
+                list.appendChild(card);
+            });
+        };
+
+        window.markAdminReplyRead = async function(uid, messageId) {
+            if (!checkSuperAdminPermission()) return;
+            const profile = (window.state.allUsers || []).find(user => safeRecordId(user.uid) === safeRecordId(uid));
+            if (!profile) return;
+            const messages = Array.isArray(profile.messages) ? profile.messages : [];
+            const updatedMessages = messages.map(message => (
+                safeRecordId(message?.id) === safeRecordId(messageId) && message.reply
+                    ? { ...message, reply: { ...message.reply, readByAdmin: true } }
+                    : message
+            ));
+            const { doc, setDoc } = window.firestoreModules;
+            await setDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'userProfiles', uid), {
+                messages: updatedMessages
+            }, { merge: true });
+            profile.messages = updatedMessages;
+            window.renderAdminMessageReplies();
+        };
+
+        window.openAdminMessagesForUser = function(uid) {
+            if (!checkSuperAdminPermission()) return;
+            const safeUid = safeRecordId(uid);
+            if (!safeUid || !(window.state.allUsers || []).some(user => safeRecordId(user.uid) === safeUid)) {
+                window.showNotification('המשתמש לא נמצא במערכת.', false);
+                return;
+            }
+            adminMessageRecipients.clear();
+            adminMessageRecipients.add(safeUid);
+            const search = document.getElementById('adminMessageUserSearch');
+            if (search) search.value = '';
+            window.openAdminMessagesCenter();
+            window.renderAdminMessageUsers();
+            requestAnimationFrame(() => document.getElementById('adminBulkMessageText')?.focus());
         };
 
         window.openAdminMessagesCenter = function() {
@@ -3475,6 +3556,7 @@
             const drawer = document.getElementById('adminDrawer');
             if (drawer?.classList.contains('translate-x-0')) toggleAdminDrawer();
             window.renderAdminMessageUsers();
+            window.renderAdminMessageReplies();
             openModal('adminMessagesCenterModal');
             if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
         };
@@ -3550,6 +3632,53 @@
             }
         };
 
+        window.submitPersonalMessageReply = async function(messageId, fallbackIndex, replyText, confirmed = false) {
+            if (!window.state.currentUser || !window.state.userProfile) return;
+            const cleanReply = String(replyText || '').trim().slice(0, 1200);
+            if (!cleanReply) {
+                window.showNotification('כתוב תשובה לפני השליחה.', false);
+                return;
+            }
+            const messages = Array.isArray(window.state.userProfile.messages)
+                ? window.state.userProfile.messages
+                : [];
+            const targetIndex = messageId
+                ? messages.findIndex(message => safeRecordId(message?.id) === safeRecordId(messageId))
+                : fallbackIndex;
+            const targetMessage = messages[targetIndex];
+            if (!targetMessage || targetMessage.allowReply !== true || targetMessage.reply) {
+                window.showNotification('לא ניתן להשיב להודעה זו.', false);
+                return;
+            }
+            if (!confirmed) {
+                showConfirm(
+                    'שליחת תשובה למנהל',
+                    'לשלוח את התשובה? היא תופיע מיד במרכז ההודעות של המנהל.',
+                    () => window.submitPersonalMessageReply(messageId, fallbackIndex, cleanReply, true)
+                );
+                return;
+            }
+
+            const updatedMessages = [...messages];
+            updatedMessages[targetIndex] = {
+                ...targetMessage,
+                read: true,
+                reply: {
+                    text: cleanReply,
+                    sentAt: Date.now(),
+                    senderUid: window.state.currentUser.uid,
+                    senderName: window.state.currentUser.displayName || 'משתמש',
+                    readByAdmin: false
+                }
+            };
+            const { doc, updateDoc } = window.firestoreModules;
+            const profileRef = doc(window.db, 'artifacts', window.appId, 'public', 'data', 'userProfiles', window.state.currentUser.uid);
+            await updateDoc(profileRef, { messages: updatedMessages });
+            window.state.userProfile = { ...window.state.userProfile, messages: updatedMessages };
+            window.renderFloatingInbox();
+            window.showNotification('התשובה נשלחה למנהל.', true);
+        };
+
         window.renderFloatingInbox = function() {
             const list = document.getElementById('floatingInboxList');
             const badge = document.getElementById('floatingWidgetBadge');
@@ -3607,6 +3736,38 @@
                 text.textContent = msg.text;
                 
                 card.append(meta, text);
+
+                if (msg.reply?.text) {
+                    const replyBox = document.createElement('div');
+                    replyBox.className = 'mt-2 rounded-lg border border-cyan-400/20 bg-cyan-400/10 p-2';
+                    const replyLabel = document.createElement('span');
+                    replyLabel.className = 'block text-[9px] font-bold text-cyan-300 mb-1';
+                    replyLabel.textContent = 'התשובה שלך';
+                    const replyText = document.createElement('p');
+                    replyText.className = 'text-[10px] text-cyan-50 leading-relaxed whitespace-pre-wrap';
+                    replyText.textContent = msg.reply.text;
+                    replyBox.append(replyLabel, replyText);
+                    card.appendChild(replyBox);
+                } else if (msg.allowReply === true) {
+                    const replyWrap = document.createElement('div');
+                    replyWrap.className = 'mt-2 pt-2 border-t border-white/10 space-y-2';
+                    const replyInput = document.createElement('textarea');
+                    replyInput.maxLength = 1200;
+                    replyInput.rows = 2;
+                    replyInput.placeholder = 'כתוב תשובה למנהל…';
+                    replyInput.className = 'w-full rounded-lg p-2 text-[10px] resize-y';
+                    replyInput.onclick = event => event.stopPropagation();
+                    const replyButton = document.createElement('button');
+                    replyButton.type = 'button';
+                    replyButton.className = 'w-full py-2 btn-primary-gold rounded-lg text-[10px] font-bold flex items-center justify-center gap-1.5';
+                    replyButton.innerHTML = '<i data-lucide="reply" class="w-3.5 h-3.5"></i> שלח תשובה';
+                    replyButton.onclick = event => {
+                        event.stopPropagation();
+                        window.submitPersonalMessageReply(msg.id, originalIndex, replyInput.value);
+                    };
+                    replyWrap.append(replyInput, replyButton);
+                    card.appendChild(replyWrap);
+                }
                 
                 // Clicking message marks as read in Firestore
                 card.onclick = async () => {
@@ -3642,11 +3803,13 @@
             const recipientText = document.getElementById('adminMessageRecipient');
             const textarea = document.getElementById('adminMessageTextarea');
             const submitBtn = document.getElementById('adminMessageSubmitBtn');
+            const allowReplyInput = document.getElementById('adminMessageAllowReply');
             
             if (recipientText) {
                 recipientText.textContent = `${displayName || 'משתמש Google'} (${email || ''})`;
             }
             if (textarea) textarea.value = '';
+            if (allowReplyInput) allowReplyInput.checked = true;
             
             if (submitBtn) {
                 submitBtn.onclick = () => {
@@ -3673,8 +3836,12 @@
                                     id: crypto.randomUUID(),
                                     text,
                                     sender: window.state.currentUser?.displayName || 'מנהל שמחת התורה',
+                                    senderUid: window.state.currentUser?.uid || '',
+                                    recipientUid: uid,
                                     sentAt: new Date().toISOString(),
-                                    read: false
+                                    read: false,
+                                    allowReply: allowReplyInput?.checked === true,
+                                    reply: null
                                 };
 
                                 await setDoc(profileRef, {
@@ -4337,8 +4504,6 @@
                     const floatingUserPanelBadge = document.getElementById('floatingUserPanelBadge');
                     const floatingSignedOutView = document.getElementById('floatingSignedOutView');
                     const floatingSignedInView = document.getElementById('floatingSignedInView');
-                    const requestDetailsContainer = document.getElementById('requestDetailsContainer');
-                    const requestDetailsTextarea = document.getElementById('requestDetailsTextarea');
 
                     const photoUrl = safeImageUrl(currentUser.photoURL);
                     if (photoUrl) {
@@ -4355,18 +4520,6 @@
                     if(floatingUserPanelEmail) floatingUserPanelEmail.textContent = currentUser.email || '';
                     if(floatingSignedOutView) floatingSignedOutView.classList.add('hidden');
                     if(floatingSignedInView) floatingSignedInView.classList.remove('hidden');
-
-                    // Synchronize Request Details Field
-                    if (requestDetailsContainer) {
-                        if (approvalStatus === 'pending' || role === 'viewer') {
-                            requestDetailsContainer.classList.remove('hidden');
-                            if (requestDetailsTextarea && window.state.userProfile && window.state.userProfile.requestDetails) {
-                                requestDetailsTextarea.value = window.state.userProfile.requestDetails;
-                            }
-                        } else {
-                            requestDetailsContainer.classList.add('hidden');
-                        }
-                    }
 
                     // Floating Panel badge styles based on roles
                     if (floatingUserPanelBadge) {
@@ -4914,6 +5067,35 @@
             window.showNotification(isBlocked ? 'חסימת המשתמש הוסרה.' : 'המשתמש נחסם.');
         };
 
+        window.deleteManagedUser = async function(uid, confirmed = false) {
+            if (!checkSuperAdminPermission()) return;
+            if (!uid || uid === window.state.currentUser?.uid) {
+                window.showNotification('לא ניתן למחוק את חשבון מנהל־העל הפעיל.', false);
+                return;
+            }
+            const profile = (window.state.allUsers || []).find(user => user.uid === uid);
+            if (!profile) return;
+            if (!confirmed) {
+                showConfirm(
+                    'מחיקת משתמש',
+                    `למחוק את ${profile.displayName || profile.email || 'המשתמש'} מרשימת המשתמשים? הפרופיל וכל ההודעות האישיות שלו יימחקו מהאתר.`,
+                    () => window.deleteManagedUser(uid, true)
+                );
+                return;
+            }
+            const { doc, deleteDoc } = window.firestoreModules;
+            await deleteDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'userProfiles', uid));
+            adminMessageRecipients.delete(safeRecordId(uid));
+            window.state.allUsers = (window.state.allUsers || []).filter(user => user.uid !== uid);
+            window.state.pendingUsers = (window.state.pendingUsers || []).filter(user => user.uid !== uid);
+            window.renderManagedUsers();
+            window.renderPendingUsers();
+            window.renderAdminMessageUsers();
+            window.renderAdminMessageReplies();
+            window.updatePendingUsersBadge();
+            window.showNotification('המשתמש וההודעות שלו נמחקו מהאתר.');
+        };
+
         window.renderManagedUsers = function() {
             const list = document.getElementById('managedUsersList');
             if (!list) return;
@@ -4985,9 +5167,27 @@
                 block.disabled = isCurrentUser;
                 block.onclick = () => window.toggleUserBlock(profile.uid);
                 controls.append(roleSelect, save, block);
-                card.append(header, controls);
+
+                const linkedActions = document.createElement('div');
+                linkedActions.className = 'grid grid-cols-2 gap-2';
+                const message = document.createElement('button');
+                message.type = 'button';
+                message.className = 'py-2 rounded-lg btn-primary-gold text-[10px] font-bold flex items-center justify-center gap-1.5';
+                message.innerHTML = '<i data-lucide="message-square" class="w-3.5 h-3.5"></i> שלח הודעה';
+                message.onclick = () => window.openAdminMessagesForUser(profile.uid);
+
+                const remove = document.createElement('button');
+                remove.type = 'button';
+                remove.className = 'py-2 rounded-lg border border-red-500/30 bg-red-500/5 text-red-300 text-[10px] font-bold flex items-center justify-center gap-1.5 disabled:opacity-40';
+                remove.innerHTML = '<i data-lucide="user-x" class="w-3.5 h-3.5"></i> מחק משתמש';
+                remove.disabled = isCurrentUser;
+                remove.onclick = () => window.deleteManagedUser(profile.uid);
+                linkedActions.append(message, remove);
+
+                card.append(header, controls, linkedActions);
                 list.appendChild(card);
             });
+            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
         };
 
         window.renderDeletionRequests = function() {
@@ -5149,7 +5349,7 @@
                 msgBtn.type = 'button';
                 msgBtn.className = 'px-2.5 btn-secondary-dark text-[10px] py-2 rounded-lg font-bold';
                 msgBtn.innerHTML = '<i data-lucide="message-square" class="w-3.5 h-3.5"></i>';
-                msgBtn.onclick = () => window.openAdminMessageModal(profile.uid, profile.displayName, profile.email);
+                msgBtn.onclick = () => window.openAdminMessagesForUser(profile.uid);
 
                 const emailBtn = document.createElement('button');
                 emailBtn.type = 'button';
