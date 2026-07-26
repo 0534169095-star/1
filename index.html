@@ -1916,8 +1916,8 @@
     </div>
 
     <!-- CUSTOM CONFIRMATION MODAL -->
-    <div id="confirmModal" class="fixed inset-0 z-[130] flex items-center justify-center p-4 hidden" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmMessage">
-        <div class="rounded-3xl w-full max-w-md overflow-hidden transform transition-all modal-animate-popup">
+    <div id="confirmModal" class="fixed inset-0 z-[130] flex items-center justify-center p-4 hidden bg-black/70 backdrop-blur-sm pointer-events-auto" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmMessage">
+        <div class="rounded-3xl w-full max-w-md overflow-hidden transform transition-all modal-animate-popup pointer-events-auto">
             <div class="p-6 space-y-4">
                 <div class="flex items-center gap-3 text-red-400">
                     <div class="bg-red-500/10 p-2 rounded-xl border border-red-500/20"><i data-lucide="alert-triangle" class="w-6 h-6"></i></div>
@@ -1925,8 +1925,8 @@
                 </div>
                 <p class="text-sm text-slate-300 leading-relaxed" id="confirmMessage">האם אתה בטוח שברצונך לבצע פעולה זו?</p>
                 <div class="pt-4 flex justify-end gap-3">
-                    <button type="button" id="confirmCancelBtn" class="px-5 py-2.5 btn-secondary-dark rounded-xl text-sm font-semibold">ביטול</button>
-                    <button type="button" id="confirmApproveBtn" class="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-all">אישור</button>
+                    <button type="button" id="confirmCancelBtn" onclick="cancelConfirmAction()" class="px-5 py-2.5 btn-secondary-dark rounded-xl text-sm font-semibold pointer-events-auto">ביטול</button>
+                    <button type="button" id="confirmApproveBtn" onclick="approveConfirmAction()" class="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-all pointer-events-auto">אישור</button>
                 </div>
             </div>
         </div>
@@ -3878,6 +3878,48 @@
         }
         window.checkSuperAdminPermission = checkSuperAdminPermission;
 
+        let pendingConfirmAction = null;
+        let confirmActionRunning = false;
+
+        function resetConfirmButtons() {
+            const approveBtn = document.getElementById('confirmApproveBtn');
+            const cancelBtn = document.getElementById('confirmCancelBtn');
+            if (approveBtn) approveBtn.disabled = false;
+            if (cancelBtn) cancelBtn.disabled = false;
+            confirmActionRunning = false;
+        }
+
+        function cancelConfirmAction() {
+            if (confirmActionRunning) return;
+            pendingConfirmAction = null;
+            resetConfirmButtons();
+            closeModal('confirmModal');
+        }
+        window.cancelConfirmAction = cancelConfirmAction;
+
+        async function approveConfirmAction() {
+            if (confirmActionRunning || typeof pendingConfirmAction !== 'function') return;
+            const action = pendingConfirmAction;
+            pendingConfirmAction = null;
+            confirmActionRunning = true;
+
+            const approveBtn = document.getElementById('confirmApproveBtn');
+            const cancelBtn = document.getElementById('confirmCancelBtn');
+            if (approveBtn) approveBtn.disabled = true;
+            if (cancelBtn) cancelBtn.disabled = true;
+
+            try {
+                await action();
+                closeModal('confirmModal');
+            } catch (error) {
+                console.error('Confirmed action failed:', error);
+                showNotification('הפעולה נכשלה. נסה שוב.', false);
+            } finally {
+                resetConfirmButtons();
+            }
+        }
+        window.approveConfirmAction = approveConfirmAction;
+
         function showConfirm(title, message, onApprove) {
             const modal = document.getElementById('confirmModal');
             if (!modal) return;
@@ -3886,33 +3928,8 @@
             const msgEl = document.getElementById('confirmMessage');
             if (titleEl) titleEl.innerText = title;
             if (msgEl) msgEl.innerText = message;
-
-            const approveBtn = document.getElementById('confirmApproveBtn');
-            const cancelBtn = document.getElementById('confirmCancelBtn');
-
-            if (approveBtn && cancelBtn) {
-                const newApproveBtn = approveBtn.cloneNode(true);
-                const newCancelBtn = cancelBtn.cloneNode(true);
-                approveBtn.parentNode.replaceChild(newApproveBtn, approveBtn);
-                cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
-
-                newApproveBtn.addEventListener('click', async () => {
-                    newApproveBtn.disabled = true;
-                    newCancelBtn.disabled = true;
-                    try {
-                        await onApprove();
-                        closeModal('confirmModal');
-                    } catch (error) {
-                        console.error('Confirmed action failed:', error);
-                        showNotification('הפעולה נכשלה. נסה שוב.', false);
-                        newApproveBtn.disabled = false;
-                        newCancelBtn.disabled = false;
-                    }
-                });
-                newCancelBtn.addEventListener('click', () => {
-                    closeModal('confirmModal');
-                });
-            }
+            pendingConfirmAction = typeof onApprove === 'function' ? onApprove : null;
+            resetConfirmButtons();
             openModal('confirmModal');
             if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
         }
