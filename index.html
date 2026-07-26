@@ -4896,7 +4896,7 @@
                         let descriptors = window.descriptorCache[imgData.id];
                         if (!descriptors) {
                             const galleryUrl = safeImageUrl(imgData.url);
-                            if (!galleryUrl) continue;
+                            if (!galleryUrl) throw new Error('כתובת התמונה אינה תקינה או אינה מורשית.');
                             const galleryImg = await loadImageElement(galleryUrl);
                             const detections = await faceapi.detectAllFaces(galleryImg).withFaceLandmarks().withFaceDescriptors();
                             descriptors = detections.map(d => Array.from(d.descriptor));
