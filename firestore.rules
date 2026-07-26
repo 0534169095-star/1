@@ -46,7 +46,16 @@ service cloud.firestore {
         (request.resource.data.status == 'pending' && request.resource.data.role == 'viewer')
       );
 
-      allow update: if admin() || (
+      // הודעות אישיות: רק מנהל־על יכול להוסיף או לשנות הודעה אצל משתמש אחר.
+      // משתמש רשאי לעדכן את תיבת ההודעות של עצמו בלבד (למשל סימון הודעה כנקראה).
+      allow update: if superAdmin() || (
+        admin() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'uid', 'displayName', 'email', 'photoURL', 'lastSeenAt', 'lastLoginAt',
+          'fullName', 'className', 'phone', 'reference', 'details', 'updatedAt',
+          'status', 'role'
+        ])
+      ) || (
         signedIn() && request.auth.uid == uid &&
         request.resource.data.status == resource.data.status &&
         request.resource.data.role == resource.data.role &&
