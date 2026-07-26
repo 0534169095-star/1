@@ -1853,11 +1853,31 @@
                     </button>
                 </div>
                 <div class="flex items-center gap-2 text-xs font-medium self-end sm:self-auto">
+                    <button type="button" data-admin-profile-launcher onclick="toggleBulkSelectionMode()" class="hidden btn-secondary-dark rounded-xl px-3 py-2 items-center gap-1.5 text-[10px] font-bold" title="בחירה מרובה">
+                        <i data-lucide="list-checks" class="w-3.5 h-3.5"></i>
+                        בחירה מרובה
+                    </button>
                     <button type="button" onclick="startGallerySlideshow()" class="btn-secondary-dark rounded-xl px-3 py-2 flex items-center gap-1.5 text-[10px] font-bold" title="הפעלת מצגת">
                         <i data-lucide="play" class="w-3.5 h-3.5"></i>
                         מצגת
                     </button>
                     <span id="imageCounter" class="px-3 py-1.5 rounded-full font-bold">טוען...</span>
+                </div>
+            </div>
+
+            <div id="bulkSelectionBar" class="hidden rounded-2xl border border-cyan-400/20 bg-cyan-400/5 p-3 flex-col sm:flex-row items-center justify-between gap-3 shadow-lg" role="toolbar" aria-label="פעולות על פריטים נבחרים">
+                <div class="flex items-center gap-3">
+                    <span class="w-9 h-9 rounded-xl bg-cyan-400/10 text-cyan-300 flex items-center justify-center"><i data-lucide="list-checks" class="w-4 h-4"></i></span>
+                    <div>
+                        <p class="text-xs font-extrabold text-white"><span id="bulkSelectedCount">0</span> פריטים נבחרו</p>
+                        <button type="button" onclick="toggleSelectAllVisibleMedia()" class="text-[9px] text-cyan-300 hover:underline">בחר את כל המוצגים</button>
+                    </div>
+                </div>
+                <div class="flex flex-wrap items-center justify-center gap-2">
+                    <button type="button" onclick="openBulkMoveDialog()" class="btn-secondary-dark rounded-xl px-3 py-2 text-[10px] font-bold flex items-center gap-1.5"><i data-lucide="folder-input" class="w-3.5 h-3.5"></i> העבר</button>
+                    <button type="button" onclick="downloadSelectedMedia()" class="btn-secondary-dark rounded-xl px-3 py-2 text-[10px] font-bold flex items-center gap-1.5"><i data-lucide="download" class="w-3.5 h-3.5"></i> הורד</button>
+                    <button type="button" onclick="deleteSelectedMedia()" class="rounded-xl px-3 py-2 text-[10px] font-bold flex items-center gap-1.5 border border-red-400/25 bg-red-400/10 text-red-300"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i> מחק</button>
+                    <button type="button" onclick="toggleBulkSelectionMode(false)" class="btn-secondary-dark rounded-xl px-3 py-2 text-[10px] font-bold">סיום</button>
                 </div>
             </div>
 
@@ -1867,8 +1887,8 @@
 
             <div id="emptyState" class="gallery-empty hidden flex-col items-center justify-center py-20 text-center p-8">
                 <div class="p-4 rounded-full mb-4"><i data-lucide="image-off" class="w-12 h-12"></i></div>
-                <h3 class="text-lg font-bold mb-1">אין תמונות להצגה</h3>
-                <p class="text-sm max-w-sm">הארכיון ריק כרגע, או שהתמונות עדיין נטענות מהענן.</p>
+                <h3 class="text-lg font-bold mb-1">אין פריטים להצגה</h3>
+                <p class="text-sm max-w-sm">הארכיון ריק כרגע, או שהמדיה עדיין נטענת מהענן.</p>
             </div>
         </section>
     </main>
@@ -1883,6 +1903,55 @@
         <div class="flex flex-col gap-2 w-full sm:w-auto">
             <button type="button" onclick="showNewUpdates()" class="btn-primary-gold px-4 py-1.5 rounded-xl text-[11px] font-bold text-center">צפה עכשיו</button>
             <button type="button" onclick="dismissNewUpdates()" class="btn-secondary-dark px-4 py-1.5 rounded-xl text-[11px] font-semibold text-center">סגור</button>
+        </div>
+    </div>
+
+    <!-- EVENT PAGE MODAL -->
+    <div id="eventPageModal" class="fixed inset-0 z-[80] hidden bg-black/85 backdrop-blur-xl p-3 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="eventPageTitle">
+        <div class="w-full h-full max-w-5xl mx-auto rounded-3xl overflow-hidden flex flex-col modal-animate-popup border border-white/10 bg-slate-950">
+            <div class="relative min-h-52 sm:min-h-72 bg-slate-900 overflow-hidden">
+                <img id="eventPageCover" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="" class="absolute inset-0 w-full h-full object-cover hidden">
+                <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/45 to-black/20"></div>
+                <button type="button" onclick="closeModal('eventPageModal')" class="absolute top-4 left-4 z-10 w-11 h-11 btn-secondary-dark rounded-full flex items-center justify-center" aria-label="סגירת עמוד האירוע"><i data-lucide="x" class="w-5 h-5"></i></button>
+                <div class="absolute inset-x-0 bottom-0 p-6 sm:p-9 z-10">
+                    <p id="eventPageDate" class="text-xs font-bold text-amber-300 mb-2"></p>
+                    <h3 id="eventPageTitle" class="text-3xl sm:text-5xl font-black text-white"></h3>
+                    <p id="eventPageStats" class="text-xs text-slate-300 mt-3"></p>
+                </div>
+            </div>
+            <div class="flex-1 overflow-y-auto p-6 sm:p-8 grid lg:grid-cols-[1fr_320px] gap-6">
+                <div>
+                    <h4 class="text-sm font-extrabold text-white mb-3">על האירוע</h4>
+                    <p id="eventPageDescription" class="text-sm leading-7 text-slate-300">לא נוסף עדיין תיאור לאירוע.</p>
+                </div>
+                <aside class="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-3">
+                    <button type="button" id="eventOpenGalleryBtn" class="w-full py-3 btn-primary-gold rounded-xl text-xs font-extrabold flex items-center justify-center gap-2"><i data-lucide="images" class="w-4 h-4"></i> פתח את תמונות האירוע</button>
+                    <button type="button" id="eventStartSlideshowBtn" class="w-full py-3 btn-secondary-dark rounded-xl text-xs font-bold flex items-center justify-center gap-2"><i data-lucide="play" class="w-4 h-4"></i> הפעל מצגת</button>
+                    <button type="button" id="eventEditToggleBtn" data-admin-profile-launcher onclick="toggleEventEdit(true)" class="hidden w-full py-3 btn-secondary-dark rounded-xl text-xs font-bold items-center justify-center gap-2"><i data-lucide="pencil" class="w-4 h-4"></i> עריכת פרטי האירוע</button>
+                </aside>
+                <form id="eventEditForm" onsubmit="saveEventDetails(event)" class="hidden lg:col-span-2 rounded-2xl border border-amber-400/20 bg-amber-400/5 p-5 grid sm:grid-cols-2 gap-4">
+                    <input type="hidden" id="eventEditFolderId">
+                    <label class="block"><span class="text-[10px] font-bold text-slate-300 block mb-1">שם האירוע</span><input id="eventEditName" required maxlength="80" class="w-full rounded-xl px-3 py-2 text-sm"></label>
+                    <label class="block"><span class="text-[10px] font-bold text-slate-300 block mb-1">תאריך האירוע</span><input id="eventEditDate" type="date" class="w-full rounded-xl px-3 py-2 text-sm"></label>
+                    <label class="block sm:col-span-2"><span class="text-[10px] font-bold text-slate-300 block mb-1">תיאור</span><textarea id="eventEditDescription" maxlength="600" rows="4" class="w-full rounded-xl px-3 py-2 text-sm resize-none"></textarea></label>
+                    <div class="sm:col-span-2 flex justify-end gap-2"><button type="button" onclick="toggleEventEdit(false)" class="btn-secondary-dark px-4 py-2 rounded-xl text-xs font-bold">ביטול</button><button type="submit" class="btn-primary-gold px-5 py-2 rounded-xl text-xs font-extrabold">שמור פרטים</button></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- DUPLICATE MEDIA DECISION -->
+    <div id="duplicateMediaModal" class="fixed inset-0 z-[140] hidden bg-black/80 backdrop-blur-md p-4 flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="duplicateMediaTitle">
+        <div class="w-full max-w-lg rounded-3xl border border-amber-400/25 bg-slate-950 p-6 modal-animate-popup shadow-2xl">
+            <div class="w-14 h-14 rounded-2xl bg-amber-400/10 text-amber-300 flex items-center justify-center mb-4"><i data-lucide="copy-check" class="w-7 h-7"></i></div>
+            <h3 id="duplicateMediaTitle" class="text-xl font-black text-white">נמצאו קבצים כפולים</h3>
+            <p id="duplicateMediaMessage" class="text-sm text-slate-300 leading-6 mt-2"></p>
+            <div id="duplicateMediaList" class="mt-4 max-h-36 overflow-y-auto space-y-1.5"></div>
+            <div class="mt-6 grid sm:grid-cols-3 gap-2">
+                <button type="button" onclick="resolveDuplicateUpload('skip')" class="btn-primary-gold rounded-xl py-3 text-xs font-extrabold">דלג על הכפולים</button>
+                <button type="button" onclick="resolveDuplicateUpload('upload')" class="btn-secondary-dark rounded-xl py-3 text-xs font-bold">העלה בכל זאת</button>
+                <button type="button" onclick="resolveDuplicateUpload('cancel')" class="rounded-xl py-3 text-xs font-bold border border-white/10 text-slate-400">ביטול</button>
+            </div>
         </div>
     </div>
 
@@ -3414,6 +3483,9 @@
                         window.state.userApprovalStatus = 'signed_out';
                         window.state.images = [];
                         window.state.folders = defaultFolders.map(folder => ({ ...folder }));
+                        window.state.favorites = new Set();
+                        window.state.selectedMediaIds = new Set();
+                        window.state.bulkSelectionMode = false;
                         window.updateAdminUI();
                         showGoogleOneTapWhenReady();
                         window.renderFolders();
@@ -3523,6 +3595,16 @@
                     }
                     window.updateAdminUI();
                 }, handleFsError));
+
+                const favoritesRef = doc(window.db, 'artifacts', window.appId, 'public', 'data', 'userFavorites', user.uid);
+                window.firestoreUnsubscribers.push(onSnapshot(favoritesRef, (snapshot) => {
+                    const ids = snapshot.exists() && Array.isArray(snapshot.data()?.mediaIds)
+                        ? snapshot.data().mediaIds.map(safeRecordId).filter(Boolean)
+                        : [];
+                    window.state.favorites = new Set(ids);
+                    window.renderFolders?.();
+                    window.renderImages?.();
+                }, handleFsError));
             }
         }
 
@@ -3536,8 +3618,9 @@
     <script>
         // --- 1. Global State ---
         window.state = {
-            folders: window.DEFAULT_GALLERY_FOLDERS.map(folder => ({ ...folder })), images: [], pendingImages: [], pendingUsers: [], allUsers: [], deletionRequests: [], trashItems: [], activityLogs: [], activeFolderId: 'all', searchQuery: '', gallerySort: 'newest',
+            folders: window.DEFAULT_GALLERY_FOLDERS.map(folder => ({ ...folder })), images: [], pendingImages: [], pendingUsers: [], allUsers: [], deletionRequests: [], trashItems: [], activityLogs: [], favorites: new Set(), activeFolderId: 'all', searchQuery: '', gallerySort: 'newest',
             currentLightboxIndex: -1, tempSearchResults: null,
+            bulkSelectionMode: false, selectedMediaIds: new Set(), activeEventFolderId: '',
             isLocked: true, isAdminLoggedIn: false, isSuperAdmin: false, isGoogleUser: false, currentUser: null,
             userProfile: null, userRole: 'guest', userApprovalStatus: 'signed_out'
         };
@@ -4955,7 +5038,7 @@
         };
 
         async function prepareMediaRecordForCloud(record, mediaId) {
-            const { sourceFile, ...cleanRecord } = record;
+            const { sourceFile, _isDuplicate, ...cleanRecord } = record;
             if (sourceFile instanceof Blob) {
                 const storedMedia = await window.uploadMediaToR2(sourceFile, mediaId, cleanRecord.title);
                 return { ...cleanRecord, ...storedMedia };
@@ -5628,10 +5711,222 @@
             window.renderImages();
         }
 
+        async function saveFavorites() {
+            if (!window.db || !window.state.currentUser?.uid) return;
+            const { doc, setDoc } = window.firestoreModules;
+            const favoriteIds = Array.from(window.state.favorites).map(safeRecordId).filter(Boolean).slice(0, 1000);
+            await setDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'userFavorites', window.state.currentUser.uid), {
+                mediaIds: favoriteIds,
+                updatedAt: Date.now()
+            }, { merge: true });
+        }
+
+        window.toggleFavorite = async function(event, mediaId) {
+            event?.preventDefault();
+            event?.stopPropagation();
+            if (!window.state.isGoogleUser || window.state.userApprovalStatus !== 'approved') {
+                window.showNotification('מועדפים זמינים למשתמשים מאושרים בלבד.', false);
+                return;
+            }
+            const id = safeRecordId(mediaId);
+            if (!id) return;
+            const wasFavorite = window.state.favorites.has(id);
+            if (wasFavorite) window.state.favorites.delete(id);
+            else window.state.favorites.add(id);
+            window.renderFolders();
+            window.renderImages();
+            try {
+                await saveFavorites();
+            } catch (error) {
+                if (wasFavorite) window.state.favorites.add(id);
+                else window.state.favorites.delete(id);
+                window.renderFolders();
+                window.renderImages();
+                window.showNotification('שמירת המועדף נכשלה. בדוק את כללי Firebase.', false);
+            }
+        };
+
+        function updateBulkSelectionBar() {
+            const bar = document.getElementById('bulkSelectionBar');
+            const count = document.getElementById('bulkSelectedCount');
+            if (count) count.textContent = String(window.state.selectedMediaIds.size);
+            if (bar) {
+                bar.classList.toggle('hidden', !window.state.bulkSelectionMode);
+                bar.classList.toggle('flex', window.state.bulkSelectionMode);
+            }
+        }
+
+        window.toggleBulkSelectionMode = function(forceState) {
+            if (!window.state.isAdminLoggedIn) return;
+            window.state.bulkSelectionMode = typeof forceState === 'boolean' ? forceState : !window.state.bulkSelectionMode;
+            if (!window.state.bulkSelectionMode) window.state.selectedMediaIds.clear();
+            updateBulkSelectionBar();
+            window.renderImages();
+        };
+
+        window.toggleMediaSelection = function(event, mediaId) {
+            event?.preventDefault();
+            event?.stopPropagation();
+            const id = safeRecordId(mediaId);
+            if (!window.state.bulkSelectionMode || !id) return;
+            if (window.state.selectedMediaIds.has(id)) window.state.selectedMediaIds.delete(id);
+            else window.state.selectedMediaIds.add(id);
+            updateBulkSelectionBar();
+            window.renderImages();
+        };
+
+        window.toggleSelectAllVisibleMedia = function() {
+            if (!window.state.bulkSelectionMode) return;
+            const visibleIds = getFilteredSortedImages().map(item => safeRecordId(item.id)).filter(Boolean);
+            const allSelected = visibleIds.length > 0 && visibleIds.every(id => window.state.selectedMediaIds.has(id));
+            visibleIds.forEach(id => allSelected ? window.state.selectedMediaIds.delete(id) : window.state.selectedMediaIds.add(id));
+            updateBulkSelectionBar();
+            window.renderImages();
+        };
+
+        window.openBulkMoveDialog = function() {
+            if (!window.state.isAdminLoggedIn || window.state.selectedMediaIds.size === 0) {
+                window.showNotification('לא נבחרו פריטים להעברה.', false);
+                return;
+            }
+            const select = document.getElementById('moveFolderSelect');
+            const submit = document.getElementById('moveFolderSubmitBtn');
+            if (!select || !submit) return;
+            select.replaceChildren();
+            window.state.folders.filter(folder => folder.id !== 'all').forEach(folder => {
+                const option = document.createElement('option');
+                option.value = safeRecordId(folder.id);
+                option.textContent = folder.name;
+                select.appendChild(option);
+            });
+            submit.onclick = () => {
+                const targetFolderId = safeRecordId(select.value);
+                const selected = window.state.images.filter(item => window.state.selectedMediaIds.has(safeRecordId(item.id)));
+                showConfirm('העברת פריטים', `להעביר ${selected.length} פריטים לתיקייה שנבחרה?`, async () => {
+                    for (const item of selected) await window.saveImageToCloud({ ...item, folderId: targetFolderId });
+                    closeModal('moveFolderModal');
+                    window.state.selectedMediaIds.clear();
+                    updateBulkSelectionBar();
+                    window.renderImages();
+                    window.showNotification(`${selected.length} פריטים הועברו בהצלחה.`);
+                });
+            };
+            openModal('moveFolderModal');
+        };
+
+        window.deleteSelectedMedia = function() {
+            if (!window.state.isAdminLoggedIn || window.state.selectedMediaIds.size === 0) {
+                window.showNotification('לא נבחרו פריטים למחיקה.', false);
+                return;
+            }
+            const selected = window.state.images.filter(item => window.state.selectedMediaIds.has(safeRecordId(item.id)));
+            const title = window.state.isSuperAdmin ? 'העברת פריטים לסל' : 'שליחת בקשות מחיקה';
+            const message = window.state.isSuperAdmin
+                ? `להעביר ${selected.length} פריטים לסל המחזור?`
+                : `לשלוח למנהל־העל ${selected.length} בקשות מחיקה?`;
+            showConfirm(title, message, async () => {
+                for (const item of selected) {
+                    if (window.state.isSuperAdmin) await window.moveImageToTrash(item.id);
+                    else await window.requestContentDeletion('image', item.id, item.title || 'קובץ מדיה');
+                }
+                window.state.selectedMediaIds.clear();
+                updateBulkSelectionBar();
+                window.renderImages();
+                window.showNotification(window.state.isSuperAdmin ? 'הפריטים הועברו לסל.' : 'בקשות המחיקה נשלחו.');
+            });
+        };
+
+        window.downloadSelectedMedia = function() {
+            const selected = window.state.images.filter(item => window.state.selectedMediaIds.has(safeRecordId(item.id)));
+            if (!selected.length) {
+                window.showNotification('לא נבחרו פריטים להורדה.', false);
+                return;
+            }
+            selected.forEach((item, index) => {
+                window.setTimeout(() => {
+                    const link = document.createElement('a');
+                    link.href = safeImageUrl(item.url);
+                    link.download = item.title || `media-${index + 1}`;
+                    link.target = '_blank';
+                    link.rel = 'noopener';
+                    document.body.appendChild(link);
+                    link.click();
+                    link.remove();
+                }, index * 250);
+            });
+            window.showNotification(`התחילה הורדה של ${selected.length} פריטים.`);
+        };
+
+        window.openEventPage = function(event, folderId) {
+            event?.preventDefault();
+            event?.stopPropagation();
+            const id = safeRecordId(folderId);
+            const folder = window.state.folders.find(item => safeRecordId(item.id) === id);
+            if (!folder || id === 'all') return;
+            const media = window.state.images.filter(item => safeRecordId(item.folderId) === id);
+            const coverRecord = media.find(item => !isVideoRecord(item));
+            const cover = document.getElementById('eventPageCover');
+            if (cover) {
+                const coverUrl = safeImageUrl(folder.coverUrl || coverRecord?.url);
+                cover.src = coverUrl || cover.src;
+                cover.classList.toggle('hidden', !coverUrl);
+            }
+            window.state.activeEventFolderId = id;
+            document.getElementById('eventPageTitle').textContent = folder.name || 'אירוע';
+            document.getElementById('eventPageDate').textContent = folder.eventDate ? formatDate(folder.eventDate) : 'ארכיון שמחת התורה';
+            document.getElementById('eventPageDescription').textContent = folder.description || 'לא נוסף עדיין תיאור לאירוע.';
+            const videoCount = media.filter(isVideoRecord).length;
+            document.getElementById('eventPageStats').textContent = `${media.length} פריטים · ${videoCount} סרטונים · ${media.length - videoCount} תמונות`;
+            const openButton = document.getElementById('eventOpenGalleryBtn');
+            if (openButton) openButton.onclick = () => {
+                setActiveFolder(id);
+                closeModal('eventPageModal');
+                document.getElementById('photosGrid')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            };
+            const slideshowButton = document.getElementById('eventStartSlideshowBtn');
+            if (slideshowButton) slideshowButton.onclick = () => {
+                setActiveFolder(id);
+                closeModal('eventPageModal');
+                window.startGallerySlideshow();
+            };
+            document.getElementById('eventEditFolderId').value = id;
+            document.getElementById('eventEditName').value = folder.name || '';
+            document.getElementById('eventEditDate').value = folder.eventDate || '';
+            document.getElementById('eventEditDescription').value = folder.description || '';
+            toggleEventEdit(false);
+            openModal('eventPageModal');
+            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+        };
+
+        window.toggleEventEdit = function(show) {
+            const form = document.getElementById('eventEditForm');
+            if (form) form.classList.toggle('hidden', !show);
+        };
+
+        window.saveEventDetails = async function(event) {
+            event?.preventDefault();
+            if (!checkAdminPermission()) return;
+            const id = safeRecordId(document.getElementById('eventEditFolderId')?.value);
+            const folder = window.state.folders.find(item => safeRecordId(item.id) === id);
+            if (!folder) return;
+            const updated = {
+                ...folder,
+                name: String(document.getElementById('eventEditName')?.value || '').trim().slice(0, 80),
+                eventDate: document.getElementById('eventEditDate')?.value || '',
+                description: String(document.getElementById('eventEditDescription')?.value || '').trim().slice(0, 600)
+            };
+            await window.saveFolderToCloud(updated);
+            Object.assign(folder, updated);
+            window.renderFolders();
+            toggleEventEdit(false);
+            window.openEventPage(null, id);
+            window.showNotification('פרטי האירוע נשמרו.');
+        };
+
         // --- 6. Main UI Renders ---
         function setActiveFolder(folderId) {
             const safeFolderId = safeRecordId(folderId);
-            if (!window.state.folders.some(folder => safeRecordId(folder.id) === safeFolderId)) return;
+            if (safeFolderId !== 'favorites' && !window.state.folders.some(folder => safeRecordId(folder.id) === safeFolderId)) return;
             window.state.tempSearchResults = null;
             const searchBanner = document.getElementById('tempSearchBanner');
             if(searchBanner) searchBanner.classList.add('hidden');
@@ -5647,7 +5942,9 @@
 
         function getFilteredSortedImages() {
             let filtered = window.state.tempSearchResults !== null ? [...window.state.tempSearchResults] : [...window.state.images];
-            if (window.state.tempSearchResults === null && window.state.activeFolderId !== 'all') {
+            if (window.state.tempSearchResults === null && window.state.activeFolderId === 'favorites') {
+                filtered = filtered.filter(img => window.state.favorites.has(safeRecordId(img.id)));
+            } else if (window.state.tempSearchResults === null && window.state.activeFolderId !== 'all') {
                 filtered = filtered.filter(img => img.folderId === window.state.activeFolderId);
             }
             if (window.state.searchQuery) {
@@ -5677,19 +5974,29 @@
             if (typeof window.updateAdminOverview === 'function') window.updateAdminOverview();
             const folderList = document.getElementById('folderList'); if (!folderList) return; folderList.innerHTML = '';
             const isEditBlocked = window.state.isLocked && !window.state.isAdminLoggedIn;
+            if (window.state.isGoogleUser && window.state.userApprovalStatus === 'approved') {
+                const favoriteCount = window.state.images.filter(item => window.state.favorites.has(safeRecordId(item.id))).length;
+                folderList.insertAdjacentHTML('beforeend', `
+                    <div class="folder-row flex items-center justify-between group p-1 ${window.state.activeFolderId === 'favorites' ? 'is-active' : ''}">
+                        <button type="button" onclick="setActiveFolder('favorites')" class="folder-button flex-1 flex items-center gap-3 px-3 py-2 text-sm" ${window.state.activeFolderId === 'favorites' ? 'aria-current="page"' : ''}>
+                            <i data-lucide="heart" class="w-4 h-4"></i><span class="truncate max-w-[120px]">המועדפים שלי</span><span class="folder-count mr-auto text-xs px-2 py-0.5 rounded-full">${favoriteCount}</span>
+                        </button>
+                    </div>`);
+            }
             window.state.folders.forEach(folder => {
                 const folderId = safeRecordId(folder.id);
                 if (!folderId) return;
                 const isActive = window.state.activeFolderId === folder.id;
                 const isProtectedFolder = ['all', '1', '2', '3', '4'].includes(folderId) || folder.isDefault === true;
                 const delBtn = (!isProtectedFolder && !isEditBlocked) ? `<button type="button" onclick="handleDeleteFolder(event, '${folderId}')" class="p-1 hover:text-red-500 rounded" aria-label="מחיקת התיקייה ${escapeHtml(folder.name)}"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : '';
+                const eventBtn = folderId !== 'all' ? `<button type="button" onclick="openEventPage(event, '${folderId}')" class="p-1 hover:text-amber-400 rounded" aria-label="פתיחת עמוד האירוע ${escapeHtml(folder.name)}" title="עמוד האירוע"><i data-lucide="panel-top-open" class="w-4 h-4"></i></button>` : '';
                 const count = folder.id === 'all' ? window.state.images.length : window.state.images.filter(img => img.folderId === folder.id).length;
 
                 folderList.insertAdjacentHTML('beforeend', `
                     <div class="folder-row flex items-center justify-between group p-1 ${isActive ? 'is-active' : ''}">
                         <button type="button" onclick="setActiveFolder('${folderId}')" class="folder-button flex-1 flex items-center gap-3 px-3 py-2 text-sm" ${isActive ? 'aria-current="page"' : ''}>
                             <i data-lucide="${safeIconName(folder.icon)}" class="w-4 h-4"></i><span class="truncate max-w-[120px]">${escapeHtml(folder.name)}</span><span class="folder-count mr-auto text-xs px-2 py-0.5 rounded-full">${count}</span>
-                        </button><div class="hidden group-hover:flex items-center gap-1 pl-2 text-slate-400">${delBtn}</div>
+                        </button><div class="flex items-center gap-1 pl-2 text-slate-400">${eventBtn}${delBtn}</div>
                     </div>`);
             });
             if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
@@ -5713,6 +6020,8 @@
                 const folder = window.state.folders.find(f => f.id === img.folderId);
                 const imageUrl = safeImageUrl(img.url);
                 const isVideo = isVideoRecord(img);
+                const isFavorite = window.state.favorites.has(imageId);
+                const isSelected = window.state.selectedMediaIds.has(imageId);
                 const title = escapeHtml(img.title || (isVideo ? 'סרטון ללא שם' : 'תמונה ללא שם'));
                 const mediaHtml = isVideo
                     ? `<video src="${escapeHtml(imageUrl)}" muted playsinline preload="metadata" class="w-full h-full object-cover gallery-card-img bg-black"></video>
@@ -5721,12 +6030,14 @@
                     : `<img src="${escapeHtml(imageUrl)}" loading="lazy" decoding="async" alt="${title}" class="w-full h-full object-cover gallery-card-img" onerror="handleImageError(this)">`;
                 const actionHtml = !isEditBlocked ? `<div class="gallery-actions mt-4 pt-3 border-t border-slate-200 flex items-center justify-between opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity"><button type="button" onclick="changeImageFolder('${imageId}')" class="text-xs font-semibold px-2.5 py-1.5 rounded-lg flex items-center gap-1"><i data-lucide="folder-sync" class="w-3.5 h-3.5"></i>העבר</button><button type="button" onclick="handleDeleteImage('${imageId}')" class="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg" aria-label="מחיקת ${title}"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>` : '';
                 grid.insertAdjacentHTML('beforeend', `
-                    <article class="overflow-hidden flex flex-col group relative fade-up gallery-card" style="--card-index:${Math.min(index, 12)}">
-                        <button type="button" class="gallery-media" onclick="openLightbox('${imageId}')" aria-label="פתיחת ${title} בתצוגה גדולה">
+                    <article class="overflow-hidden flex flex-col group relative fade-up gallery-card ${isSelected ? 'ring-2 ring-cyan-400 ring-offset-2 ring-offset-slate-950' : ''}" style="--card-index:${Math.min(index, 12)}">
+                        <button type="button" class="gallery-media" onclick="${window.state.bulkSelectionMode ? `toggleMediaSelection(event, '${imageId}')` : `openLightbox('${imageId}')`}" aria-label="${window.state.bulkSelectionMode ? 'בחירת' : 'פתיחת'} ${title}">
                             ${mediaHtml}
                             <span class="gallery-number">${String(index + 1).padStart(2, '0')}</span>
                             <span class="gallery-view"><i data-lucide="maximize-2" class="w-3.5 h-3.5"></i> תצוגה מלאה</span>
                         </button>
+                        ${window.state.bulkSelectionMode ? `<button type="button" onclick="toggleMediaSelection(event, '${imageId}')" class="absolute top-3 left-3 z-30 w-9 h-9 rounded-full flex items-center justify-center border ${isSelected ? 'bg-cyan-400 text-slate-950 border-cyan-300' : 'bg-black/70 text-white border-white/30'}" aria-label="${isSelected ? 'ביטול בחירה' : 'בחירת הפריט'}"><i data-lucide="${isSelected ? 'circle-check-big' : 'circle'}" class="w-5 h-5"></i></button>` : ''}
+                        <button type="button" onclick="toggleFavorite(event, '${imageId}')" class="absolute ${window.state.bulkSelectionMode ? 'top-14' : 'top-3'} left-3 z-30 w-9 h-9 rounded-full flex items-center justify-center border bg-black/65 ${isFavorite ? 'text-red-400 border-red-300/50' : 'text-white border-white/25'}" aria-label="${isFavorite ? 'הסרה מהמועדפים' : 'הוספה למועדפים'}"><i data-lucide="heart" class="w-4 h-4 ${isFavorite ? 'fill-current' : ''}"></i></button>
                         <div class="gallery-caption p-4 flex-1 flex flex-col justify-between relative z-10">
                             <div><h3 class="gallery-title font-bold truncate mb-1">${title}</h3><div class="gallery-meta flex items-center gap-2 text-[11px]"><span class="gallery-folder-tag px-2 py-0.5 font-medium">${escapeHtml(folder ? folder.name : 'כללי')}</span><span aria-hidden="true">•</span><time datetime="${escapeHtml(img.date || '')}">${formatDate(img.date)}</time></div></div>${actionHtml}
                         </div>
@@ -5760,6 +6071,57 @@
                 || /\.(?:png|jpe?g|webp|gif)$/i.test(file.name)
                 || isSupportedVideoFile(file)
             ));
+        }
+
+        async function createFileFingerprint(file) {
+            if (!(file instanceof Blob) || !window.crypto?.subtle) return '';
+            const bytes = await file.arrayBuffer();
+            const digest = await window.crypto.subtle.digest('SHA-256', bytes);
+            return Array.from(new Uint8Array(digest)).map(value => value.toString(16).padStart(2, '0')).join('');
+        }
+
+        let duplicateUploadResolver = null;
+
+        window.resolveDuplicateUpload = function(choice) {
+            closeModal('duplicateMediaModal');
+            const resolver = duplicateUploadResolver;
+            duplicateUploadResolver = null;
+            if (resolver) resolver(choice);
+        };
+
+        async function resolveDuplicateMedia(records) {
+            const knownHashes = new Set(
+                [...(window.state.images || []), ...(window.state.pendingImages || [])]
+                    .map(item => String(item.contentHash || ''))
+                    .filter(Boolean)
+            );
+            const currentHashes = new Set();
+            records.forEach(record => {
+                const hash = String(record.contentHash || '');
+                record._isDuplicate = Boolean(hash && (knownHashes.has(hash) || currentHashes.has(hash)));
+                if (hash) currentHashes.add(hash);
+            });
+            const duplicates = records.filter(record => record._isDuplicate);
+            if (!duplicates.length) return records;
+
+            const message = document.getElementById('duplicateMediaMessage');
+            const list = document.getElementById('duplicateMediaList');
+            if (message) message.textContent = `נמצאו ${duplicates.length} קבצים שכבר קיימים בגלריה או מופיעים יותר מפעם אחת בבחירה הנוכחית.`;
+            if (list) {
+                list.replaceChildren();
+                duplicates.slice(0, 20).forEach(record => {
+                    const row = document.createElement('p');
+                    row.className = 'rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-[10px] text-slate-300 truncate';
+                    row.textContent = record.title || 'קובץ ללא שם';
+                    list.appendChild(row);
+                });
+            }
+            openModal('duplicateMediaModal');
+            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+            const choice = await new Promise(resolve => { duplicateUploadResolver = resolve; });
+            if (choice === 'cancel') return [];
+            if (choice === 'skip') return records.filter(record => !record._isDuplicate);
+            return records;
         }
 
         window.renderSelectedUploadQueue = function(inputIds, containerId) {
@@ -5830,6 +6192,12 @@
             for (let i = 0; i < files.length; i++) {
                 const file = files[i]; let destFolderId = targetFolderId === 'auto' ? null : targetFolderId; let folderName = "כללי";
                 updateUploadQueueItem(queueId, i, 'active', 'מעבד');
+                let contentHash = '';
+                try {
+                    contentHash = await createFileFingerprint(file);
+                } catch (error) {
+                    console.warn('File fingerprint failed:', error);
+                }
                 if (file.webkitRelativePath) {
                     const parts = file.webkitRelativePath.split('/');
                     if (parts.length > 1) {
@@ -5856,6 +6224,7 @@
                         id: `img_${crypto.randomUUID()}`,
                         folderId: destFolderId || '4', title: file.name.replace(/\.[^.]+$/, ''), url: '',
                         sourceFile: videoFile, mediaType: 'video', mimeType: videoMimeType,
+                        contentHash, originalSize: file.size,
                         date: new Date().toISOString().split('T')[0], createdAt: Date.now(), originalFolderName: folderName
                     });
                     updateUploadQueueItem(queueId, i, 'ready', 'מוכן');
@@ -5867,6 +6236,7 @@
                             id: `img_${crypto.randomUUID()}`,
                             folderId: destFolderId || '4', title: file.name.replace(/\.[^.]+$/, ''), url: base64,
                             mediaType: 'image', mimeType: 'image/jpeg',
+                            contentHash, originalSize: file.size,
                             date: new Date().toISOString().split('T')[0], createdAt: Date.now(), originalFolderName: folderName
                         });
                         updateUploadQueueItem(queueId, i, 'ready', 'מוכן');
@@ -5907,11 +6277,16 @@
                 if(pText) pText.innerText = 'מכין את הקבצים להעלאה...';
                 const newImages = await processFilesWithFolders(allFiles, targetFolderId, true);
                 if (newImages.length === 0) throw new Error('לא נמצאו קובצי מדיה תקינים.');
+                const uploadRecords = await resolveDuplicateMedia(newImages);
+                if (uploadRecords.length === 0) {
+                    window.showNotification('ההעלאה בוטלה או שכל הקבצים הכפולים דולגו.', true);
+                    return;
+                }
                 let uploadedCount = 0;
                 let failedCount = 0;
-                for (let index = 0; index < newImages.length; index++) {
-                    if(pText) pText.innerText = `מעלה לאחסון: ${index + 1} מתוך ${newImages.length}`;
-                    const { uploadQueueIndex, ...imageRecord } = newImages[index];
+                for (let index = 0; index < uploadRecords.length; index++) {
+                    if(pText) pText.innerText = `מעלה לאחסון: ${index + 1} מתוך ${uploadRecords.length}`;
+                    const { uploadQueueIndex, ...imageRecord } = uploadRecords[index];
                     updateUploadQueueItem('adminUploadQueue', uploadQueueIndex, 'active', 'מעלה');
                     try {
                         await window.saveImageToCloud(imageRecord);
@@ -5978,11 +6353,16 @@
                 if(pText) pText.innerText = 'מכין את הקבצים להעלאה...';
                 const newImages = await processFilesWithFolders(allFiles, targetFolderId, false);
                 if (newImages.length === 0) throw new Error('לא נמצאו קובצי מדיה תקינים.');
+                const uploadRecords = await resolveDuplicateMedia(newImages);
+                if (uploadRecords.length === 0) {
+                    window.showNotification('ההעלאה בוטלה או שכל הקבצים הכפולים דולגו.', true);
+                    return;
+                }
                 let uploadedCount = 0;
                 let failedCount = 0;
-                for (let index = 0; index < newImages.length; index++) {
-                    if(pText) pText.innerText = `${canUploadDirectly ? 'מעלה לגלריה' : 'שולח לאישור'}: ${index + 1} מתוך ${newImages.length}`;
-                    const { uploadQueueIndex, ...imageRecord } = newImages[index];
+                for (let index = 0; index < uploadRecords.length; index++) {
+                    if(pText) pText.innerText = `${canUploadDirectly ? 'מעלה לגלריה' : 'שולח לאישור'}: ${index + 1} מתוך ${uploadRecords.length}`;
+                    const { uploadQueueIndex, ...imageRecord } = uploadRecords[index];
                     updateUploadQueueItem('userUploadQueue', uploadQueueIndex, 'active', canUploadDirectly ? 'מעלה' : 'שולח');
                     try {
                         if (canUploadDirectly) await window.saveImageToCloud(imageRecord);
