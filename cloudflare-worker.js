@@ -348,6 +348,49 @@ async function deleteImage(request, env, pathname) {
   return json(request, { success: true, key });
 }
 
+async function sendEmail(request, env) {
+  const user = await requireUser(request, env, ["super_admin"]);
+  if (!env.RESEND_API_KEY || !env.EMAIL_FROM) {
+    throw apiError("שירות הדוא״ל עדיין לא הוגדר בשרת.", 503, "email_not_configured");
+  }
+  const payload = await request.json().catch(() => ({}));
+  const to = String(payload.to || "").trim().toLowerCase();
+  const subject = String(payload.subject || "").trim();
+  const textBody = String(payload.text || "").trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to) || to.length > 254) {
+    throw apiError("כתובת הדוא״ל של הנמען אינה תקינה.", 400, "invalid_recipient");
+  }
+  if (subject.length < 1 || subject.length > 160) {
+    throw apiError("נושא ההודעה חייב להכיל עד 160 תווים.", 400, "invalid_subject");
+  }
+  if (textBody.length < 1 || textBody.length > 5000) {
+    throw apiError("תוכן ההודעה חייב להכיל עד 5,000 תווים.", 400, "invalid_email_body");
+  }
+
+  const idempotencyKey = `gallery-${user.uid}-${crypto.randomUUID()}`;
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${env.RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+      "Idempotency-Key": idempotencyKey
+    },
+    body: JSON.stringify({
+      from: String(env.EMAIL_FROM).trim(),
+      to: [to],
+      subject,
+      text: textBody,
+      reply_to: user.email
+    })
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok || !result.id) {
+    console.error("Email provider rejected request", response.status, result?.name || result?.message || "unknown");
+    throw apiError("ספק הדוא״ל לא הצליח לשלוח את ההודעה.", 502, "email_send_failed");
+  }
+  return json(request, { success: true, id: result.id });
+}
+
 function safeAiSearchImage(value) {
   const id = safeImageId(value?.id);
   const title = String(value?.title || "תמונה").trim().slice(0, 120);
@@ -543,6 +586,9 @@ export default {
       }
       if (request.method === "POST" && url.pathname === "/ai-search") {
         return await aiImageSearch(request, env);
+      }
+      if (request.method === "POST" && url.pathname === "/send-email") {
+        return await sendEmail(request, env);
       }
       if (request.method === "GET" && url.pathname.startsWith("/face-assets/")) {
         return await serveFaceAsset(request, env, url.pathname);
