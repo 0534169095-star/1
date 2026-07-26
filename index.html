@@ -9,7 +9,7 @@
     <title>ארכיון הרגעים | גלריית שמחת התורה</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
+    <script src="https://simchas-gallery-api.0534169095.workers.dev/face-assets/face-api.js"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 
@@ -4718,7 +4718,7 @@
 
         async function loadFaceApiModels() {
             if (faceApiModelsLoaded) return;
-            const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model';
+            const MODEL_URL = `${R2_WORKER_BASE_URL}/face-assets/model`;
             await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
             await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
             await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
@@ -4889,6 +4889,7 @@
 
                 const matches = [];
                 const total = window.state.images.length;
+                let failedImages = 0;
                 for (let i = 0; i < total; i++) {
                     const imgData = window.state.images[i];
                     try {
@@ -4908,7 +4909,10 @@
                         });
 
                         if (isMatch) matches.push(imgData);
-                    } catch (e) { }
+                    } catch (error) {
+                        failedImages++;
+                        console.warn(`Face search skipped image ${safeRecordId(imgData?.id) || i}:`, error);
+                    }
                     if(statusText) statusText.innerText = `סורק תמונות... ${i + 1}/${total}`;
                     if(bar) bar.style.width = `${20 + Math.round(((i + 1) / total) * 78)}%`;
                 }
@@ -4918,7 +4922,14 @@
                 showFaceResultBanner(matches.length);
                 window.renderImages();
                 closeModal('faceSearchModal');
-                window.showNotification(matches.length ? `נמצאו ${matches.length} תמונות עם הפרצוף הזה.` : 'לא נמצאו תמונות תואמות.', matches.length > 0);
+                if (matches.length) {
+                    const skippedText = failedImages ? ` ${failedImages} תמונות לא הצליחו להיסרק.` : '';
+                    window.showNotification(`נמצאו ${matches.length} תמונות עם הפרצוף הזה.${skippedText}`, true);
+                } else if (failedImages) {
+                    window.showNotification(`לא נמצאה התאמה, אך ${failedImages} מתוך ${total} תמונות לא הצליחו להיסרק.`, false);
+                } else {
+                    window.showNotification('לא נמצאו תמונות תואמות.', false);
+                }
             } catch (err) {
                 console.error(err);
                 window.showNotification('שגיאה במנוע זיהוי הפנים. בדוק חיבור אינטרנט ונסה שוב.', false);
