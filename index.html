@@ -1139,6 +1139,14 @@
         #sidebarAdminPanel .admin-control-card > button [id$="Arrow"] {
             transform: rotate(90deg);
         }
+        .admin-section-label {
+            margin: 15px 4px 7px;
+            color: #687386;
+            font-size: 9px;
+            font-weight: 900;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+        }
 
         .admin-task-window,
         .admin-messages-window {
@@ -1513,11 +1521,12 @@
         
         /* Floating Profile Widget */
         .floating-profile-container {
-    position: fixed;
-    top: 96px;
-    right: 24px;
-    z-index: 50;
-}
+            position: relative;
+            top: auto;
+            left: auto;
+            right: auto;
+            z-index: 50;
+        }
         .floating-profile-btn {
             width: 58px;
             height: 58px;
@@ -1540,8 +1549,9 @@
         /* Expanded Floating Profile Panel */
         .floating-profile-panel {
             position: fixed;
-            top: 166px;
-            right: 24px;
+            top: 86px;
+            left: 24px;
+            right: auto;
             width: 360px;
             max-height: 580px;
             border-radius: 24px;
@@ -1562,6 +1572,70 @@
             transform: translateY(0) scale(1);
             opacity: 1;
             pointer-events: auto;
+        }
+
+        .conversation-window {
+            color: var(--paper);
+            background:
+                radial-gradient(circle at 10% 0%, rgba(100,216,229,.1), transparent 30%),
+                linear-gradient(155deg, rgba(20,25,35,.99), rgba(8,10,15,.99));
+            border: 1px solid rgba(255,255,255,.1);
+            box-shadow: 0 35px 110px rgba(0,0,0,.72);
+        }
+        .conversation-stream {
+            background:
+                linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+                rgba(5,7,11,.55);
+            background-size: 28px 28px;
+        }
+        .conversation-bubble {
+            width: fit-content;
+            max-width: min(78%, 620px);
+            padding: 11px 14px;
+            border-radius: 18px;
+            border: 1px solid rgba(255,255,255,.08);
+            box-shadow: 0 8px 24px rgba(0,0,0,.18);
+        }
+        .conversation-bubble.is-user {
+            margin-left: auto;
+            color: #061116;
+            background: linear-gradient(135deg, #8ee7ef, #64d8e5);
+            border-bottom-left-radius: 6px;
+        }
+        .conversation-bubble.is-admin {
+            margin-right: auto;
+            color: #090805;
+            background: linear-gradient(135deg, #ffe18a, #ffb627);
+            border-bottom-right-radius: 6px;
+        }
+        .conversation-bubble p { white-space: pre-wrap; overflow-wrap: anywhere; }
+        .conversation-bubble time { display: block; margin-top: 5px; font-size: 8px; opacity: .62; }
+        html[data-theme="light"] .conversation-window {
+            color: #172033;
+            background: linear-gradient(155deg, #fff, #f6f8fc);
+            border-color: rgba(15,23,42,.12);
+            box-shadow: 0 35px 100px rgba(15,23,42,.24);
+        }
+        html[data-theme="light"] .conversation-stream { background-color: #eef2f7; }
+
+        @media (max-width: 680px) {
+            .floating-profile-container { top: auto; left: auto; }
+            .floating-profile-btn { width: 44px; height: 44px; }
+            .theme-toggle { width: 42px; padding-inline: 0; }
+            .theme-toggle span { display: none; }
+            .brand-lockup { gap: 9px !important; }
+            .brand-mark { padding: 8px !important; }
+            .brand-mark svg { width: 24px !important; height: 24px !important; }
+            .brand-title { font-size: 15px !important; }
+            .brand-kicker { font-size: 8px !important; }
+            .floating-profile-panel {
+                top: 74px;
+                left: 10px;
+                width: calc(100vw - 20px);
+                max-height: calc(100vh - 88px);
+            }
+            .conversation-bubble { max-width: 88%; }
         }
         
         /* Shimmer sweep line animation */
@@ -1591,7 +1665,7 @@
         <canvas id="ambientCanvas"></canvas>
     </div>
 
-    <header class="site-header bg-black/80 backdrop-blur-xl border-b sticky top-0 z-40 shadow-sm">
+    <header class="site-header bg-black/80 backdrop-blur-xl border-b sticky top-0 z-40 shadow-sm" aria-label="כותרת האתר">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
             <div class="brand-lockup flex items-center gap-4">
                 <div class="brand-mark bg-gradient-to-br text-white p-2.5 rounded-xl shadow-md" aria-hidden="true">
@@ -1603,6 +1677,15 @@
                 </div>
             </div>
             <div class="header-actions flex items-center gap-2 sm:gap-3">
+                <div class="floating-profile-container">
+                    <span id="floatingWidgetBadge" class="absolute -top-1.5 -left-1.5 w-5 h-5 bg-red-500 border-2 border-slate-950 rounded-full flex items-center justify-center text-[9px] font-extrabold text-white hidden animate-bounce animate-pulse">0</span>
+                    <button type="button" onclick="toggleFloatingProfile()" class="floating-profile-btn group" title="פרופיל גוגל והודעות" aria-label="פרופיל גוגל והודעות">
+                        <img id="floatingUserPhoto" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="פרופיל" class="w-full h-full rounded-full object-cover hidden border-2 border-amber-400/50">
+                        <span id="floatingUserFallback" class="w-full h-full rounded-full bg-gradient-to-br from-amber-400/10 to-amber-500/20 text-amber-300 flex items-center justify-center group-hover:scale-105 transition-all">
+                            <i data-lucide="user-check" class="w-6 h-6"></i>
+                        </span>
+                    </button>
+                </div>
                 <button id="themeToggleButton" type="button" onclick="toggleSiteTheme()" class="theme-toggle" aria-label="מעבר למצב בהיר" title="מעבר בין מצב בהיר לכהה">
                     <i id="themeToggleIcon" data-lucide="sun" class="w-4 h-4"></i>
                     <span id="themeToggleText">בהיר</span>
@@ -1772,6 +1855,19 @@
                     <div class="admin-stat"><span class="admin-stat-icon"><i data-lucide="folders" class="w-5 h-5"></i></span><div><strong id="adminOverviewFoldersCount">0</strong><span>תיקיות</span></div></div>
                 </section>
 
+                <p class="admin-section-label super-admin-only hidden">תקשורת ואנשים</p>
+
+                <div id="superAdminChatsCard" class="hidden super-admin-only admin-control-card rounded-2xl overflow-hidden">
+                    <button type="button" onclick="openAdminMessagesCenter()" class="w-full px-4 py-3.5 text-xs font-bold text-slate-200 flex items-center justify-between transition-all">
+                        <span class="flex items-center gap-2 text-cyan-300">
+                            <i data-lucide="messages-square" class="w-4 h-4"></i>
+                            שיחות ופניות ממשתמשים
+                            <span id="adminChatsUnreadBadge" class="hidden min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[9px] items-center justify-center">0</span>
+                        </span>
+                        <i data-lucide="arrow-left" class="w-4 h-4 text-cyan-300/70"></i>
+                    </button>
+                </div>
+
                 <!-- אישור משתמשים חדשים ובחירת דרגה -->
                 <div id="superAdminUsersCard" class="hidden super-admin-only admin-control-card rounded-2xl overflow-hidden">
                     <button type="button" onclick="openAdminTaskWindow('accUserApprovals')" class="w-full hover:bg-white/5 px-4 py-3 text-xs font-bold text-slate-200 flex items-center justify-between transition-all">
@@ -1799,6 +1895,8 @@
                     </div>
                 </div>
 
+                <p class="admin-section-label">תוכן הגלריה</p>
+
                 <!-- אישור ממתינות -->
                 <div class="admin-control-card rounded-2xl overflow-hidden">
                     <button type="button" onclick="openAdminTaskWindow('accPending')" class="w-full hover:bg-white/5 px-4 py-3 text-xs font-bold text-slate-200 flex items-center justify-between transition-all">
@@ -1822,6 +1920,8 @@
                         </div>
                     </div>
                 </div>
+
+                <p class="admin-section-label">כלי מערכת</p>
 
                 <!-- העלאה חכמה / יצירת תיקייה -->
                 <div class="admin-control-card rounded-2xl overflow-hidden mt-2">
@@ -1967,34 +2067,6 @@
         </div>
     </div>
 
-
-    <!-- ADMIN MESSAGING MODAL -->
-    <div id="adminMessageModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden" role="dialog" aria-modal="true" aria-label="שלח הודעה למשתמש">
-        <div class="rounded-3xl w-full max-w-md overflow-hidden transform transition-all modal-animate-popup text-right">
-            <div class="bg-gradient-to-r from-amber-500/20 to-transparent border-b border-amber-500/30 p-5 flex justify-between items-center text-white">
-                <h3 class="font-bold text-lg flex items-center gap-2"><i data-lucide="message-square" class="w-5 h-5 text-amber-400"></i> שלח הודעה למשתמש</h3>
-                <button type="button" onclick="closeModal('adminMessageModal')" class="text-slate-400 hover:text-white transition-all" aria-label="סגירת חלון שליחת הודעה"><i data-lucide="x" class="w-6 h-6"></i></button>
-            </div>
-            <div class="p-6 space-y-4">
-                <div>
-                    <span class="text-[10px] font-bold text-slate-400 block">נמען:</span>
-                    <p id="adminMessageRecipient" class="text-sm font-bold text-white"></p>
-                </div>
-                <div>
-                    <label class="text-[10px] font-bold text-slate-400 block mb-1">תוכן ההודעה האישית:</label>
-                    <textarea id="adminMessageTextarea" class="w-full text-xs p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 h-28" placeholder="הקלד כאן את הודעתך..."></textarea>
-                </div>
-                <label class="flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/5 p-3 cursor-pointer">
-                    <input id="adminMessageAllowReply" type="checkbox" checked class="w-4 h-4 accent-amber-400">
-                    <span class="text-[10px] font-bold text-slate-300">אפשר למשתמש להשיב להודעה</span>
-                </label>
-                <div class="pt-4 flex justify-end gap-3">
-                    <button type="button" onclick="closeModal('adminMessageModal')" class="px-5 py-2.5 btn-secondary-dark rounded-xl text-sm font-semibold">ביטול</button>
-                    <button type="button" id="adminMessageSubmitBtn" class="px-5 py-2.5 btn-primary-gold rounded-xl text-sm font-bold">שלח הודעה</button>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- LIGHTBOX Modal -->
     <div id="lightboxModal" class="fixed inset-0 bg-black/95 backdrop-blur-xl z-50 flex flex-col justify-between p-4 hidden animate-fade-in" role="dialog" aria-modal="true" aria-label="תצוגת תמונה מלאה">
@@ -2194,13 +2266,6 @@
                         <span class="text-xs font-bold text-slate-300">תוכן ההודעה</span>
                         <textarea id="adminBulkMessageText" maxlength="1500" rows="9" oninput="updateAdminMessageCenterUI()" placeholder="כתוב כאן את ההודעה שתופיע באזור האישי…" class="w-full mt-2 rounded-2xl p-4 text-sm leading-7 resize-y"></textarea>
                     </label>
-                    <label class="mt-3 flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3 cursor-pointer">
-                        <input id="adminBulkAllowReply" type="checkbox" checked class="w-4 h-4 accent-amber-400">
-                        <span>
-                            <strong class="block text-xs text-slate-200">אפשר למשתמשים להשיב</strong>
-                            <small class="block text-[10px] text-slate-500 mt-0.5">התשובות יופיעו כאן במרכז ההודעות</small>
-                        </span>
-                    </label>
                     <div class="flex justify-between text-[10px] text-slate-500 mt-1">
                         <span>ההודעה תופיע באזור האישי</span>
                         <span id="adminBulkMessageCharacterCount">0/1500</span>
@@ -2210,33 +2275,21 @@
                         <span id="adminBulkMessageSendText">שלח הודעה</span>
                     </button>
                     <div id="adminBulkMessageProgress" class="hidden mt-4 rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-slate-300" aria-live="polite"></div>
-                    <section class="mt-6 pt-5 border-t border-white/10" aria-label="תשובות ממשתמשים">
+                    <section class="mt-6 pt-5 border-t border-white/10" aria-label="פניות ושיחות ממשתמשים">
                         <div class="flex items-center justify-between gap-3">
                             <h4 class="text-sm font-extrabold text-white flex items-center gap-2">
                                 <i data-lucide="reply" class="w-4 h-4 text-cyan-300"></i>
-                                תשובות ממשתמשים
+                                פניות ושיחות
                             </h4>
                             <span id="adminMessageRepliesCount" class="text-[10px] px-2 py-1 rounded-full bg-cyan-500/10 text-cyan-300">0</span>
                         </div>
                         <div id="adminMessageRepliesList" class="mt-3 space-y-2 max-h-72 overflow-y-auto pr-1">
-                            <p class="text-[10px] text-slate-500 text-center py-5">עדיין לא התקבלו תשובות.</p>
+                            <p class="text-[10px] text-slate-500 text-center py-5">עדיין לא התקבלו פניות.</p>
                         </div>
                     </section>
                 </aside>
             </div>
         </div>
-    </div>
-
-    <!-- FLOATING PROFILE & NOTIFICATIONS WIDGET -->
-    <div class="floating-profile-container">
-        <!-- Pulse ring for new messages -->
-        <span id="floatingWidgetBadge" class="absolute -top-1.5 -left-1.5 w-5 h-5 bg-red-500 border-2 border-slate-950 rounded-full flex items-center justify-center text-[9px] font-extrabold text-white hidden animate-bounce animate-pulse">0</span>
-        <button type="button" onclick="toggleFloatingProfile()" class="floating-profile-btn group" title="פרופיל גוגל והודעות" aria-label="פרופיל גוגל והודעות">
-            <img id="floatingUserPhoto" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="פרופיל" class="w-full h-full rounded-full object-cover hidden border-2 border-amber-400/50">
-            <span id="floatingUserFallback" class="w-full h-full rounded-full bg-gradient-to-br from-amber-400/10 to-amber-500/20 text-amber-300 flex items-center justify-center group-hover:scale-105 transition-all">
-                <i data-lucide="user-check" class="w-6 h-6"></i>
-            </span>
-        </button>
     </div>
 
     <!-- FLOATING PROFILE PANEL -->
@@ -2269,6 +2322,11 @@
                     </div>
                 </div>
 
+                <button id="contactManagerButton" type="button" onclick="openUserConversation()" class="w-full py-3 btn-primary-gold rounded-xl text-xs font-extrabold flex items-center justify-center gap-2">
+                    <i data-lucide="message-circle-more" class="w-4 h-4"></i>
+                    פנייה למנהל
+                </button>
+
                 <button type="button" data-super-admin-messages-launcher onclick="openAdminMessagesCenter()" class="hidden w-full py-3 btn-primary-gold rounded-xl text-xs font-extrabold items-center justify-center gap-2">
                     <i data-lucide="messages-square" class="w-4 h-4"></i>
                     מרכז שליחת הודעות למשתמשים
@@ -2287,6 +2345,38 @@
 
                 <button type="button" onclick="signOutGoogleAccount()" class="w-full py-2 btn-secondary-dark rounded-xl text-[10px] font-semibold">התנתק מחשבון Google</button>
             </div>
+        </div>
+    </div>
+
+    <!-- UNIFIED USER / ADMIN CONVERSATION -->
+    <div id="conversationModal" class="fixed inset-0 z-[120] hidden bg-black/80 backdrop-blur-md p-3 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="conversationTitle">
+        <div class="conversation-window w-full h-full max-w-4xl mx-auto rounded-3xl overflow-hidden flex flex-col modal-animate-popup">
+            <header class="px-4 sm:px-6 py-4 border-b border-white/10 flex items-center justify-between gap-3" aria-label="כותרת השיחה">
+                <div class="min-w-0 flex items-center gap-3">
+                    <span class="w-11 h-11 rounded-2xl bg-cyan-400/10 border border-cyan-400/20 text-cyan-300 flex items-center justify-center shrink-0">
+                        <i data-lucide="messages-square" class="w-5 h-5"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <h3 id="conversationTitle" class="text-base sm:text-lg font-extrabold text-white truncate">צ׳אט עם המנהל</h3>
+                        <p id="conversationSubtitle" class="text-[10px] sm:text-xs text-slate-400 truncate">כל ההודעות נשמרות בשיחה אחת</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeModal('conversationModal')" class="w-11 h-11 btn-secondary-dark rounded-xl flex items-center justify-center shrink-0" aria-label="סגירת הצ׳אט">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </header>
+            <div id="conversationMessages" class="conversation-stream flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-3" aria-live="polite">
+                <div class="h-full flex items-center justify-center text-sm text-slate-500">טוען את השיחה…</div>
+            </div>
+            <footer class="p-3 sm:p-4 border-t border-white/10 bg-black/15">
+                <div class="flex items-end gap-2">
+                    <textarea id="conversationInput" maxlength="1500" rows="2" placeholder="כתוב הודעה…" class="flex-1 rounded-2xl p-3 text-sm resize-none" onkeydown="handleConversationKeydown(event)"></textarea>
+                    <button id="conversationSendButton" type="button" onclick="sendConversationMessage()" class="w-12 h-12 btn-primary-gold rounded-2xl flex items-center justify-center shrink-0" aria-label="שליחת ההודעה">
+                        <i data-lucide="send-horizontal" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <p class="mt-2 text-[9px] text-slate-500">Enter לשליחה · Shift+Enter לשורה חדשה</p>
+            </footer>
         </div>
     </div>
 
@@ -2876,6 +2966,7 @@
             if (typeof window.renderPendingUsers === 'function') window.renderPendingUsers();
             if (typeof window.renderPendingImages === 'function') window.renderPendingImages();
             if (typeof window.renderManagedUsers === 'function') window.renderManagedUsers();
+            if (typeof window.renderAdminMessageReplies === 'function') window.renderAdminMessageReplies();
             if (typeof window.renderDeletionRequests === 'function') window.renderDeletionRequests();
             if (typeof window.updatePendingUsersBadge === 'function') window.updatePendingUsersBadge();
             if (typeof window.updatePendingBadge === 'function') window.updatePendingBadge();
@@ -2909,6 +3000,7 @@
                 window.renderManagedUsers();
                 window.renderAdminMessageUsers?.();
                 window.renderAdminMessageReplies?.();
+                window.renderActiveConversation?.();
                 window.updatePendingUsersBadge();
 
                 if (newRequests.length > 0) {
@@ -3269,6 +3361,205 @@
 
         const adminMessageRecipients = new Set();
         let adminMessageSending = false;
+        let activeConversationUid = '';
+        let activeConversationMode = '';
+        let conversationSending = false;
+
+        function messageDirection(message) {
+            return message?.direction === 'user_to_admin' ? 'user_to_admin' : 'admin_to_user';
+        }
+
+        function conversationEntries(profile) {
+            const entries = [];
+            const messages = Array.isArray(profile?.messages) ? profile.messages : [];
+            messages.forEach((message, index) => {
+                if (!message || !String(message.text || '').trim()) return;
+                entries.push({
+                    id: safeRecordId(message.id) || `legacy_${index}`,
+                    text: String(message.text),
+                    direction: messageDirection(message),
+                    sentAt: message.sentAt || 0,
+                    sender: message.sender || (messageDirection(message) === 'user_to_admin' ? profile.displayName : 'מנהל הגלריה')
+                });
+                if (message.reply?.text) {
+                    entries.push({
+                        id: `${safeRecordId(message.id) || `legacy_${index}`}_reply`,
+                        text: String(message.reply.text),
+                        direction: 'user_to_admin',
+                        sentAt: message.reply.sentAt || message.sentAt || 0,
+                        sender: message.reply.senderName || profile.displayName || 'משתמש'
+                    });
+                }
+            });
+            return entries.sort((a, b) => {
+                const aTime = new Date(a.sentAt || 0).getTime() || Number(a.sentAt || 0) || 0;
+                const bTime = new Date(b.sentAt || 0).getTime() || Number(b.sentAt || 0) || 0;
+                return aTime - bTime;
+            });
+        }
+
+        function activeConversationProfile() {
+            if (activeConversationMode === 'admin') {
+                return (window.state.allUsers || []).find(user => safeRecordId(user.uid) === safeRecordId(activeConversationUid)) || null;
+            }
+            return window.state.userProfile || null;
+        }
+
+        window.renderActiveConversation = function() {
+            const modal = document.getElementById('conversationModal');
+            const stream = document.getElementById('conversationMessages');
+            if (!stream || !modal || modal.classList.contains('hidden')) return;
+            const profile = activeConversationProfile();
+            const entries = conversationEntries(profile);
+            stream.replaceChildren();
+            if (!entries.length) {
+                const empty = document.createElement('div');
+                empty.className = 'h-full flex flex-col items-center justify-center text-center text-slate-500 gap-3';
+                empty.innerHTML = '<i data-lucide="message-circle" class="w-10 h-10 text-cyan-300/60"></i><p class="text-sm font-bold">עדיין אין הודעות בשיחה</p><p class="text-[10px]">כתוב הודעה ראשונה למטה.</p>';
+                stream.appendChild(empty);
+            } else {
+                entries.forEach(entry => {
+                    const bubble = document.createElement('article');
+                    bubble.className = `conversation-bubble ${entry.direction === 'user_to_admin' ? 'is-user' : 'is-admin'}`;
+                    const sender = document.createElement('strong');
+                    sender.className = 'block text-[9px] mb-1 opacity-70';
+                    sender.textContent = entry.direction === 'user_to_admin'
+                        ? (profile?.displayName || entry.sender || 'משתמש')
+                        : (entry.sender || 'מנהל הגלריה');
+                    const text = document.createElement('p');
+                    text.className = 'text-xs sm:text-sm leading-relaxed';
+                    text.textContent = entry.text;
+                    const time = document.createElement('time');
+                    time.textContent = formatDate(entry.sentAt);
+                    bubble.append(sender, text, time);
+                    stream.appendChild(bubble);
+                });
+            }
+            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+            requestAnimationFrame(() => { stream.scrollTop = stream.scrollHeight; });
+        };
+
+        async function markConversationRead() {
+            const profile = activeConversationProfile();
+            const uid = activeConversationMode === 'admin' ? activeConversationUid : window.state.currentUser?.uid;
+            if (!profile || !uid) return;
+            const messages = Array.isArray(profile.messages) ? profile.messages : [];
+            let changed = false;
+            const updatedMessages = messages.map(message => {
+                if (activeConversationMode === 'admin' && messageDirection(message) === 'user_to_admin' && message.readByAdmin !== true) {
+                    changed = true;
+                    return { ...message, readByAdmin: true };
+                }
+                if (activeConversationMode === 'admin' && message.reply && message.reply.readByAdmin !== true) {
+                    changed = true;
+                    return { ...message, reply: { ...message.reply, readByAdmin: true } };
+                }
+                if (activeConversationMode === 'user' && messageDirection(message) === 'admin_to_user' && message.read !== true) {
+                    changed = true;
+                    return { ...message, read: true };
+                }
+                return message;
+            });
+            if (!changed) return;
+            const { doc, setDoc } = window.firestoreModules;
+            await setDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'userProfiles', uid), {
+                messages: updatedMessages
+            }, { merge: true });
+            profile.messages = updatedMessages;
+            window.renderFloatingInbox?.();
+            window.renderAdminMessageReplies?.();
+        }
+
+        window.openUserConversation = function() {
+            if (!window.state.currentUser || !window.state.userProfile) {
+                window.showNotification('יש להתחבר באמצעות Google כדי לפנות למנהל.', false);
+                return;
+            }
+            activeConversationMode = 'user';
+            activeConversationUid = window.state.currentUser.uid;
+            const title = document.getElementById('conversationTitle');
+            const subtitle = document.getElementById('conversationSubtitle');
+            if (title) title.textContent = 'צ׳אט עם מנהל הגלריה';
+            if (subtitle) subtitle.textContent = 'אפשר לשלוח פנייה ולהמשיך את השיחה כאן';
+            document.getElementById('floatingProfilePanel')?.classList.remove('active');
+            openModal('conversationModal');
+            window.renderActiveConversation();
+            markConversationRead().catch(error => console.warn('Marking user chat read failed:', error));
+        };
+
+        window.openAdminConversation = function(uid) {
+            if (!checkSuperAdminPermission()) return;
+            const profile = (window.state.allUsers || []).find(user => safeRecordId(user.uid) === safeRecordId(uid));
+            if (!profile) {
+                window.showNotification('המשתמש לא נמצא במערכת.', false);
+                return;
+            }
+            activeConversationMode = 'admin';
+            activeConversationUid = profile.uid;
+            const title = document.getElementById('conversationTitle');
+            const subtitle = document.getElementById('conversationSubtitle');
+            if (title) title.textContent = profile.displayName || 'שיחה עם משתמש';
+            if (subtitle) subtitle.textContent = profile.email || 'שיחה ישירה באזור האישי';
+            openModal('conversationModal');
+            window.renderActiveConversation();
+            markConversationRead().catch(error => console.warn('Marking admin chat read failed:', error));
+        };
+
+        window.handleConversationKeydown = function(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                window.sendConversationMessage();
+            }
+        };
+
+        window.sendConversationMessage = async function() {
+            if (conversationSending) return;
+            const input = document.getElementById('conversationInput');
+            const button = document.getElementById('conversationSendButton');
+            const text = String(input?.value || '').trim().slice(0, 1500);
+            if (!text) return;
+            const profile = activeConversationProfile();
+            const uid = activeConversationMode === 'admin' ? activeConversationUid : window.state.currentUser?.uid;
+            if (!profile || !uid) return;
+
+            conversationSending = true;
+            if (button) button.disabled = true;
+            try {
+                const { doc, getDoc, setDoc } = window.firestoreModules;
+                const profileRef = doc(window.db, 'artifacts', window.appId, 'public', 'data', 'userProfiles', uid);
+                const snapshot = await getDoc(profileRef);
+                if (!snapshot.exists()) throw new Error('פרופיל השיחה לא נמצא');
+                const currentMessages = Array.isArray(snapshot.data().messages) ? snapshot.data().messages : [];
+                const fromAdmin = activeConversationMode === 'admin';
+                const message = {
+                    id: crypto.randomUUID(),
+                    text,
+                    direction: fromAdmin ? 'admin_to_user' : 'user_to_admin',
+                    sender: fromAdmin
+                        ? (window.state.currentUser?.displayName || 'מנהל הגלריה')
+                        : (window.state.currentUser?.displayName || 'משתמש'),
+                    senderUid: window.state.currentUser?.uid || '',
+                    recipientUid: fromAdmin ? uid : 'gallery-admin',
+                    sentAt: Date.now(),
+                    read: !fromAdmin,
+                    readByAdmin: fromAdmin
+                };
+                const updatedMessages = [message, ...currentMessages].slice(0, 250);
+                await setDoc(profileRef, { messages: updatedMessages }, { merge: true });
+                profile.messages = updatedMessages;
+                if (input) input.value = '';
+                window.renderActiveConversation();
+                window.renderFloatingInbox?.();
+                window.renderAdminMessageReplies?.();
+            } catch (error) {
+                console.error('Conversation message failed:', error);
+                window.showNotification('שליחת ההודעה נכשלה. נסה שוב.', false);
+            } finally {
+                conversationSending = false;
+                if (button) button.disabled = false;
+                input?.focus();
+            }
+        };
 
         function adminMessageCenterUsers() {
             const query = String(document.getElementById('adminMessageUserSearch')?.value || '').trim().toLowerCase();
@@ -3379,7 +3670,6 @@
             const textarea = document.getElementById('adminBulkMessageText');
             const progress = document.getElementById('adminBulkMessageProgress');
             const text = String(textarea?.value || '').trim();
-            const allowReply = document.getElementById('adminBulkAllowReply')?.checked === true;
             const recipients = (window.state.allUsers || []).filter(user => adminMessageRecipients.has(safeRecordId(user.uid)));
             if (!text || !recipients.length) return;
             if (!confirmed) {
@@ -3416,8 +3706,10 @@
                         senderUid: window.state.currentUser?.uid || '',
                         recipientUid: user.uid,
                         sentAt: Date.now(),
+                        direction: 'admin_to_user',
                         read: false,
-                        allowReply,
+                        readByAdmin: true,
+                        allowReply: true,
                         reply: null
                     };
                     await setDoc(profileRef, { messages: [message, ...existingMessages].slice(0, 100) }, { merge: true });
@@ -3451,6 +3743,19 @@
                 if (!uid) return;
                 const messages = Array.isArray(user.messages) ? user.messages : [];
                 messages.forEach((message, messageIndex) => {
+                    if (messageDirection(message) === 'user_to_admin' && String(message.text || '').trim()) {
+                        replies.push({
+                            user,
+                            uid,
+                            message,
+                            messageIndex,
+                            reply: {
+                                text: message.text,
+                                sentAt: message.sentAt,
+                                readByAdmin: message.readByAdmin === true
+                            }
+                        });
+                    }
                     const reply = message?.reply;
                     if (!reply || !String(reply.text || '').trim()) return;
                     replies.push({ user, uid, message, messageIndex, reply });
@@ -3463,17 +3768,38 @@
             const list = document.getElementById('adminMessageRepliesList');
             const count = document.getElementById('adminMessageRepliesCount');
             if (!list) return;
-            const replies = collectAdminMessageReplies();
-            const unreadCount = replies.filter(item => item.reply.readByAdmin !== true).length;
+            const incomingMessages = collectAdminMessageReplies();
+            const conversations = new Map();
+            incomingMessages.forEach(item => {
+                const existing = conversations.get(item.uid);
+                const sentAt = new Date(item.reply.sentAt || 0).getTime() || Number(item.reply.sentAt || 0) || 0;
+                if (!existing || sentAt > existing.latestAt) {
+                    conversations.set(item.uid, {
+                        ...item,
+                        latestAt: sentAt,
+                        unread: (existing?.unread || 0) + (item.reply.readByAdmin === true ? 0 : 1)
+                    });
+                } else if (item.reply.readByAdmin !== true) {
+                    existing.unread++;
+                }
+            });
+            const replies = Array.from(conversations.values()).sort((a, b) => b.latestAt - a.latestAt);
+            const unreadCount = incomingMessages.filter(item => item.reply.readByAdmin !== true).length;
+            const drawerBadge = document.getElementById('adminChatsUnreadBadge');
             if (count) {
                 count.textContent = unreadCount ? `${unreadCount} חדשות` : String(replies.length);
                 count.classList.toggle('animate-pulse', unreadCount > 0);
+            }
+            if (drawerBadge) {
+                drawerBadge.textContent = String(unreadCount);
+                drawerBadge.classList.toggle('hidden', unreadCount === 0);
+                drawerBadge.classList.toggle('flex', unreadCount > 0);
             }
             list.replaceChildren();
             if (!replies.length) {
                 const empty = document.createElement('p');
                 empty.className = 'text-[10px] text-slate-500 text-center py-5';
-                empty.textContent = 'עדיין לא התקבלו תשובות.';
+                empty.textContent = 'עדיין לא התקבלו פניות.';
                 list.appendChild(empty);
                 return;
             }
@@ -3487,29 +3813,40 @@
                 const name = document.createElement('strong');
                 name.className = 'text-[11px] text-white truncate';
                 name.textContent = user.displayName || user.email || 'משתמש';
+                const headerMeta = document.createElement('div');
+                headerMeta.className = 'flex items-center gap-1.5 shrink-0';
+                const unread = conversations.get(uid)?.unread || 0;
+                if (unread) {
+                    const unreadBadge = document.createElement('span');
+                    unreadBadge.className = 'min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[8px] font-bold flex items-center justify-center';
+                    unreadBadge.textContent = String(unread);
+                    headerMeta.appendChild(unreadBadge);
+                }
                 const time = document.createElement('span');
-                time.className = 'text-[9px] text-slate-500 shrink-0';
+                time.className = 'text-[9px] text-slate-500';
                 time.textContent = formatDate(reply.sentAt);
-                header.append(name, time);
+                headerMeta.appendChild(time);
+                header.append(name, headerMeta);
 
                 const original = document.createElement('p');
                 original.className = 'text-[9px] text-slate-500 line-clamp-2';
-                original.textContent = `בתגובה להודעה: ${message.text || ''}`;
+                original.textContent = conversations.get(uid)?.unread
+                    ? `${conversations.get(uid).unread} הודעות חדשות בשיחה`
+                    : 'השיחה נקראה';
                 const replyText = document.createElement('p');
                 replyText.className = 'text-[11px] text-cyan-100 leading-relaxed whitespace-pre-wrap';
                 replyText.textContent = reply.text;
                 card.append(header, original, replyText);
 
-                if (reply.readByAdmin !== true) {
-                    const readButton = document.createElement('button');
-                    readButton.type = 'button';
-                    readButton.className = 'w-full py-2 rounded-lg btn-secondary-dark text-[10px] font-bold';
-                    readButton.textContent = 'סמן שקראתי';
-                    readButton.onclick = () => window.markAdminReplyRead(uid, message.id);
-                    card.appendChild(readButton);
-                }
+                const openChatButton = document.createElement('button');
+                openChatButton.type = 'button';
+                openChatButton.className = 'w-full py-2 rounded-lg btn-primary-gold text-[10px] font-bold flex items-center justify-center gap-1.5';
+                openChatButton.innerHTML = '<i data-lucide="messages-square" class="w-3.5 h-3.5"></i> פתח את השיחה';
+                openChatButton.onclick = () => window.openAdminConversation(uid);
+                card.appendChild(openChatButton);
                 list.appendChild(card);
             });
+            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
         };
 
         window.markAdminReplyRead = async function(uid, messageId) {
@@ -3531,19 +3868,7 @@
         };
 
         window.openAdminMessagesForUser = function(uid) {
-            if (!checkSuperAdminPermission()) return;
-            const safeUid = safeRecordId(uid);
-            if (!safeUid || !(window.state.allUsers || []).some(user => safeRecordId(user.uid) === safeUid)) {
-                window.showNotification('המשתמש לא נמצא במערכת.', false);
-                return;
-            }
-            adminMessageRecipients.clear();
-            adminMessageRecipients.add(safeUid);
-            const search = document.getElementById('adminMessageUserSearch');
-            if (search) search.value = '';
-            window.openAdminMessagesCenter();
-            window.renderAdminMessageUsers();
-            requestAnimationFrame(() => document.getElementById('adminBulkMessageText')?.focus());
+            window.openAdminConversation(uid);
         };
 
         window.openAdminMessagesCenter = function() {
@@ -3632,53 +3957,6 @@
             }
         };
 
-        window.submitPersonalMessageReply = async function(messageId, fallbackIndex, replyText, confirmed = false) {
-            if (!window.state.currentUser || !window.state.userProfile) return;
-            const cleanReply = String(replyText || '').trim().slice(0, 1200);
-            if (!cleanReply) {
-                window.showNotification('כתוב תשובה לפני השליחה.', false);
-                return;
-            }
-            const messages = Array.isArray(window.state.userProfile.messages)
-                ? window.state.userProfile.messages
-                : [];
-            const targetIndex = messageId
-                ? messages.findIndex(message => safeRecordId(message?.id) === safeRecordId(messageId))
-                : fallbackIndex;
-            const targetMessage = messages[targetIndex];
-            if (!targetMessage || targetMessage.allowReply !== true || targetMessage.reply) {
-                window.showNotification('לא ניתן להשיב להודעה זו.', false);
-                return;
-            }
-            if (!confirmed) {
-                showConfirm(
-                    'שליחת תשובה למנהל',
-                    'לשלוח את התשובה? היא תופיע מיד במרכז ההודעות של המנהל.',
-                    () => window.submitPersonalMessageReply(messageId, fallbackIndex, cleanReply, true)
-                );
-                return;
-            }
-
-            const updatedMessages = [...messages];
-            updatedMessages[targetIndex] = {
-                ...targetMessage,
-                read: true,
-                reply: {
-                    text: cleanReply,
-                    sentAt: Date.now(),
-                    senderUid: window.state.currentUser.uid,
-                    senderName: window.state.currentUser.displayName || 'משתמש',
-                    readByAdmin: false
-                }
-            };
-            const { doc, updateDoc } = window.firestoreModules;
-            const profileRef = doc(window.db, 'artifacts', window.appId, 'public', 'data', 'userProfiles', window.state.currentUser.uid);
-            await updateDoc(profileRef, { messages: updatedMessages });
-            window.state.userProfile = { ...window.state.userProfile, messages: updatedMessages };
-            window.renderFloatingInbox();
-            window.showNotification('התשובה נשלחה למנהל.', true);
-        };
-
         window.renderFloatingInbox = function() {
             const list = document.getElementById('floatingInboxList');
             const badge = document.getElementById('floatingWidgetBadge');
@@ -3689,6 +3967,7 @@
             const dismissedMessages = getDismissedPersonalMessages();
             const visibleMessages = messages
                 .map((message, originalIndex) => ({ message, originalIndex }))
+                .filter(({ message }) => messageDirection(message) === 'admin_to_user')
                 .filter(({ message, originalIndex }) => !dismissedMessages.has(personalMessageKey(message, originalIndex)));
             
             if (visibleMessages.length === 0) {
@@ -3748,26 +4027,17 @@
                     replyText.textContent = msg.reply.text;
                     replyBox.append(replyLabel, replyText);
                     card.appendChild(replyBox);
-                } else if (msg.allowReply === true) {
-                    const replyWrap = document.createElement('div');
-                    replyWrap.className = 'mt-2 pt-2 border-t border-white/10 space-y-2';
-                    const replyInput = document.createElement('textarea');
-                    replyInput.maxLength = 1200;
-                    replyInput.rows = 2;
-                    replyInput.placeholder = 'כתוב תשובה למנהל…';
-                    replyInput.className = 'w-full rounded-lg p-2 text-[10px] resize-y';
-                    replyInput.onclick = event => event.stopPropagation();
-                    const replyButton = document.createElement('button');
-                    replyButton.type = 'button';
-                    replyButton.className = 'w-full py-2 btn-primary-gold rounded-lg text-[10px] font-bold flex items-center justify-center gap-1.5';
-                    replyButton.innerHTML = '<i data-lucide="reply" class="w-3.5 h-3.5"></i> שלח תשובה';
-                    replyButton.onclick = event => {
-                        event.stopPropagation();
-                        window.submitPersonalMessageReply(msg.id, originalIndex, replyInput.value);
-                    };
-                    replyWrap.append(replyInput, replyButton);
-                    card.appendChild(replyWrap);
                 }
+
+                const openChatButton = document.createElement('button');
+                openChatButton.type = 'button';
+                openChatButton.className = 'w-full mt-2 py-2 btn-secondary-dark rounded-lg text-[10px] font-bold flex items-center justify-center gap-1.5';
+                openChatButton.innerHTML = '<i data-lucide="messages-square" class="w-3.5 h-3.5"></i> פתח בצ׳אט';
+                openChatButton.onclick = event => {
+                    event.stopPropagation();
+                    window.openUserConversation();
+                };
+                card.appendChild(openChatButton);
                 
                 // Clicking message marks as read in Firestore
                 card.onclick = async () => {
@@ -3797,74 +4067,7 @@
         };
     
 
-        // --- Admin messaging and Email mailto triggers ---
-        window.openAdminMessageModal = function(uid, displayName, email) {
-            if (!checkSuperAdminPermission()) return;
-            const recipientText = document.getElementById('adminMessageRecipient');
-            const textarea = document.getElementById('adminMessageTextarea');
-            const submitBtn = document.getElementById('adminMessageSubmitBtn');
-            const allowReplyInput = document.getElementById('adminMessageAllowReply');
-            
-            if (recipientText) {
-                recipientText.textContent = `${displayName || 'משתמש Google'} (${email || ''})`;
-            }
-            if (textarea) textarea.value = '';
-            if (allowReplyInput) allowReplyInput.checked = true;
-            
-            if (submitBtn) {
-                submitBtn.onclick = () => {
-                    const text = textarea ? textarea.value.trim() : '';
-                    if (!text) {
-                        window.showNotification('אנא הזן תוכן הודעה.', false);
-                        return;
-                    }
-
-                    showConfirm(
-                        'שליחת הודעה אישית',
-                        `לשלוח את ההודעה אל ${displayName || email || 'המשתמש'}? היא תופיע מיד באזור האישי.`,
-                        async () => {
-                            submitBtn.disabled = true;
-                            try {
-                                // Fetch current profile to append the new message to their messages list
-                                const { doc, getDoc, setDoc } = window.firestoreModules;
-                                const profileRef = doc(window.db, 'artifacts', window.appId, 'public', 'data', 'userProfiles', uid);
-                                const snap = await getDoc(profileRef);
-                                const profile = snap.exists() ? snap.data() : {};
-                                const currentMsgs = profile.messages || [];
-
-                                const newMsg = {
-                                    id: crypto.randomUUID(),
-                                    text,
-                                    sender: window.state.currentUser?.displayName || 'מנהל שמחת התורה',
-                                    senderUid: window.state.currentUser?.uid || '',
-                                    recipientUid: uid,
-                                    sentAt: new Date().toISOString(),
-                                    read: false,
-                                    allowReply: allowReplyInput?.checked === true,
-                                    reply: null
-                                };
-
-                                await setDoc(profileRef, {
-                                    messages: [newMsg, ...currentMsgs]
-                                }, { merge: true });
-
-                                closeModal('adminMessageModal');
-                                window.showNotification('ההודעה האישית נשלחה למשתמש בהצלחה!', true);
-                            } catch (error) {
-                                console.error('Failed to send admin message:', error);
-                                window.showNotification('הפעולה נכשלה. בדוק את חיבור האינטרנט.', false);
-                                throw error;
-                            } finally {
-                                submitBtn.disabled = false;
-                            }
-                        }
-                    );
-                };
-            }
-            openModal('adminMessageModal');
-            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
-        };
-
+        // --- Email mailto trigger ---
         window.sendDirectMail = function(recipientEmail, displayName, confirmed = false) {
             if (!recipientEmail) {
                 window.showNotification('אין כתובת מייל תקינה למשתמש זה.', false);
@@ -4435,22 +4638,28 @@
             const uploadText = document.getElementById('userUploadAccessText');
             const uploadModeText = document.getElementById('userUploadModeText');
             const uploadSubmitButton = document.getElementById('userUploadSubmitBtn');
+            const superAdminChatsCard = document.getElementById('superAdminChatsCard');
             const superAdminUsersCard = document.getElementById('superAdminUsersCard');
             const superAdminDeletionRequestsCard = document.getElementById('superAdminDeletionRequestsCard');
+            const superAdminOnlyElements = document.querySelectorAll('#sidebarAdminPanel .super-admin-only');
             const rejectPendingButton = document.getElementById('rejectPendingBtn');
             const superAdminMessageLaunchers = document.querySelectorAll('[data-super-admin-messages-launcher]');
+            const contactManagerButton = document.getElementById('contactManagerButton');
 
             if (!statusBadge) return;
 
             if (userArea) userArea.classList.add('hidden');
             if (adminPanel) adminPanel.classList.add('hidden');
             if (uploadCard) uploadCard.classList.add('hidden');
+            superAdminOnlyElements.forEach(element => element.classList.add('hidden'));
+            if (superAdminChatsCard) superAdminChatsCard.classList.add('hidden');
             if (superAdminUsersCard) superAdminUsersCard.classList.add('hidden');
             if (superAdminDeletionRequestsCard) superAdminDeletionRequestsCard.classList.add('hidden');
             superAdminMessageLaunchers.forEach(button => {
                 button.classList.toggle('hidden', !window.state.isSuperAdmin);
                 button.classList.toggle('flex', window.state.isSuperAdmin);
             });
+            if (contactManagerButton) contactManagerButton.classList.toggle('hidden', window.state.isSuperAdmin);
 
             const googleSignedOutView = document.getElementById('googleSignedOutView');
             const googleSignedInView = document.getElementById('googleSignedInView');
@@ -4547,6 +4756,7 @@
 
                     // Render floating inbox messages
                     window.renderFloatingInbox();
+                    window.renderActiveConversation?.();
     
                     if (googleUserName) googleUserName.textContent = currentUser.displayName || 'משתמש Google';
                     if (googleUserEmail) googleUserEmail.textContent = currentUser.email || '';
@@ -4624,6 +4834,8 @@
                         : 'text-[9px] px-2 py-1 rounded-full font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
                 }
                 if (window.state.isSuperAdmin) {
+                    superAdminOnlyElements.forEach(element => element.classList.remove('hidden'));
+                    if (superAdminChatsCard) superAdminChatsCard.classList.remove('hidden');
                     if (superAdminUsersCard) superAdminUsersCard.classList.remove('hidden');
                     if (superAdminDeletionRequestsCard) superAdminDeletionRequestsCard.classList.remove('hidden');
                 }
