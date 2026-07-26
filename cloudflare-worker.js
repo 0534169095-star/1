@@ -1,10 +1,22 @@
-const FIREBASE_API_KEY = "AIzaSyCELVhy_L5dkGAVsY5in57Yv6-wdM3wHY4";
-const FIREBASE_PROJECT_ID = "simchas-bb35c";
-const APP_ID = "org-gallery";
+const DEFAULT_FIREBASE_API_KEY = "AIzaSyCELVhy_L5dkGAVsY5in57Yv6-wdM3wHY4";
+const DEFAULT_FIREBASE_PROJECT_ID = "simchas-bb35c";
+const DEFAULT_FIREBASE_APP_ID = "org-gallery";
 const INITIAL_SUPER_ADMIN_EMAIL_SHA256 = "d2632af59d29239eef52f10e1cfbf38e27c65c55470b355134b1cd1fb4f809d6";
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
 const OPENAI_VISION_MODEL = "gpt-5.4-mini";
+const FACE_API_VERSION = "1.7.15";
+const FACE_API_CDN_BASE = `https://cdn.jsdelivr.net/npm/@vladmandic/face-api@${FACE_API_VERSION}`;
+
+const FACE_ASSETS = new Map([
+  ["face-api.js", { upstreamPath: "dist/face-api.js", contentType: "application/javascript; charset=utf-8" }],
+  ["model/ssd_mobilenetv1_model-weights_manifest.json", { upstreamPath: "model/ssd_mobilenetv1_model-weights_manifest.json", contentType: "application/json; charset=utf-8" }],
+  ["model/ssd_mobilenetv1_model.bin", { upstreamPath: "model/ssd_mobilenetv1_model.bin", contentType: "application/octet-stream" }],
+  ["model/face_landmark_68_model-weights_manifest.json", { upstreamPath: "model/face_landmark_68_model-weights_manifest.json", contentType: "application/json; charset=utf-8" }],
+  ["model/face_landmark_68_model.bin", { upstreamPath: "model/face_landmark_68_model.bin", contentType: "application/octet-stream" }],
+  ["model/face_recognition_model-weights_manifest.json", { upstreamPath: "model/face_recognition_model-weights_manifest.json", contentType: "application/json; charset=utf-8" }],
+  ["model/face_recognition_model.bin", { upstreamPath: "model/face_recognition_model.bin", contentType: "application/octet-stream" }]
+]);
 
 const ALLOWED_ORIGINS = new Set([
   "https://0534169095-star.github.io",
@@ -51,6 +63,14 @@ function apiError(message, status = 400, code = "request_failed") {
   return error;
 }
 
+function firebaseConfig(env) {
+  return {
+    apiKey: String(env.FIREBASE_API_KEY || DEFAULT_FIREBASE_API_KEY).trim(),
+    projectId: String(env.FIREBASE_PROJECT_ID || DEFAULT_FIREBASE_PROJECT_ID).trim(),
+    appId: String(env.FIREBASE_APP_ID || DEFAULT_FIREBASE_APP_ID).trim()
+  };
+}
+
 function getBearerToken(request) {
   const header = request.headers.get("Authorization") || "";
   const match = header.match(/^Bearer\s+(.+)$/i);
@@ -66,9 +86,10 @@ async function sha256(value) {
     .join("");
 }
 
-async function verifyFirebaseAccount(idToken) {
+async function verifyFirebaseAccount(idToken, env) {
+  const { apiKey } = firebaseConfig(env);
   const response = await fetch(
-    `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${encodeURIComponent(FIREBASE_API_KEY)}`,
+    `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${encodeURIComponent(apiKey)}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -95,17 +116,18 @@ function firestoreString(fields, name) {
   return fields?.[name]?.stringValue || "";
 }
 
-async function readUserProfile(uid, idToken) {
+async function readUserProfile(uid, idToken, env) {
+  const { projectId, appId } = firebaseConfig(env);
   const path = [
     "artifacts",
-    APP_ID,
+    appId,
     "public",
     "data",
     "userProfiles",
     uid
   ].map(encodeURIComponent).join("/");
   const response = await fetch(
-    `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/${path}`,
+    `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/databases/(default)/documents/${path}`,
     { headers: { "Authorization": `Bearer ${idToken}` } }
   );
 
@@ -122,13 +144,13 @@ async function readUserProfile(uid, idToken) {
   };
 }
 
-async function requireUser(request, allowedRoles = null) {
+async function requireUser(request, env, allowedRoles = null) {
   const idToken = getBearerToken(request);
-  const account = await verifyFirebaseAccount(idToken);
+  const account = await verifyFirebaseAccount(idToken, env);
   const isInitialSuperAdmin = await sha256(account.email) === INITIAL_SUPER_ADMIN_EMAIL_SHA256;
   const profile = isInitialSuperAdmin
     ? { status: "approved", role: "super_admin" }
-    : await readUserProfile(account.localId, idToken);
+    : await readUserProfile(account.localId, idToken, env);
 
   if (profile.status === "blocked") {
     throw apiError("החשבון חסום ואינו מורשה לבצע פעולות.", 403, "account_blocked");
@@ -175,7 +197,7 @@ function mediaUrl(request, key) {
 }
 
 async function uploadImage(request, env) {
-  const user = await requireUser(request, ["viewer", "uploader", "admin", "super_admin"]);
+  const user = await requireUser(request, env, ["viewer", "uploader", "admin", "super_admin"]);
   const form = await request.formData();
   const file = form.get("file");
   if (!file || typeof file.arrayBuffer !== "function") {
@@ -220,7 +242,7 @@ async function serveImage(request, env, pathname) {
   const key = decodeObjectKey(pathname, "/media/");
 
   if (key.startsWith("pending/")) {
-    const user = await requireUser(request, ["viewer", "uploader", "admin", "super_admin"]);
+    const user = await requireUser(request, env, ["viewer", "uploader", "admin", "super_admin"]);
     const ownerUid = key.split("/")[1] || "";
     if (user.uid !== ownerUid && !["admin", "super_admin"].includes(user.role)) {
       throw apiError("אין הרשאה לצפות בתמונה הממתינה.", 403, "permission_denied");
@@ -244,7 +266,7 @@ async function serveImage(request, env, pathname) {
 }
 
 async function approveImage(request, env) {
-  const user = await requireUser(request, ["admin", "super_admin"]);
+  const user = await requireUser(request, env, ["admin", "super_admin"]);
   const payload = await request.json().catch(() => ({}));
   const key = String(payload.key || "");
   if (!/^pending\/[a-zA-Z0-9_-]+\/[a-zA-Z0-9_-]+\.(jpg|png|webp|gif)$/.test(key)) {
@@ -286,7 +308,7 @@ async function approveImage(request, env) {
 }
 
 async function deleteImage(request, env, pathname) {
-  await requireUser(request, ["super_admin"]);
+  await requireUser(request, env, ["super_admin"]);
   const key = decodeObjectKey(pathname, "/media/");
   await env.GALLERY_BUCKET.delete(key);
   return json(request, { success: true, key });
@@ -321,7 +343,7 @@ function extractOpenAIOutputText(payload) {
 }
 
 async function aiImageSearch(request, env) {
-  await requireUser(request, ["viewer", "uploader", "admin", "super_admin"]);
+  await requireUser(request, env, ["viewer", "uploader", "admin", "super_admin"]);
   if (!env.OPENAI_API_KEY) {
     throw apiError("חיפוש ה־AI עדיין לא הוגדר בשרת.", 503, "openai_key_missing");
   }
@@ -404,6 +426,56 @@ async function aiImageSearch(request, env) {
   return json(request, { success: true, matches });
 }
 
+async function serveFaceAsset(request, env, pathname) {
+  let assetPath;
+  try {
+    assetPath = decodeURIComponent(pathname.slice("/face-assets/".length));
+  } catch {
+    throw apiError("כתובת נכס זיהוי הפנים אינה תקינה.", 400, "invalid_face_asset");
+  }
+
+  const asset = FACE_ASSETS.get(assetPath);
+  if (!asset) {
+    throw apiError("נכס זיהוי הפנים לא נמצא.", 404, "face_asset_not_found");
+  }
+
+  const cacheKey = `system/face-api/${FACE_API_VERSION}/${assetPath}`;
+  let body;
+  let contentType = asset.contentType;
+  const cached = await env.GALLERY_BUCKET.get(cacheKey);
+
+  if (cached) {
+    body = cached.body;
+    contentType = cached.httpMetadata?.contentType || contentType;
+  } else {
+    const upstreamUrl = `${FACE_API_CDN_BASE}/${asset.upstreamPath}`;
+    const upstream = await fetch(upstreamUrl, {
+      headers: { "User-Agent": "simchas-gallery-worker/1.0" }
+    });
+    if (!upstream.ok) {
+      throw apiError("לא ניתן לטעון את מנוע זיהוי הפנים.", 502, "face_asset_upstream_failed");
+    }
+    const bytes = await upstream.arrayBuffer();
+    await env.GALLERY_BUCKET.put(cacheKey, bytes, {
+      httpMetadata: { contentType },
+      customMetadata: {
+        source: upstreamUrl,
+        cachedAt: new Date().toISOString()
+      }
+    });
+    body = bytes;
+  }
+
+  return new Response(body, {
+    headers: {
+      ...corsHeaders(request),
+      "Content-Type": contentType,
+      "Cache-Control": "public, max-age=604800, s-maxage=31536000, immutable",
+      "X-Content-Type-Options": "nosniff"
+    }
+  });
+}
+
 export default {
   async fetch(request, env) {
     if (request.method === "OPTIONS") {
@@ -437,6 +509,9 @@ export default {
       }
       if (request.method === "POST" && url.pathname === "/ai-search") {
         return await aiImageSearch(request, env);
+      }
+      if (request.method === "GET" && url.pathname.startsWith("/face-assets/")) {
+        return await serveFaceAsset(request, env, url.pathname);
       }
       if (request.method === "GET" && url.pathname.startsWith("/media/")) {
         return await serveImage(request, env, url.pathname);
