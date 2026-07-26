@@ -52,8 +52,7 @@ service cloud.firestore {
         admin() &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'uid', 'displayName', 'email', 'photoURL', 'lastSeenAt', 'lastLoginAt',
-          'fullName', 'className', 'phone', 'reference', 'details', 'requestDetails', 'updatedAt',
-          'status', 'role'
+          'fullName', 'className', 'phone', 'reference', 'details', 'requestDetails', 'updatedAt'
         ])
       ) || (
         signedIn() && request.auth.uid == uid &&
@@ -62,8 +61,12 @@ service cloud.firestore {
         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'uid', 'displayName', 'email', 'photoURL', 'lastSeenAt', 'lastLoginAt',
           'fullName', 'className', 'phone', 'reference', 'details', 'requestDetails', 'updatedAt',
-          'messages'
-        ])
+          'messages', 'supportStatus'
+        ]) &&
+        (
+          request.resource.data.get('supportStatus', 'open') == resource.data.get('supportStatus', 'open') ||
+          request.resource.data.get('supportStatus', 'open') == 'open'
+        )
       );
 
       allow delete: if superAdmin() && request.auth.uid != uid;
@@ -126,6 +129,25 @@ service cloud.firestore {
       allow read: if superAdmin() || (roleIs('admin') && resource.data.requestedBy == request.auth.uid);
       allow update: if superAdmin();
       allow delete: if false;
+    }
+
+    match /artifacts/org-gallery/public/data/trashItems/{trashId} {
+      allow read, create, update, delete: if superAdmin();
+    }
+
+    match /artifacts/org-gallery/public/data/activityLogs/{logId} {
+      allow read: if superAdmin();
+      allow create: if approved() &&
+        request.resource.data.actorUid == request.auth.uid &&
+        (
+          (admin() && request.resource.data.action in [
+            'moved_to_trash', 'restored', 'purged', 'approved_user', 'changed_role',
+            'changed_block', 'approved_images', 'uploaded_images', 'synced_drive',
+            'resolved_support', 'reopened_support'
+          ]) ||
+          request.resource.data.action == 'uploaded_images'
+        );
+      allow update, delete: if false;
     }
 
     match /{document=**} {
