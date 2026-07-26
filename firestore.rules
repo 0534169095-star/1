@@ -105,6 +105,10 @@ service cloud.firestore {
       allow delete: if superAdmin();
     }
 
+    match /artifacts/org-gallery/public/data/userFavorites/{uid} {
+      allow read, create, update, delete: if signedIn() && request.auth.uid == uid;
+    }
+
     match /artifacts/org-gallery/public/data/notifications/{notificationId} {
       allow read: if approved() && (
         resource.data.target == 'all' ||
