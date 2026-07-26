@@ -1145,6 +1145,96 @@
         #sidebarAdminPanel .admin-control-card > button [id$="Arrow"] {
             transform: rotate(90deg);
         }
+        #sidebarAdminPanel > .admin-control-card,
+        #sidebarAdminPanel > .admin-section-label,
+        #sidebarAdminPanel > button:not(.admin-logout) {
+            display: none !important;
+        }
+        .admin-topic-grid {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+        }
+        #sidebarAdminPanel .admin-topic-grid .super-admin-only {
+            grid-column: auto;
+        }
+        .admin-topic-card {
+            min-height: 132px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 18px;
+            text-align: right;
+            color: var(--paper);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            background:
+                radial-gradient(circle at 90% 0, var(--topic-glow, rgba(255,182,39,.12)), transparent 48%),
+                #131821;
+            box-shadow: 0 12px 30px rgba(0,0,0,.18);
+        }
+        .admin-topic-card:hover {
+            border-color: var(--topic-border, rgba(255,182,39,.45));
+            background:
+                radial-gradient(circle at 90% 0, var(--topic-glow, rgba(255,182,39,.18)), transparent 52%),
+                #171d28;
+        }
+        .admin-topic-icon {
+            width: 44px;
+            height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--topic-color, var(--accent));
+            border: 1px solid var(--topic-border, rgba(255,182,39,.28));
+            border-radius: 14px;
+            background: var(--topic-glow, rgba(255,182,39,.1));
+        }
+        .admin-topic-card strong {
+            display: block;
+            font-size: 15px;
+            line-height: 1.2;
+        }
+        .admin-topic-card small {
+            display: block;
+            margin-top: 6px;
+            color: var(--muted);
+            font-size: 10px;
+            line-height: 1.5;
+        }
+        .admin-category-action {
+            width: 100%;
+            min-height: 76px;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            gap: 13px;
+            text-align: right;
+            color: var(--paper);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            background: rgba(255,255,255,.035);
+        }
+        .admin-category-action:hover {
+            border-color: rgba(255,182,39,.38);
+            background: rgba(255,182,39,.075);
+        }
+        .admin-category-action > span:first-child {
+            width: 40px;
+            height: 40px;
+            flex: 0 0 40px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent);
+            border-radius: 12px;
+            background: rgba(255,182,39,.1);
+        }
+        .admin-category-action strong { display: block; font-size: 13px; }
+        .admin-category-action small { display: block; margin-top: 4px; color: var(--muted); font-size: 10px; }
         .admin-section-label {
             margin: 15px 4px 7px;
             color: #687386;
@@ -1203,6 +1293,8 @@
             #sidebarAdminPanel .admin-overview,
             #sidebarAdminPanel .admin-logout,
             #sidebarAdminPanel .super-admin-only { grid-column: 1; }
+            .admin-topic-grid { grid-template-columns: 1fr; }
+            .admin-topic-card { min-height: 106px; }
         }
 
         #newUpdatesBanner {
@@ -1865,6 +1957,30 @@
                     <div class="admin-stat"><span class="admin-stat-icon"><i data-lucide="folders" class="w-5 h-5"></i></span><div><strong id="adminOverviewFoldersCount">0</strong><span>תיקיות</span></div></div>
                 </section>
 
+                <nav class="admin-topic-grid" style="order: 4" aria-label="נושאי ניהול">
+                    <button type="button" onclick="openAdminCategory('gallery')" class="admin-topic-card" style="--topic-color:#ffb627;--topic-border:rgba(255,182,39,.35);--topic-glow:rgba(255,182,39,.12)">
+                        <span class="admin-topic-icon"><i data-lucide="images" class="w-5 h-5"></i></span>
+                        <span>
+                            <strong>תמונות ותיקיות</strong>
+                            <small>העלאה, סנכרון, אישורים, תיקיות ומחיקה</small>
+                        </span>
+                    </button>
+                    <button type="button" onclick="openAdminCategory('users')" class="admin-topic-card hidden super-admin-only" style="--topic-color:#64d8e5;--topic-border:rgba(100,216,229,.35);--topic-glow:rgba(100,216,229,.11)">
+                        <span class="admin-topic-icon"><i data-lucide="users-round" class="w-5 h-5"></i></span>
+                        <span>
+                            <strong>משתמשים ותקשורת</strong>
+                            <small>בקשות הצטרפות, דרגות, חסימות, הודעות ופניות</small>
+                        </span>
+                    </button>
+                    <button type="button" onclick="openAdminCategory('system')" class="admin-topic-card" style="--topic-color:#86efac;--topic-border:rgba(134,239,172,.3);--topic-glow:rgba(134,239,172,.09)">
+                        <span class="admin-topic-icon"><i data-lucide="activity" class="w-5 h-5"></i></span>
+                        <span>
+                            <strong>פעילות ומערכת</strong>
+                            <small>יומן פעילות, מצב המערכת ובדיקות תקינות</small>
+                        </span>
+                    </button>
+                </nav>
+
                 <p class="admin-section-label super-admin-only hidden" style="order: 6">תקשורת ואנשים</p>
 
                 <div id="superAdminChatsCard" class="hidden super-admin-only admin-control-card rounded-2xl overflow-hidden" style="order: 7">
@@ -2218,6 +2334,30 @@
         </div>
     </div>
 
+
+    <!-- ADMIN CATEGORY WINDOW -->
+    <div id="adminCategoryModal" class="fixed inset-0 z-[104] hidden bg-black/80 backdrop-blur-md p-3 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="adminCategoryTitle">
+        <div class="admin-task-window w-full h-full max-w-5xl mx-auto rounded-3xl overflow-hidden flex flex-col modal-animate-popup">
+            <div class="flex items-center justify-between gap-4 px-5 sm:px-7 py-4 border-b border-white/10">
+                <div class="flex items-center gap-3 min-w-0">
+                    <span id="adminCategoryIcon" class="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                        <i data-lucide="layout-grid" class="w-5 h-5"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <h3 id="adminCategoryTitle" class="text-base sm:text-xl font-extrabold text-white truncate">נושא ניהול</h3>
+                        <p id="adminCategoryDescription" class="text-[10px] sm:text-xs text-slate-400 mt-0.5 truncate"></p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeAdminCategoryWindow()" class="px-3.5 h-11 btn-secondary-dark rounded-xl flex items-center justify-center gap-2 shrink-0" aria-label="חזרה לתפריט הנושאים">
+                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    <span class="text-xs font-bold">חזרה לתפריט</span>
+                </button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-5 sm:p-7">
+                <div id="adminCategoryActions" class="grid sm:grid-cols-2 gap-3"></div>
+            </div>
+        </div>
+    </div>
 
     <!-- ADMIN TASK WINDOW: existing management controls are moved here while open -->
     <div id="adminTaskModal" class="fixed inset-0 z-[105] hidden bg-black/80 backdrop-blur-md p-3 sm:p-6" role="dialog" aria-modal="true" aria-label="חלון ניהול">
@@ -4256,6 +4396,110 @@
         }
         window.toggleAccordion = toggleAccordion;
 
+        const adminCategoryDefinitions = {
+            gallery: {
+                title: 'תמונות ותיקיות',
+                description: 'כל הפעולות הקשורות לתוכן הגלריה במקום אחד',
+                icon: 'images',
+                actions: [
+                    { label: 'העלאת תמונות', description: 'העלאת תמונות בודדות או תיקייה שלמה', icon: 'cloud-upload', type: 'modal', target: 'userUploadModal' },
+                    { label: 'בקשות העלאה לאישור', description: 'בדיקה ואישור של תמונות שנשלחו ממשתמשים', icon: 'image-plus', type: 'task', target: 'accPending' },
+                    { label: 'סנכרון Google Drive', description: 'ייבוא תמונות ותיקיות ישירות מחשבון Drive', icon: 'folder-sync', type: 'task', target: 'accDriveSync' },
+                    { label: 'יצירת תיקייה חדשה', description: 'הוספת תיקייה חדשה וסמל מתאים לגלריה', icon: 'folder-plus', type: 'task', target: 'accEmptyFolder' },
+                    { label: 'ניהול ומחיקת תמונות', description: 'מעבר לגלריה להעברה בין תיקיות או למחיקה', icon: 'image-minus', type: 'gallery' },
+                    { label: 'בקשות מחיקה', description: 'אישור בקשות מחיקה שנשלחו ממנהלי דרגה 3', icon: 'trash-2', type: 'task', target: 'accDeletionRequests', superAdminOnly: true },
+                    { label: 'סל מחזור', description: 'שחזור תמונות ותיקיות או מחיקה סופית', icon: 'archive-restore', type: 'task', target: 'accTrash', superAdminOnly: true }
+                ]
+            },
+            users: {
+                title: 'משתמשים ותקשורת',
+                description: 'ניהול חשבונות, הרשאות, הודעות ופניות',
+                icon: 'users-round',
+                superAdminOnly: true,
+                actions: [
+                    { label: 'ניהול משתמשים ובקשות', description: 'אישור משתמשים, שינוי דרגות וחסימת חשבונות', icon: 'user-cog', type: 'task', target: 'accUserApprovals' },
+                    { label: 'שיחות ופניות', description: 'קריאת פניות והמשך שיחה עם משתמשים', icon: 'messages-square', type: 'messages' }
+                ]
+            },
+            system: {
+                title: 'פעילות ומערכת',
+                description: 'מעקב אחר פעילות ובדיקת שירותי הגלריה',
+                icon: 'activity',
+                actions: [
+                    { label: 'מרכז פעילות', description: 'יומן הפעולות האחרונות ותמונת מצב ניהולית', icon: 'chart-no-axes-combined', type: 'task', target: 'accActivityCenter', superAdminOnly: true },
+                    { label: 'בדיקת תקינות המערכת', description: 'בדיקת Firebase, האחסון, זיהוי פנים ו־Drive', icon: 'shield-check', type: 'task', target: 'accSystemHealth' }
+                ]
+            }
+        };
+
+        let activeAdminCategoryId = '';
+
+        window.closeAdminCategoryWindow = function() {
+            activeAdminCategoryId = '';
+            closeModal('adminCategoryModal');
+        };
+
+        window.openAdminCategory = function(categoryId) {
+            if (!checkAdminPermission()) return;
+            const definition = adminCategoryDefinitions[categoryId];
+            if (!definition) return;
+            if (definition.superAdminOnly && !checkSuperAdminPermission()) return;
+            activeAdminCategoryId = categoryId;
+
+            const title = document.getElementById('adminCategoryTitle');
+            const description = document.getElementById('adminCategoryDescription');
+            const icon = document.getElementById('adminCategoryIcon');
+            const actionsContainer = document.getElementById('adminCategoryActions');
+            if (!actionsContainer) return;
+
+            if (title) title.textContent = definition.title;
+            if (description) description.textContent = definition.description;
+            if (icon) icon.innerHTML = `<i data-lucide="${definition.icon}" class="w-5 h-5"></i>`;
+
+            actionsContainer.replaceChildren();
+            definition.actions
+                .filter(action => !action.superAdminOnly || window.state.isSuperAdmin)
+                .forEach(action => {
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'admin-category-action';
+
+                    const actionIcon = document.createElement('span');
+                    actionIcon.innerHTML = `<i data-lucide="${action.icon}" class="w-5 h-5"></i>`;
+                    const actionText = document.createElement('span');
+                    actionText.className = 'min-w-0 flex-1';
+                    const actionTitle = document.createElement('strong');
+                    actionTitle.textContent = action.label;
+                    const actionDescription = document.createElement('small');
+                    actionDescription.textContent = action.description;
+                    const arrow = document.createElement('i');
+                    arrow.setAttribute('data-lucide', 'arrow-left');
+                    arrow.className = 'w-4 h-4 text-slate-500 shrink-0';
+                    actionText.append(actionTitle, actionDescription);
+                    button.append(actionIcon, actionText, arrow);
+
+                    button.onclick = () => {
+                        closeModal('adminCategoryModal');
+                        if (action.type === 'modal') {
+                            openModal(action.target);
+                        } else if (action.type === 'task') {
+                            window.openAdminTaskWindow(action.target);
+                        } else if (action.type === 'messages') {
+                            window.openAdminMessagesCenter();
+                        } else if (action.type === 'gallery') {
+                            const drawer = document.getElementById('adminDrawer');
+                            if (drawer && drawer.classList.contains('translate-x-0')) toggleAdminDrawer();
+                            document.getElementById('photosGrid')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            window.showNotification('בכרטיסי התמונות אפשר להעביר תיקייה או לבחור מחיקה.', true);
+                        }
+                    };
+                    actionsContainer.appendChild(button);
+                });
+
+            openModal('adminCategoryModal');
+            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+        };
+
         const adminTaskDefinitions = {
             accUserApprovals: {
                 title: 'ניהול משתמשים ובקשות',
@@ -4315,6 +4559,9 @@
 
         window.closeAdminTaskWindow = function() {
             closeModal('adminTaskModal');
+            if (activeAdminCategoryId) {
+                window.openAdminCategory(activeAdminCategoryId);
+            }
         };
 
         window.openAdminTaskWindow = function(contentId) {
