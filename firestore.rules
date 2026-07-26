@@ -109,6 +109,27 @@ service cloud.firestore {
       allow read, create, update, delete: if signedIn() && request.auth.uid == uid;
     }
 
+    match /artifacts/org-gallery/public/data/userPreferences/{uid} {
+      allow read, create, update, delete: if signedIn() && request.auth.uid == uid;
+    }
+
+    match /artifacts/org-gallery/public/data/mediaStats/{mediaId} {
+      allow read: if approved();
+      allow create: if approved() &&
+        request.resource.data.id == mediaId &&
+        request.resource.data.views == 1;
+      allow update: if approved() &&
+        request.resource.data.id == resource.data.id &&
+        request.resource.data.views == resource.data.views + 1 &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views', 'lastViewedAt']);
+      allow delete: if superAdmin();
+    }
+
+    match /artifacts/org-gallery/public/data/systemMeta/{metaId} {
+      allow read: if approved();
+      allow create, update, delete: if superAdmin();
+    }
+
     match /artifacts/org-gallery/public/data/notifications/{notificationId} {
       allow read: if approved() && (
         resource.data.target == 'all' ||
@@ -147,7 +168,7 @@ service cloud.firestore {
           (admin() && request.resource.data.action in [
             'moved_to_trash', 'restored', 'purged', 'approved_user', 'changed_role',
             'changed_block', 'approved_images', 'uploaded_images', 'synced_drive',
-            'resolved_support', 'reopened_support'
+            'resolved_support', 'reopened_support', 'sent_email', 'restored_backup'
           ]) ||
           request.resource.data.action == 'uploaded_images'
         );
