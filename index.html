@@ -2217,8 +2217,9 @@
                         <p id="adminTaskDescription" class="text-[10px] sm:text-xs text-slate-400 mt-0.5 truncate"></p>
                     </div>
                 </div>
-                <button type="button" onclick="closeAdminTaskWindow()" class="w-11 h-11 btn-secondary-dark rounded-xl flex items-center justify-center shrink-0" aria-label="סגירת חלון הניהול">
-                    <i data-lucide="x" class="w-5 h-5"></i>
+                <button type="button" onclick="closeAdminTaskWindow()" class="px-3.5 h-11 btn-secondary-dark rounded-xl flex items-center justify-center gap-2 shrink-0" aria-label="חזרה ללוח הניהול">
+                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    <span class="text-xs font-bold">חזרה לניהול</span>
                 </button>
             </div>
             <div id="adminTaskBody" class="admin-task-body flex-1 overflow-y-auto p-5 sm:p-7"></div>
@@ -2233,8 +2234,9 @@
                     <h3 class="text-base sm:text-xl font-extrabold text-white flex items-center gap-2"><i data-lucide="messages-square" class="w-5 h-5 text-amber-400"></i> מרכז שליחת הודעות</h3>
                     <p class="text-[10px] sm:text-xs text-slate-400 mt-1">פועל בתוך הגלריה ובאותו חשבון Google שכבר מחובר</p>
                 </div>
-                <button type="button" onclick="closeModal('adminMessagesCenterModal')" class="w-11 h-11 btn-secondary-dark rounded-xl flex items-center justify-center shrink-0" aria-label="סגירת מרכז ההודעות">
-                    <i data-lucide="x" class="w-5 h-5"></i>
+                <button type="button" onclick="closeModal('adminMessagesCenterModal')" class="px-3.5 h-11 btn-secondary-dark rounded-xl flex items-center justify-center gap-2 shrink-0" aria-label="חזרה ללוח הניהול">
+                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    <span class="text-xs font-bold">חזרה לניהול</span>
                 </button>
             </div>
             <div class="flex-1 min-h-0 grid lg:grid-cols-[minmax(0,1fr)_390px]">
@@ -3893,8 +3895,6 @@
             }
             const floatingPanel = document.getElementById('floatingProfilePanel');
             if (floatingPanel) floatingPanel.classList.remove('active');
-            const drawer = document.getElementById('adminDrawer');
-            if (drawer?.classList.contains('translate-x-0')) toggleAdminDrawer();
             window.renderAdminMessageUsers();
             window.renderAdminMessageReplies();
             openModal('adminMessagesCenterModal');
@@ -4256,8 +4256,6 @@
             if (description) description.textContent = definition.description;
             if (icon) icon.innerHTML = `<i data-lucide="${definition.icon}" class="w-5 h-5"></i>`;
 
-            const drawer = document.getElementById('adminDrawer');
-            if (drawer?.classList.contains('translate-x-0')) toggleAdminDrawer();
             openModal('adminTaskModal');
 
             if (contentId === 'accPending') window.renderPendingImages?.();
@@ -5113,7 +5111,6 @@
                 if(filesInput) filesInput.value = '';
                 if(folderInput) folderInput.value = '';
                 window.showNotification(`הועלו ${newImages.length} תמונות לגלריה בענן!`);
-                window.toggleAdminDrawer();
             } catch (error) {
                 console.error('Admin upload failed:', error);
                 window.showNotification(error.message || 'העלאת התמונות נכשלה. נסה שוב.', false);
