@@ -443,7 +443,7 @@
             gap: 22px !important;
         }
 
-        .settings-wrap { left: 16px !important; top: 42px !important; }
+        .settings-wrap { display: none !important; }
         .settings-trigger {
             width: 48px !important;
             height: 48px !important;
@@ -1521,11 +1521,11 @@
         
         /* Floating Profile Widget */
         .floating-profile-container {
-            position: relative;
-            top: auto;
-            left: auto;
+            position: fixed;
+            top: 6px;
+            left: 6px;
             right: auto;
-            z-index: 50;
+            z-index: 60;
         }
         .floating-profile-btn {
             width: 58px;
@@ -1549,8 +1549,8 @@
         /* Expanded Floating Profile Panel */
         .floating-profile-panel {
             position: fixed;
-            top: 86px;
-            left: 24px;
+            top: 72px;
+            left: 6px;
             right: auto;
             width: 360px;
             max-height: 580px;
@@ -1620,7 +1620,7 @@
         html[data-theme="light"] .conversation-stream { background-color: #eef2f7; }
 
         @media (max-width: 680px) {
-            .floating-profile-container { top: auto; left: auto; }
+            .floating-profile-container { top: 5px; left: 5px; }
             .floating-profile-btn { width: 44px; height: 44px; }
             .theme-toggle { width: 42px; padding-inline: 0; }
             .theme-toggle span { display: none; }
@@ -1630,10 +1630,10 @@
             .brand-title { font-size: 15px !important; }
             .brand-kicker { font-size: 8px !important; }
             .floating-profile-panel {
-                top: 74px;
-                left: 10px;
-                width: calc(100vw - 20px);
-                max-height: calc(100vh - 88px);
+                top: 64px;
+                left: 5px;
+                width: calc(100vw - 10px);
+                max-height: calc(100vh - 69px);
             }
             .conversation-bubble { max-width: 88%; }
         }
@@ -2321,6 +2321,11 @@
                         <span id="floatingUserPanelBadge" class="inline-flex mt-1 text-[9px] px-2 py-0.5 rounded-full font-bold"></span>
                     </div>
                 </div>
+
+                <button type="button" data-admin-profile-launcher onclick="openManagementFromProfile()" class="hidden w-full py-3 btn-primary-gold rounded-xl text-xs font-extrabold items-center justify-center gap-2">
+                    <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                    פתח לוח ניהול
+                </button>
 
                 <button id="contactManagerButton" type="button" onclick="openUserConversation()" class="w-full py-3 btn-primary-gold rounded-xl text-xs font-extrabold flex items-center justify-center gap-2">
                     <i data-lucide="message-circle-more" class="w-4 h-4"></i>
@@ -3347,6 +3352,16 @@
                 panel.classList.add('active');
                 if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
             }
+        };
+
+        window.openManagementFromProfile = function() {
+            if (!window.state.isAdminLoggedIn) {
+                window.showNotification('הכניסה ללוח הניהול זמינה למנהלים בלבד.', false);
+                return;
+            }
+            document.getElementById('floatingProfilePanel')?.classList.remove('active');
+            const drawer = document.getElementById('adminDrawer');
+            if (drawer && !drawer.classList.contains('translate-x-0')) toggleAdminDrawer();
         };
 
         function openModal(id) {
@@ -4644,6 +4659,7 @@
             const superAdminOnlyElements = document.querySelectorAll('#sidebarAdminPanel .super-admin-only');
             const rejectPendingButton = document.getElementById('rejectPendingBtn');
             const superAdminMessageLaunchers = document.querySelectorAll('[data-super-admin-messages-launcher]');
+            const adminProfileLaunchers = document.querySelectorAll('[data-admin-profile-launcher]');
             const contactManagerButton = document.getElementById('contactManagerButton');
 
             if (!statusBadge) return;
@@ -4658,6 +4674,10 @@
             superAdminMessageLaunchers.forEach(button => {
                 button.classList.toggle('hidden', !window.state.isSuperAdmin);
                 button.classList.toggle('flex', window.state.isSuperAdmin);
+            });
+            adminProfileLaunchers.forEach(button => {
+                button.classList.toggle('hidden', !window.state.isAdminLoggedIn);
+                button.classList.toggle('flex', window.state.isAdminLoggedIn);
             });
             if (contactManagerButton) contactManagerButton.classList.toggle('hidden', window.state.isSuperAdmin);
 
