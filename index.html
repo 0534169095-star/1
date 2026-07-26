@@ -1927,6 +1927,7 @@
                 <aside class="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-3">
                     <button type="button" id="eventOpenGalleryBtn" class="w-full py-3 btn-primary-gold rounded-xl text-xs font-extrabold flex items-center justify-center gap-2"><i data-lucide="images" class="w-4 h-4"></i> פתח את תמונות האירוע</button>
                     <button type="button" id="eventStartSlideshowBtn" class="w-full py-3 btn-secondary-dark rounded-xl text-xs font-bold flex items-center justify-center gap-2"><i data-lucide="play" class="w-4 h-4"></i> הפעל מצגת</button>
+                    <button type="button" id="eventFollowButton" class="w-full py-3 btn-secondary-dark rounded-xl text-xs font-bold flex items-center justify-center gap-2"><i data-lucide="bell-plus" class="w-4 h-4"></i> עקוב אחר התיקייה</button>
                     <button type="button" id="eventEditToggleBtn" data-admin-profile-launcher onclick="toggleEventEdit(true)" class="hidden w-full py-3 btn-secondary-dark rounded-xl text-xs font-bold items-center justify-center gap-2"><i data-lucide="pencil" class="w-4 h-4"></i> עריכת פרטי האירוע</button>
                 </aside>
                 <form id="eventEditForm" onsubmit="saveEventDetails(event)" class="hidden lg:col-span-2 rounded-2xl border border-amber-400/20 bg-amber-400/5 p-5 grid sm:grid-cols-2 gap-4">
@@ -1938,6 +1939,50 @@
                 </form>
             </div>
         </div>
+    </div>
+
+    <!-- BACKUP & RESTORE -->
+    <div id="backupRestoreModal" class="fixed inset-0 z-[120] hidden bg-black/80 backdrop-blur-md p-4 flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="backupRestoreTitle">
+        <div class="w-full max-w-xl rounded-3xl border border-white/10 bg-slate-950 p-6 modal-animate-popup shadow-2xl">
+            <div class="flex items-center justify-between gap-4">
+                <div>
+                    <h3 id="backupRestoreTitle" class="text-xl font-black text-white">גיבוי ושחזור הגלריה</h3>
+                    <p class="mt-1 text-xs text-slate-400">הגיבוי כולל תיקיות, פרטי מדיה, משתמשים והגדרות. קובצי המדיה נשארים שמורים ב־R2.</p>
+                </div>
+                <button type="button" onclick="closeModal('backupRestoreModal')" class="w-10 h-10 btn-secondary-dark rounded-full flex items-center justify-center" aria-label="סגירה"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="mt-6 grid sm:grid-cols-2 gap-3">
+                <button type="button" onclick="exportGalleryBackup()" class="btn-primary-gold rounded-xl py-3 text-xs font-extrabold flex items-center justify-center gap-2"><i data-lucide="download" class="w-4 h-4"></i> הורד קובץ גיבוי</button>
+                <label class="btn-secondary-dark rounded-xl py-3 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer"><i data-lucide="file-up" class="w-4 h-4"></i> בחר קובץ לשחזור<input id="backupRestoreFile" type="file" accept="application/json,.json" class="sr-only" onchange="previewBackupFile(this)"></label>
+            </div>
+            <div id="backupRestoreStatus" class="mt-4 rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-slate-400">טרם נבחר קובץ שחזור.</div>
+            <button id="backupRestoreSubmit" type="button" onclick="restoreGalleryBackup()" disabled class="mt-3 w-full btn-primary-gold rounded-xl py-3 text-xs font-extrabold disabled:opacity-40">שחזר את הנתונים</button>
+        </div>
+    </div>
+
+    <!-- ADVANCED ANALYTICS -->
+    <div id="advancedAnalyticsModal" class="fixed inset-0 z-[120] hidden bg-black/80 backdrop-blur-md p-3 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="advancedAnalyticsTitle">
+        <div class="w-full h-full max-w-5xl mx-auto rounded-3xl border border-white/10 bg-slate-950 overflow-hidden flex flex-col modal-animate-popup">
+            <div class="p-5 border-b border-white/10 flex items-center justify-between">
+                <div><h3 id="advancedAnalyticsTitle" class="text-xl font-black text-white">ניתוח נתונים מתקדם</h3><p class="text-xs text-slate-400 mt-1">תמונת מצב של תוכן, נפח, משתמשים וצפיות.</p></div>
+                <button type="button" onclick="closeModal('advancedAnalyticsModal')" class="w-10 h-10 btn-secondary-dark rounded-full flex items-center justify-center" aria-label="סגירה"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-5">
+                <div id="advancedAnalyticsCards" class="grid grid-cols-2 lg:grid-cols-4 gap-3"></div>
+                <div class="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4"><h4 class="text-sm font-extrabold text-white mb-3">המדיה הנצפית ביותר</h4><div id="advancedAnalyticsTop" class="space-y-2 text-xs text-slate-400">טוען נתונים...</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DIRECT EMAIL -->
+    <div id="directEmailModal" class="fixed inset-0 z-[125] hidden bg-black/80 backdrop-blur-md p-4 flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="directEmailTitle">
+        <form onsubmit="submitDirectEmail(event)" class="w-full max-w-lg rounded-3xl border border-white/10 bg-slate-950 p-6 modal-animate-popup shadow-2xl space-y-4">
+            <div class="flex items-center justify-between"><h3 id="directEmailTitle" class="text-xl font-black text-white">שליחת דוא״ל</h3><button type="button" onclick="closeModal('directEmailModal')" class="w-10 h-10 btn-secondary-dark rounded-full flex items-center justify-center" aria-label="סגירה"><i data-lucide="x" class="w-5 h-5"></i></button></div>
+            <input id="directEmailTo" type="email" required readonly class="w-full rounded-xl px-3 py-2 text-sm" dir="ltr">
+            <input id="directEmailSubject" required maxlength="160" class="w-full rounded-xl px-3 py-2 text-sm" placeholder="נושא">
+            <textarea id="directEmailBody" required maxlength="5000" rows="8" class="w-full rounded-xl px-3 py-2 text-sm resize-y" placeholder="תוכן ההודעה"></textarea>
+            <button id="directEmailSubmit" type="submit" class="w-full btn-primary-gold rounded-xl py-3 text-xs font-extrabold flex items-center justify-center gap-2"><i data-lucide="send" class="w-4 h-4"></i> שלח עכשיו</button>
+        </form>
     </div>
 
     <!-- DUPLICATE MEDIA DECISION -->
@@ -2264,6 +2309,8 @@
                 </div>
                 <div class="pt-4 flex justify-end gap-2 border-t border-white/10 mt-4">
                     <button type="button" onclick="closeModal('userUploadModal')" class="px-5 py-2 btn-secondary-dark rounded-xl text-xs font-semibold">ביטול</button>
+                    <button type="button" id="userUploadPauseBtn" onclick="toggleUploadPause()" class="hidden px-4 py-2 btn-secondary-dark rounded-xl text-xs font-bold">השהה</button>
+                    <button type="button" id="userUploadRetryBtn" onclick="retryFailedUploads()" class="hidden px-4 py-2 btn-secondary-dark rounded-xl text-xs font-bold">נסה שוב קבצים שנכשלו</button>
                     <button type="button" id="userUploadSubmitBtn" onclick="submitUserUpload()" class="px-5 py-2 btn-primary-gold rounded-xl text-xs font-bold">העלה לגלריה</button>
                 </div>
             </div>
@@ -2656,12 +2703,12 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithCredential, signInWithPopup, signInWithRedirect, getRedirectResult, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, getDoc, getDocs, setDoc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-lite.js";
+        import { getFirestore, collection, doc, getDoc, getDocs, setDoc, deleteDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-lite.js";
 
         // גישה גלובלית לפונקציות פיירבייס מכל מקום בקוד
         window.db = null;
         window.appId = typeof __app_id !== 'undefined' ? __app_id : 'org-gallery';
-        window.firestoreModules = { collection, doc, getDoc, getDocs, setDoc, deleteDoc, updateDoc };
+        window.firestoreModules = { collection, doc, getDoc, getDocs, setDoc, deleteDoc, updateDoc, increment };
 
         // Firestore Lite משתמש בבקשות HTTPS רגילות. הרענון המחזורי מחליף את החיבור
         // המתמשך של onSnapshot, שעלול להיחסם ברשתות מסוימות.
@@ -3530,6 +3577,7 @@
                 window.galleryUnsubscribers = [];
                 window.state.images = [];
                 window.state.folders = defaultFolders.map(folder => ({ ...folder }));
+                window.state.gallerySnapshotInitialized = false;
                 window.renderFolders();
                 window.renderImages();
             };
@@ -3538,13 +3586,26 @@
                 if (window.galleryUnsubscribers.length > 0) return;
 
                 // מאזין לתיקיות רק לאחר קבלת הרשאת צפייה.
-                window.galleryUnsubscribers.push(onSnapshot(collection(window.db, 'artifacts', window.appId, 'public', 'data', 'folders'), (snapshot) => {
+                window.galleryUnsubscribers.push(onSnapshot(collection(window.db, 'artifacts', window.appId, 'public', 'data', 'folders'), async (snapshot) => {
                 if (snapshot.empty) {
-                    window.state.folders = defaultFolders.map(folder => ({ ...folder }));
+                    let alreadyInitialized = false;
+                    try {
+                        const metaSnapshot = await getDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'systemMeta', 'gallery'));
+                        alreadyInitialized = metaSnapshot.exists() && metaSnapshot.data()?.foldersInitialized === true;
+                    } catch (error) {
+                        console.warn('Folder initialization marker unavailable:', error);
+                    }
+                    window.state.folders = alreadyInitialized
+                        ? defaultFolders.filter(folder => safeRecordId(folder.id) === 'all').map(folder => ({ ...folder }))
+                        : defaultFolders.map(folder => ({ ...folder }));
                     window.renderFolders();
                     window.populateFolderSelects();
-                    if (window.state.isAdminLoggedIn) {
+                    if (window.state.isAdminLoggedIn && !alreadyInitialized) {
                         defaultFolders.forEach(folder => window.saveFolderToCloud(folder).catch(handleFsError));
+                        setDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'systemMeta', 'gallery'), {
+                            foldersInitialized: true,
+                            updatedAt: Date.now()
+                        }, { merge: true }).catch(handleFsError);
                     }
                 } else {
                     window.state.folders = snapshot.docs.map(d => {
@@ -3560,7 +3621,17 @@
 
                 // מאזין לתמונות פעילות רק לאחר קבלת הרשאת צפייה.
                 window.galleryUnsubscribers.push(onSnapshot(collection(window.db, 'artifacts', window.appId, 'public', 'data', 'images'), (snapshot) => {
-                    window.state.images = snapshot.docs.map(d => d.data());
+                    const previousIds = new Set((window.state.images || []).map(item => safeRecordId(item.id)));
+                    const nextImages = snapshot.docs.map(d => d.data());
+                    if (window.state.gallerySnapshotInitialized) {
+                        const followedNewItems = nextImages.filter(item => !previousIds.has(safeRecordId(item.id)) && window.state.followedFolders.has(safeRecordId(item.folderId)));
+                        if (followedNewItems.length) {
+                            const folderNames = [...new Set(followedNewItems.map(item => window.state.folders.find(folder => safeRecordId(folder.id) === safeRecordId(item.folderId))?.name).filter(Boolean))];
+                            window.showNotification(`נוספו ${followedNewItems.length} פריטים חדשים${folderNames.length ? ` ב־${folderNames.join(', ')}` : ''}.`, true);
+                        }
+                    }
+                    window.state.images = nextImages;
+                    window.state.gallerySnapshotInitialized = true;
                     window.state.images.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
                     window.renderImages();
                     window.checkNewUpdates();
@@ -3605,6 +3676,14 @@
                     window.renderFolders?.();
                     window.renderImages?.();
                 }, handleFsError));
+
+                const preferencesRef = doc(window.db, 'artifacts', window.appId, 'public', 'data', 'userPreferences', user.uid);
+                window.firestoreUnsubscribers.push(onSnapshot(preferencesRef, (snapshot) => {
+                    const ids = snapshot.exists() && Array.isArray(snapshot.data()?.followedFolderIds)
+                        ? snapshot.data().followedFolderIds.map(safeRecordId).filter(Boolean)
+                        : [];
+                    window.state.followedFolders = new Set(ids);
+                }, handleFsError));
             }
         }
 
@@ -3618,7 +3697,7 @@
     <script>
         // --- 1. Global State ---
         window.state = {
-            folders: window.DEFAULT_GALLERY_FOLDERS.map(folder => ({ ...folder })), images: [], pendingImages: [], pendingUsers: [], allUsers: [], deletionRequests: [], trashItems: [], activityLogs: [], favorites: new Set(), activeFolderId: 'all', searchQuery: '', gallerySort: 'newest',
+            folders: window.DEFAULT_GALLERY_FOLDERS.map(folder => ({ ...folder })), images: [], pendingImages: [], pendingUsers: [], allUsers: [], deletionRequests: [], trashItems: [], activityLogs: [], favorites: new Set(), followedFolders: new Set(), activeFolderId: 'all', searchQuery: '', gallerySort: 'newest',
             currentLightboxIndex: -1, tempSearchResults: null,
             bulkSelectionMode: false, selectedMediaIds: new Set(), activeEventFolderId: '',
             isLocked: true, isAdminLoggedIn: false, isSuperAdmin: false, isGoogleUser: false, currentUser: null,
@@ -4403,31 +4482,43 @@
         };
     
 
-        // --- Email mailto trigger ---
-        window.sendDirectMail = function(recipientEmail, displayName, confirmed = false) {
+        // --- שליחת דוא״ל מאובטחת דרך ה-Worker ---
+        window.sendDirectMail = function(recipientEmail, displayName) {
             if (!recipientEmail) {
                 window.showNotification('אין כתובת מייל תקינה למשתמש זה.', false);
                 return;
             }
-            if (!confirmed) {
-                showConfirm(
-                    'פתיחת הודעת דוא״ל',
-                    `לפתוח הודעת דוא״ל חדשה אל ${displayName || recipientEmail}? השליחה עצמה תתבצע באפליקציית הדוא״ל.`,
-                    () => window.sendDirectMail(recipientEmail, displayName, true)
-                );
-                return;
-            }
-            
-            const subject = encodeURIComponent('עדכון בנוגע לבקשת הגישה שלך לגלריית שמחת התורה');
-            const body = encodeURIComponent(`שלום ${displayName || 'ידיד הישיבה'},
+            document.getElementById('directEmailTo').value = recipientEmail;
+            document.getElementById('directEmailSubject').value = 'עדכון בנוגע לבקשת הגישה שלך לגלריית שמחת התורה';
+            document.getElementById('directEmailBody').value = `שלום ${displayName || 'ידיד הישיבה'},
 
 הבקשה שלך לגישה לגלריית שמחת התורה מעובדת כעת על ידי מנהלי המערכת.
 
 בברכה,
-צוות גלריית שמחת התורה`);
-            
-            window.location.href = `mailto:${recipientEmail}?subject=${subject}&body=${body}`;
-            window.showNotification('מפעיל את אפליקציית הדוא"ל שלך לשליחה מהירה...', true);
+צוות גלריית שמחת התורה`;
+            openModal('directEmailModal');
+        };
+
+        window.submitDirectEmail = async function(event) {
+            event?.preventDefault();
+            if (!checkSuperAdminPermission()) return;
+            const button = document.getElementById('directEmailSubmit');
+            const payload = {
+                to: document.getElementById('directEmailTo').value.trim(),
+                subject: document.getElementById('directEmailSubject').value.trim(),
+                text: document.getElementById('directEmailBody').value.trim()
+            };
+            if (button) button.disabled = true;
+            try {
+                await r2Request('/send-email', { method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' } });
+                closeModal('directEmailModal');
+                window.showNotification('הדוא״ל נשלח בהצלחה.', true);
+                await window.logActivity('sent_email', 'user', '', payload.to, payload.subject);
+            } catch (error) {
+                window.showNotification(error.message || 'שליחת הדוא״ל נכשלה.', false);
+            } finally {
+                if (button) button.disabled = false;
+            }
         };
     
         window.openModal = openModal;
@@ -4445,6 +4536,11 @@
             }
             if (id === 'faceCameraModal') {
                 if (typeof window.stopFaceCamera === 'function') window.stopFaceCamera();
+            }
+            if (id === 'userUploadModal') {
+                uploadPaused = false;
+                const pauseButton = document.getElementById('userUploadPauseBtn');
+                if (pauseButton) pauseButton.textContent = 'השהה';
             }
         }
         window.closeModal = closeModal;
@@ -4532,6 +4628,8 @@
                 icon: 'activity',
                 actions: [
                     { label: 'מרכז פעילות', description: 'יומן הפעולות האחרונות ותמונת מצב ניהולית', icon: 'chart-no-axes-combined', type: 'task', target: 'accActivityCenter', superAdminOnly: true },
+                    { label: 'ניתוח נתונים מתקדם', description: 'צפיות, נפח אחסון, סוגי מדיה והפריטים המובילים', icon: 'chart-column-big', type: 'analytics', superAdminOnly: true },
+                    { label: 'גיבוי ושחזור', description: 'ייצוא נתוני הגלריה לקובץ ושחזור מגיבוי', icon: 'database-backup', type: 'modal', target: 'backupRestoreModal', superAdminOnly: true },
                     { label: 'בדיקת תקינות המערכת', description: 'בדיקת Firebase, האחסון, זיהוי פנים ו־Drive', icon: 'shield-check', type: 'task', target: 'accSystemHealth' }
                 ]
             }
@@ -4596,6 +4694,9 @@
                             if (drawer && drawer.classList.contains('translate-x-0')) toggleAdminDrawer();
                             document.getElementById('photosGrid')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                             window.showNotification('בכרטיסי התמונות אפשר להעביר תיקייה או לבחור מחיקה.', true);
+                        } else if (action.type === 'analytics') {
+                            openModal('advancedAnalyticsModal');
+                            window.loadAdvancedAnalytics();
                         }
                     };
                     actionsContainer.appendChild(button);
@@ -5008,6 +5109,146 @@
             return payload;
         }
 
+        let selectedBackupPayload = null;
+
+        window.exportGalleryBackup = function() {
+            if (!checkSuperAdminPermission()) return;
+            const payload = {
+                version: 2,
+                exportedAt: new Date().toISOString(),
+                appId: window.appId,
+                folders: (window.state.folders || []).filter(folder => safeRecordId(folder.id) !== 'all'),
+                images: window.state.images || [],
+                pendingImages: window.state.pendingImages || [],
+                userProfiles: window.state.allUsers || [],
+                deletionRequests: window.state.deletionRequests || []
+            };
+            const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `simchas-gallery-backup-${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(link.href);
+            window.showNotification('קובץ הגיבוי הורד בהצלחה.', true);
+        };
+
+        window.previewBackupFile = async function(input) {
+            selectedBackupPayload = null;
+            const status = document.getElementById('backupRestoreStatus');
+            const submit = document.getElementById('backupRestoreSubmit');
+            try {
+                const file = input?.files?.[0];
+                if (!file || file.size > 20 * 1024 * 1024) throw new Error('יש לבחור קובץ JSON תקין בגודל עד 20MB.');
+                const payload = JSON.parse(await file.text());
+                if (!Number.isFinite(payload.version) || !Array.isArray(payload.folders) || !Array.isArray(payload.images)) {
+                    throw new Error('מבנה קובץ הגיבוי אינו תקין.');
+                }
+                selectedBackupPayload = payload;
+                if (status) status.textContent = `מוכן לשחזור: ${payload.folders.length} תיקיות ו־${payload.images.length} פריטי מדיה.`;
+                if (submit) submit.disabled = false;
+            } catch (error) {
+                if (status) status.textContent = error.message || 'קריאת קובץ הגיבוי נכשלה.';
+                if (submit) submit.disabled = true;
+            }
+        };
+
+        window.restoreGalleryBackup = function(confirmed = false) {
+            if (!checkSuperAdminPermission() || !selectedBackupPayload) return;
+            if (!confirmed) {
+                showConfirm('שחזור גיבוי', 'לשחזר את כל הנתונים שבקובץ? נתונים בעלי אותו מזהה יעודכנו, אך קבצים קיימים אחרים לא יימחקו.', () => window.restoreGalleryBackup(true));
+                return;
+            }
+            (async () => {
+                const status = document.getElementById('backupRestoreStatus');
+                const { doc, setDoc } = window.firestoreModules;
+                const base = ['artifacts', window.appId, 'public', 'data'];
+                const collections = [
+                    ['folders', selectedBackupPayload.folders || [], 'id', false],
+                    ['images', selectedBackupPayload.images || [], 'id', false],
+                    ['pendingImages', selectedBackupPayload.pendingImages || [], 'id', false],
+                    ['userProfiles', selectedBackupPayload.userProfiles || [], 'uid', true],
+                    ['deletionRequests', selectedBackupPayload.deletionRequests || [], 'id', false]
+                ];
+                let restored = 0;
+                for (const [collectionName, records, idField, merge] of collections) {
+                    for (const record of records.slice(0, 10000)) {
+                        const id = safeRecordId(record?.[idField]);
+                        if (!id || (collectionName === 'folders' && id === 'all')) continue;
+                        await setDoc(doc(window.db, ...base, collectionName, id), record, merge ? { merge: true } : undefined);
+                        restored++;
+                        if (status) status.textContent = `משחזר נתונים… ${restored} פריטים הושלמו`;
+                    }
+                }
+                if (status) status.textContent = `השחזור הושלם בהצלחה: ${restored} רשומות.`;
+                await window.logActivity('restored_backup', 'system', '', 'גיבוי גלריה', `${restored} רשומות`);
+                window.showNotification('שחזור הגיבוי הושלם.', true);
+            })().catch(error => {
+                document.getElementById('backupRestoreStatus').textContent = error.message || 'שחזור הגיבוי נכשל.';
+                window.showNotification(error.message || 'שחזור הגיבוי נכשל.', false);
+            });
+        };
+
+        function formatBytes(bytes) {
+            const value = Number(bytes) || 0;
+            if (value < 1024) return `${value} B`;
+            if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
+            if (value < 1024 * 1024 * 1024) return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+            return `${(value / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+        }
+
+        window.recordMediaView = async function(mediaId) {
+            const id = safeRecordId(mediaId);
+            if (!id || !window.db || !window.state.currentUser || sessionStorage.getItem(`viewed_${id}`)) return;
+            sessionStorage.setItem(`viewed_${id}`, '1');
+            try {
+                const { doc, setDoc, increment } = window.firestoreModules;
+                await setDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'mediaStats', id), {
+                    id,
+                    views: increment(1),
+                    lastViewedAt: Date.now()
+                }, { merge: true });
+            } catch (error) {
+                sessionStorage.removeItem(`viewed_${id}`);
+                console.warn('View counter update failed:', error);
+            }
+        };
+
+        window.loadAdvancedAnalytics = async function() {
+            if (!checkSuperAdminPermission()) return;
+            const cards = document.getElementById('advancedAnalyticsCards');
+            const top = document.getElementById('advancedAnalyticsTop');
+            if (cards) cards.innerHTML = '<p class="text-xs text-slate-400">טוען…</p>';
+            try {
+                const { collection, getDocs } = window.firestoreModules;
+                const snapshot = await getDocs(collection(window.db, 'artifacts', window.appId, 'public', 'data', 'mediaStats'));
+                const stats = snapshot.docs.map(entry => entry.data());
+                const totalViews = stats.reduce((sum, entry) => sum + (Number(entry.views) || 0), 0);
+                const videos = (window.state.images || []).filter(isVideoRecord).length;
+                const storage = (window.state.images || []).reduce((sum, item) => sum + (Number(item.originalSize) || 0), 0);
+                const values = [
+                    ['פריטי מדיה', window.state.images.length, 'images'],
+                    ['סרטונים', videos, 'video'],
+                    ['משתמשים', window.state.allUsers.length, 'users'],
+                    ['צפיות', totalViews, 'eye'],
+                    ['תיקיות', window.state.folders.filter(folder => folder.id !== 'all').length, 'folders'],
+                    ['נפח מקורי', formatBytes(storage), 'hard-drive'],
+                    ['מועדפים שלך', window.state.favorites.size, 'heart'],
+                    ['ממתינים לאישור', window.state.pendingImages.length, 'clock']
+                ];
+                if (cards) cards.innerHTML = values.map(([label, value, icon]) => `<div class="rounded-2xl border border-white/10 bg-white/5 p-4"><i data-lucide="${icon}" class="w-4 h-4 text-amber-300"></i><strong class="block text-2xl text-white mt-3">${escapeHtml(value)}</strong><span class="text-[10px] text-slate-400">${label}</span></div>`).join('');
+                const ordered = stats.sort((a, b) => (Number(b.views) || 0) - (Number(a.views) || 0)).slice(0, 10);
+                if (top) top.innerHTML = ordered.length ? ordered.map((entry, index) => {
+                    const media = window.state.images.find(item => safeRecordId(item.id) === safeRecordId(entry.id));
+                    return `<div class="flex items-center justify-between rounded-xl bg-black/20 px-3 py-2"><span>${index + 1}. ${escapeHtml(media?.title || entry.id)}</span><strong class="text-amber-300">${Number(entry.views) || 0} צפיות</strong></div>`;
+                }).join('') : '<p>נתוני הצפייה יופיעו כאן לאחר פתיחת תמונות וסרטונים.</p>';
+                if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+            } catch (error) {
+                if (top) top.textContent = error.message || 'טעינת הנתונים נכשלה.';
+            }
+        };
+
         window.uploadMediaToR2 = async function(mediaBlob, imgId, title = 'קובץ מדיה') {
             if (!(mediaBlob instanceof Blob)) throw new Error('קובץ המדיה אינו תקין.');
             const isVideo = String(mediaBlob.type || '').startsWith('video/');
@@ -5038,26 +5279,32 @@
         };
 
         async function prepareMediaRecordForCloud(record, mediaId) {
-            const { sourceFile, _isDuplicate, ...cleanRecord } = record;
+            const { sourceFile, thumbnailDataUrl, _isDuplicate, ...cleanRecord } = record;
+            let preparedRecord = cleanRecord;
             if (sourceFile instanceof Blob) {
                 const storedMedia = await window.uploadMediaToR2(sourceFile, mediaId, cleanRecord.title);
-                return { ...cleanRecord, ...storedMedia };
-            }
-            if (cleanRecord.url && cleanRecord.url.startsWith('data:')) {
+                preparedRecord = { ...cleanRecord, ...storedMedia };
+            } else if (cleanRecord.url && cleanRecord.url.startsWith('data:')) {
                 const storedImage = await window.uploadImageToR2(cleanRecord.url, mediaId, cleanRecord.title);
-                return { ...cleanRecord, ...storedImage };
+                preparedRecord = { ...cleanRecord, ...storedImage };
             }
-            return cleanRecord;
+            if (thumbnailDataUrl) {
+                const storedThumbnail = await window.uploadImageToR2(thumbnailDataUrl, `${mediaId}_thumb`, `${cleanRecord.title || 'סרטון'}-תמונה-מקדימה`);
+                preparedRecord.thumbnailUrl = storedThumbnail.url;
+                preparedRecord.thumbnailR2Key = storedThumbnail.r2Key;
+            }
+            return preparedRecord;
         }
 
         window.deleteImageFromR2 = async function(imageRecord) {
-            const key = String(imageRecord?.r2Key || '').trim();
-            if (!key) return;
-            try {
-                const encodedKey = key.split('/').map(encodeURIComponent).join('/');
-                await r2Request(`/media/${encodedKey}`, { method: 'DELETE' });
-            } catch (error) {
-                console.warn('לא ניתן היה למחוק את הקובץ מ-R2:', error);
+            const keys = [imageRecord?.r2Key, imageRecord?.thumbnailR2Key].map(key => String(key || '').trim()).filter(Boolean);
+            for (const key of keys) {
+                try {
+                    const encodedKey = key.split('/').map(encodeURIComponent).join('/');
+                    await r2Request(`/media/${encodedKey}`, { method: 'DELETE' });
+                } catch (error) {
+                    console.warn('לא ניתן היה למחוק את הקובץ מ-R2:', error);
+                }
             }
         };
 
@@ -5070,7 +5317,20 @@
                 body: JSON.stringify({ key })
             });
             if (!result?.url || !result?.key) throw new Error('שרת האחסון לא השלים את אישור התמונה.');
-            return { ...imageRecord, url: result.url, r2Key: result.key, status: 'active' };
+            const approvedRecord = { ...imageRecord, url: result.url, r2Key: result.key, status: 'active' };
+            const thumbnailKey = String(imageRecord?.thumbnailR2Key || '');
+            if (thumbnailKey.startsWith('pending/')) {
+                const thumbnailResult = await r2Request('/approve', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key: thumbnailKey })
+                });
+                if (thumbnailResult?.url && thumbnailResult?.key) {
+                    approvedRecord.thumbnailUrl = thumbnailResult.url;
+                    approvedRecord.thumbnailR2Key = thumbnailResult.key;
+                }
+            }
+            return approvedRecord;
         };
 
         window.saveFolderToCloud = async function(folderData) {
@@ -5208,7 +5468,7 @@
             if (!collectionName || !originalId || !record) throw new Error('הפריט למחיקה אינו תקין.');
 
             const { doc, setDoc, deleteDoc } = window.firestoreModules;
-            const trashId = `trash_${Date.now()}_${crypto.randomUUID().replace(/-/g, '').slice(0, 10)}`;
+            const trashId = safeRecordId(options.trashId) || `trash_${Date.now()}_${crypto.randomUUID().replace(/-/g, '').slice(0, 10)}`;
             const trashRecord = {
                 id: trashId,
                 originalType: type,
@@ -5217,6 +5477,8 @@
                 targetName: String(options.targetName || record.title || record.name || record.displayName || record.email || 'פריט').slice(0, 160),
                 record,
                 relatedImageIds: Array.isArray(options.relatedImageIds) ? options.relatedImageIds.map(safeRecordId).filter(Boolean) : [],
+                relatedTrashIds: Array.isArray(options.relatedTrashIds) ? options.relatedTrashIds.map(safeRecordId).filter(Boolean) : [],
+                parentTrashGroupId: safeRecordId(options.parentTrashGroupId),
                 deletedAt: Date.now(),
                 deletedBy: window.state.currentUser?.uid || '',
                 deletedByName: window.state.currentUser?.displayName || window.state.currentUser?.email || 'מנהל־על'
@@ -5247,9 +5509,21 @@
             const folder = (window.state.folders || []).find(item => safeRecordId(item.id) === folderId);
             if (!folder) throw new Error('התיקייה לא נמצאה.');
             const relatedImages = (window.state.images || []).filter(image => safeRecordId(image.folderId) === folderId);
-            await Promise.all(relatedImages.map(image => window.saveImageToCloud({ ...image, folderId: '4' })));
+            const { doc, setDoc } = window.firestoreModules;
+            await setDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'systemMeta', 'gallery'), {
+                foldersInitialized: true,
+                updatedAt: Date.now()
+            }, { merge: true });
+            const folderTrashId = `trash_folder_${Date.now()}_${crypto.randomUUID().replace(/-/g, '').slice(0, 8)}`;
+            const relatedTrashItems = [];
+            for (const image of relatedImages) {
+                const trashItem = await window.moveRecordToTrash('image', image, { parentTrashGroupId: folderTrashId });
+                if (trashItem) relatedTrashItems.push(trashItem);
+            }
             await window.moveRecordToTrash('folder', folder, {
-                relatedImageIds: relatedImages.map(image => image.id)
+                trashId: folderTrashId,
+                relatedImageIds: relatedImages.map(image => image.id),
+                relatedTrashIds: relatedTrashItems.map(item => item.id)
             });
             if (window.state.activeFolderId === folderId) window.state.activeFolderId = 'all';
         };
@@ -5272,11 +5546,16 @@
             if (!collectionName || !item.record) throw new Error('נתוני השחזור אינם תקינים.');
             const { doc, setDoc, deleteDoc } = window.firestoreModules;
             await setDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', collectionName, safeRecordId(item.originalId)), item.record);
-            if (item.originalType === 'folder' && Array.isArray(item.relatedImageIds)) {
-                await Promise.all(item.relatedImageIds.map(imageId => {
-                    const image = (window.state.images || []).find(entry => safeRecordId(entry.id) === safeRecordId(imageId));
-                    return image ? window.saveImageToCloud({ ...image, folderId: item.originalId }) : Promise.resolve();
-                }));
+            if (item.originalType === 'folder' && Array.isArray(item.relatedTrashIds)) {
+                for (const childTrashId of item.relatedTrashIds) {
+                    const child = (window.state.trashItems || []).find(entry => safeRecordId(entry.id) === safeRecordId(childTrashId));
+                    if (!child?.record) continue;
+                    await setDoc(
+                        doc(window.db, 'artifacts', window.appId, 'public', 'data', 'images', safeRecordId(child.originalId)),
+                        { ...child.record, folderId: item.originalId }
+                    );
+                    await deleteDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'trashItems', safeRecordId(child.id)));
+                }
             }
             await deleteDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'trashItems', safeRecordId(item.id)));
             window.state.trashItems = (window.state.trashItems || []).filter(entry => entry.id !== item.id);
@@ -5297,6 +5576,13 @@
                 await window.deleteImageFromR2(item.record);
             }
             const { doc, deleteDoc } = window.firestoreModules;
+            if (item.originalType === 'folder' && Array.isArray(item.relatedTrashIds)) {
+                for (const childTrashId of item.relatedTrashIds) {
+                    const child = (window.state.trashItems || []).find(entry => safeRecordId(entry.id) === safeRecordId(childTrashId));
+                    if (child?.record?.r2Key) await window.deleteImageFromR2(child.record);
+                    await deleteDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'trashItems', safeRecordId(childTrashId)));
+                }
+            }
             await deleteDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'trashItems', safeRecordId(item.id)));
             window.state.trashItems = (window.state.trashItems || []).filter(entry => entry.id !== item.id);
             window.renderTrashItems();
@@ -5307,7 +5593,8 @@
         window.renderTrashItems = function() {
             const list = document.getElementById('trashItemsList');
             const badge = document.getElementById('trashItemsCountBadge');
-            const items = window.state.trashItems || [];
+            const allItems = window.state.trashItems || [];
+            const items = allItems.filter(item => !item.parentTrashGroupId);
             if (badge) badge.textContent = String(items.length);
             if (!list) return;
             list.innerHTML = '';
@@ -5889,6 +6176,12 @@
                 closeModal('eventPageModal');
                 window.startGallerySlideshow();
             };
+            const followButton = document.getElementById('eventFollowButton');
+            if (followButton) {
+                const isFollowing = window.state.followedFolders.has(id);
+                followButton.innerHTML = `<i data-lucide="${isFollowing ? 'bell-off' : 'bell-plus'}" class="w-4 h-4"></i> ${isFollowing ? 'הפסק לעקוב' : 'עקוב וקבל עדכונים'}`;
+                followButton.onclick = () => window.toggleFollowEvent(id);
+            }
             document.getElementById('eventEditFolderId').value = id;
             document.getElementById('eventEditName').value = folder.name || '';
             document.getElementById('eventEditDate').value = folder.eventDate || '';
@@ -5896,6 +6189,26 @@
             toggleEventEdit(false);
             openModal('eventPageModal');
             if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+        };
+
+        window.toggleFollowEvent = async function(folderId) {
+            const id = safeRecordId(folderId);
+            if (!id || !window.state.currentUser?.uid) return;
+            const followed = new Set(window.state.followedFolders);
+            if (followed.has(id)) followed.delete(id);
+            else followed.add(id);
+            try {
+                const { doc, setDoc } = window.firestoreModules;
+                await setDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'userPreferences', window.state.currentUser.uid), {
+                    followedFolderIds: [...followed],
+                    updatedAt: Date.now()
+                }, { merge: true });
+                window.state.followedFolders = followed;
+                window.openEventPage(null, id);
+                window.showNotification(followed.has(id) ? 'המעקב הופעל. תקבל התראה על פריטים חדשים.' : 'המעקב אחר התיקייה הופסק.', true);
+            } catch (error) {
+                window.showNotification(error.message || 'עדכון המעקב נכשל.', false);
+            }
         };
 
         window.toggleEventEdit = function(show) {
@@ -5987,8 +6300,10 @@
                 const folderId = safeRecordId(folder.id);
                 if (!folderId) return;
                 const isActive = window.state.activeFolderId === folder.id;
-                const isProtectedFolder = ['all', '1', '2', '3', '4'].includes(folderId) || folder.isDefault === true;
-                const delBtn = (!isProtectedFolder && !isEditBlocked) ? `<button type="button" onclick="handleDeleteFolder(event, '${folderId}')" class="p-1 hover:text-red-500 rounded" aria-label="מחיקת התיקייה ${escapeHtml(folder.name)}"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : '';
+                const canDeleteFolder = folderId !== 'all' && !isEditBlocked && (
+                    window.state.isSuperAdmin || (!folder.isDefault && !['1', '2', '3', '4'].includes(folderId))
+                );
+                const delBtn = canDeleteFolder ? `<button type="button" onclick="handleDeleteFolder(event, '${folderId}')" class="p-1 hover:text-red-500 rounded" aria-label="מחיקת התיקייה ${escapeHtml(folder.name)}"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : '';
                 const eventBtn = folderId !== 'all' ? `<button type="button" onclick="openEventPage(event, '${folderId}')" class="p-1 hover:text-amber-400 rounded" aria-label="פתיחת עמוד האירוע ${escapeHtml(folder.name)}" title="עמוד האירוע"><i data-lucide="panel-top-open" class="w-4 h-4"></i></button>` : '';
                 const count = folder.id === 'all' ? window.state.images.length : window.state.images.filter(img => img.folderId === folder.id).length;
 
@@ -6023,10 +6338,12 @@
                 const isFavorite = window.state.favorites.has(imageId);
                 const isSelected = window.state.selectedMediaIds.has(imageId);
                 const title = escapeHtml(img.title || (isVideo ? 'סרטון ללא שם' : 'תמונה ללא שם'));
+                const videoPoster = safeImageUrl(img.thumbnailUrl);
+                const durationLabel = formatMediaDuration(img.duration);
                 const mediaHtml = isVideo
-                    ? `<video src="${escapeHtml(imageUrl)}" muted playsinline preload="metadata" class="w-full h-full object-cover gallery-card-img bg-black"></video>
+                    ? `<video src="${escapeHtml(imageUrl)}" ${videoPoster ? `poster="${escapeHtml(videoPoster)}"` : ''} muted playsinline preload="metadata" class="w-full h-full object-cover gallery-card-img bg-black"></video>
                        <span class="absolute inset-0 flex items-center justify-center pointer-events-none"><span class="w-14 h-14 rounded-full bg-black/65 border border-white/30 text-white flex items-center justify-center shadow-xl"><i data-lucide="play" class="w-6 h-6 fill-current"></i></span></span>
-                       <span class="absolute top-3 right-3 rounded-full bg-black/70 border border-white/20 px-2.5 py-1 text-[9px] font-bold text-white flex items-center gap-1"><i data-lucide="video" class="w-3 h-3"></i> סרטון</span>`
+                       <span class="absolute top-3 right-3 rounded-full bg-black/70 border border-white/20 px-2.5 py-1 text-[9px] font-bold text-white flex items-center gap-1"><i data-lucide="video" class="w-3 h-3"></i> סרטון${durationLabel ? ` · ${durationLabel}` : ''}</span>`
                     : `<img src="${escapeHtml(imageUrl)}" loading="lazy" decoding="async" alt="${title}" class="w-full h-full object-cover gallery-card-img" onerror="handleImageError(this)">`;
                 const actionHtml = !isEditBlocked ? `<div class="gallery-actions mt-4 pt-3 border-t border-slate-200 flex items-center justify-between opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity"><button type="button" onclick="changeImageFolder('${imageId}')" class="text-xs font-semibold px-2.5 py-1.5 rounded-lg flex items-center gap-1"><i data-lucide="folder-sync" class="w-3.5 h-3.5"></i>העבר</button><button type="button" onclick="handleDeleteImage('${imageId}')" class="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg" aria-label="מחיקת ${title}"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>` : '';
                 grid.insertAdjacentHTML('beforeend', `
@@ -6124,6 +6441,63 @@
             return records;
         }
 
+        function inspectVideoFile(file) {
+            return new Promise(resolve => {
+                const video = document.createElement('video');
+                const objectUrl = URL.createObjectURL(file);
+                let settled = false;
+                const finish = result => {
+                    if (settled) return;
+                    settled = true;
+                    URL.revokeObjectURL(objectUrl);
+                    video.removeAttribute('src');
+                    video.load();
+                    resolve(result);
+                };
+                const timeout = window.setTimeout(() => finish({ duration: 0, thumbnailDataUrl: '' }), 15000);
+                video.muted = true;
+                video.playsInline = true;
+                video.preload = 'metadata';
+                video.onloadedmetadata = () => {
+                    const duration = Number.isFinite(video.duration) ? Math.round(video.duration) : 0;
+                    const captureAt = Math.min(Math.max(0.1, duration * 0.1), 2);
+                    video.onseeked = () => {
+                        window.clearTimeout(timeout);
+                        try {
+                            const width = video.videoWidth || 640;
+                            const height = video.videoHeight || 360;
+                            const canvas = document.createElement('canvas');
+                            const scale = Math.min(1, 800 / Math.max(width, height));
+                            canvas.width = Math.max(1, Math.round(width * scale));
+                            canvas.height = Math.max(1, Math.round(height * scale));
+                            canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height);
+                            finish({ duration, thumbnailDataUrl: canvas.toDataURL('image/jpeg', 0.76) });
+                        } catch (error) {
+                            finish({ duration, thumbnailDataUrl: '' });
+                        }
+                    };
+                    try {
+                        video.currentTime = captureAt;
+                    } catch (error) {
+                        window.clearTimeout(timeout);
+                        finish({ duration, thumbnailDataUrl: '' });
+                    }
+                };
+                video.onerror = () => {
+                    window.clearTimeout(timeout);
+                    finish({ duration: 0, thumbnailDataUrl: '' });
+                };
+                video.src = objectUrl;
+            });
+        }
+
+        function formatMediaDuration(seconds) {
+            const total = Math.max(0, Math.round(Number(seconds) || 0));
+            const minutes = Math.floor(total / 60);
+            const remaining = String(total % 60).padStart(2, '0');
+            return `${minutes}:${remaining}`;
+        }
+
         window.renderSelectedUploadQueue = function(inputIds, containerId) {
             const container = document.getElementById(containerId);
             if (!container) return;
@@ -6185,11 +6559,70 @@
             if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
         }
 
+        let uploadPaused = false;
+        let failedUploadRecords = [];
+
+        function waitWhileUploadPaused() {
+            return new Promise(resolve => {
+                const check = () => uploadPaused ? window.setTimeout(check, 250) : resolve();
+                check();
+            });
+        }
+
+        window.toggleUploadPause = function() {
+            uploadPaused = !uploadPaused;
+            const button = document.getElementById('userUploadPauseBtn');
+            if (button) button.textContent = uploadPaused ? 'המשך העלאה' : 'השהה';
+            const text = document.getElementById('userUploadProgressText');
+            if (uploadPaused && text) text.textContent = 'תור ההעלאה מושהה. הקובץ הנוכחי יסתיים בבטחה.';
+        };
+
+        function updateUploadControlButtons(running = false) {
+            const pause = document.getElementById('userUploadPauseBtn');
+            const retry = document.getElementById('userUploadRetryBtn');
+            if (pause) pause.classList.toggle('hidden', !running);
+            if (retry) retry.classList.toggle('hidden', running || failedUploadRecords.length === 0);
+        }
+
+        window.retryFailedUploads = async function() {
+            if (!failedUploadRecords.length) return;
+            const pending = [...failedUploadRecords];
+            failedUploadRecords = [];
+            uploadPaused = false;
+            updateUploadControlButtons(true);
+            const progress = document.getElementById('userUploadProgress');
+            const text = document.getElementById('userUploadProgressText');
+            progress?.classList.remove('hidden');
+            for (let index = 0; index < pending.length; index++) {
+                await waitWhileUploadPaused();
+                const item = pending[index];
+                if (text) text.textContent = `ניסיון חוזר: ${index + 1} מתוך ${pending.length}`;
+                updateUploadQueueItem(item.queueId, item.uploadQueueIndex, 'active', 'מנסה שוב');
+                try {
+                    if (item.mode === 'pending') await window.savePendingImageCloud(item.record);
+                    else await window.saveImageToCloud(item.record);
+                    updateUploadQueueItem(item.queueId, item.uploadQueueIndex, 'success', 'הושלם');
+                } catch (error) {
+                    failedUploadRecords.push(item);
+                    updateUploadQueueItem(item.queueId, item.uploadQueueIndex, 'error', 'נכשל שוב');
+                }
+            }
+            progress?.classList.add('hidden');
+            updateUploadControlButtons(false);
+            window.showNotification(failedUploadRecords.length ? `${failedUploadRecords.length} קבצים עדיין לא הועלו.` : 'כל הקבצים הועלו בהצלחה.', failedUploadRecords.length === 0);
+        };
+
         async function processFilesWithFolders(files, targetFolderId = 'auto', isAdmin = false) {
             const newImages = []; let processedCount = 0;
+            const fallbackFolderId = safeRecordId(
+                window.state.folders.find(folder => safeRecordId(folder.id) === '4')?.id
+                || window.state.folders.find(folder => safeRecordId(folder.id) !== 'all')?.id
+            );
+            if (!fallbackFolderId) throw new Error('יש ליצור לפחות תיקיית יעד אחת לפני העלאת קבצים.');
             const progressEl = document.getElementById(isAdmin ? 'adminUploadProgressText' : 'userUploadProgressText');
             const queueId = isAdmin ? 'adminUploadQueue' : 'userUploadQueue';
             for (let i = 0; i < files.length; i++) {
+                await waitWhileUploadPaused();
                 const file = files[i]; let destFolderId = targetFolderId === 'auto' ? null : targetFolderId; let folderName = "כללי";
                 updateUploadQueueItem(queueId, i, 'active', 'מעבד');
                 let contentHash = '';
@@ -6219,11 +6652,14 @@
                 } else if (isVideo) {
                     const videoMimeType = file.type || (/\.webm$/i.test(file.name) ? 'video/webm' : 'video/mp4');
                     const videoFile = file.type ? file : new File([file], file.name, { type: videoMimeType, lastModified: file.lastModified });
+                    const videoInfo = await inspectVideoFile(videoFile);
                     newImages.push({
                         uploadQueueIndex: i,
                         id: `img_${crypto.randomUUID()}`,
-                        folderId: destFolderId || '4', title: file.name.replace(/\.[^.]+$/, ''), url: '',
+                        folderId: destFolderId || fallbackFolderId, title: file.name.replace(/\.[^.]+$/, ''), url: '',
                         sourceFile: videoFile, mediaType: 'video', mimeType: videoMimeType,
+                        duration: videoInfo.duration,
+                        thumbnailDataUrl: videoInfo.thumbnailDataUrl,
                         contentHash, originalSize: file.size,
                         date: new Date().toISOString().split('T')[0], createdAt: Date.now(), originalFolderName: folderName
                     });
@@ -6234,7 +6670,7 @@
                         newImages.push({
                             uploadQueueIndex: i,
                             id: `img_${crypto.randomUUID()}`,
-                            folderId: destFolderId || '4', title: file.name.replace(/\.[^.]+$/, ''), url: base64,
+                            folderId: destFolderId || fallbackFolderId, title: file.name.replace(/\.[^.]+$/, ''), url: base64,
                             mediaType: 'image', mimeType: 'image/jpeg',
                             contentHash, originalSize: file.size,
                             date: new Date().toISOString().split('T')[0], createdAt: Date.now(), originalFolderName: folderName
@@ -6274,6 +6710,8 @@
             const pText = document.getElementById('adminUploadProgressText');
 
             try {
+                failedUploadRecords = [];
+                uploadPaused = false;
                 if(pText) pText.innerText = 'מכין את הקבצים להעלאה...';
                 const newImages = await processFilesWithFolders(allFiles, targetFolderId, true);
                 if (newImages.length === 0) throw new Error('לא נמצאו קובצי מדיה תקינים.');
@@ -6285,6 +6723,7 @@
                 let uploadedCount = 0;
                 let failedCount = 0;
                 for (let index = 0; index < uploadRecords.length; index++) {
+                    await waitWhileUploadPaused();
                     if(pText) pText.innerText = `מעלה לאחסון: ${index + 1} מתוך ${uploadRecords.length}`;
                     const { uploadQueueIndex, ...imageRecord } = uploadRecords[index];
                     updateUploadQueueItem('adminUploadQueue', uploadQueueIndex, 'active', 'מעלה');
@@ -6294,6 +6733,7 @@
                         updateUploadQueueItem('adminUploadQueue', uploadQueueIndex, 'success', 'הושלם');
                     } catch (error) {
                         failedCount++;
+                        failedUploadRecords.push({ record: imageRecord, queueId: 'adminUploadQueue', uploadQueueIndex, mode: 'direct' });
                         updateUploadQueueItem('adminUploadQueue', uploadQueueIndex, 'error', 'נכשל — נסה שוב');
                         console.warn('Single admin upload failed:', error);
                     }
@@ -6350,6 +6790,9 @@
             const pText = document.getElementById('userUploadProgressText');
 
             try {
+                failedUploadRecords = [];
+                uploadPaused = false;
+                updateUploadControlButtons(true);
                 if(pText) pText.innerText = 'מכין את הקבצים להעלאה...';
                 const newImages = await processFilesWithFolders(allFiles, targetFolderId, false);
                 if (newImages.length === 0) throw new Error('לא נמצאו קובצי מדיה תקינים.');
@@ -6361,6 +6804,7 @@
                 let uploadedCount = 0;
                 let failedCount = 0;
                 for (let index = 0; index < uploadRecords.length; index++) {
+                    await waitWhileUploadPaused();
                     if(pText) pText.innerText = `${canUploadDirectly ? 'מעלה לגלריה' : 'שולח לאישור'}: ${index + 1} מתוך ${uploadRecords.length}`;
                     const { uploadQueueIndex, ...imageRecord } = uploadRecords[index];
                     updateUploadQueueItem('userUploadQueue', uploadQueueIndex, 'active', canUploadDirectly ? 'מעלה' : 'שולח');
@@ -6371,6 +6815,7 @@
                         updateUploadQueueItem('userUploadQueue', uploadQueueIndex, 'success', 'הושלם');
                     } catch (error) {
                         failedCount++;
+                        failedUploadRecords.push({ record: imageRecord, queueId: 'userUploadQueue', uploadQueueIndex, mode: canUploadDirectly ? 'direct' : 'pending' });
                         updateUploadQueueItem('userUploadQueue', uploadQueueIndex, 'error', 'נכשל — נסה שוב');
                         console.warn('Single user upload failed:', error);
                     }
@@ -6390,6 +6835,7 @@
             } finally {
                 if(progressContainer) progressContainer.classList.add('hidden');
                 if(btn) btn.disabled = false;
+                updateUploadControlButtons(false);
             }
         }
 
@@ -6981,8 +7427,8 @@
         function handleDeleteFolder(event, folderId) {
             event.stopPropagation(); if (!checkAdminPermission()) return;
             folderId = safeRecordId(folderId);
-            if (['all', '1', '2', '3', '4'].includes(folderId)) {
-                window.showNotification('לא ניתן למחוק תיקיית מערכת.', false);
+            if (folderId === 'all') {
+                window.showNotification('תיקיית „הכול” היא תצוגה כללית ואינה תיקייה אמיתית למחיקה.', false);
                 return;
             }
             const folder = window.state.folders.find(item => safeRecordId(item.id) === folderId);
@@ -6993,7 +7439,8 @@
                 });
                 return;
             }
-            showConfirm('העברת תיקייה לסל', 'להעביר את התיקייה לסל המחזור? התמונות יועברו זמנית לתיקייה הכללית.', async () => {
+            const mediaCount = window.state.images.filter(item => safeRecordId(item.folderId) === folderId).length;
+            showConfirm('העברת תיקייה לסל', `להעביר את התיקייה ואת ${mediaCount} הפריטים שבתוכה לסל המחזור? יהיה אפשר לשחזר הכול יחד.`, async () => {
                 await window.moveFolderToTrash(folderId);
                 window.showNotification('התיקייה הועברה לסל המחזור.');
             });
@@ -7060,6 +7507,7 @@
             currentFilteredImages = getFilteredSortedImages();
             window.state.currentLightboxIndex = currentFilteredImages.findIndex(img => safeRecordId(img.id) === imageId);
             if (window.state.currentLightboxIndex === -1) return;
+            window.recordMediaView(imageId);
             updateLightbox(); openModal('lightboxModal');
         }
 
@@ -7138,6 +7586,19 @@
                 if (lbImage) lbImage.hidden = true;
                 if (lbVideo) {
                     lbVideo.classList.remove('hidden');
+                    const posterUrl = safeImageUrl(img.thumbnailUrl);
+                    if (posterUrl) lbVideo.poster = posterUrl;
+                    else lbVideo.removeAttribute('poster');
+                    const progressKey = `simchat_video_progress_${safeRecordId(img.id)}`;
+                    lbVideo.dataset.mediaId = safeRecordId(img.id);
+                    lbVideo.onloadedmetadata = () => {
+                        const saved = Number(localStorage.getItem(progressKey));
+                        if (Number.isFinite(saved) && saved > 3 && saved < lbVideo.duration - 3) lbVideo.currentTime = saved;
+                    };
+                    lbVideo.ontimeupdate = () => {
+                        if (Math.floor(lbVideo.currentTime) % 3 === 0) localStorage.setItem(progressKey, String(lbVideo.currentTime));
+                    };
+                    lbVideo.onended = () => localStorage.removeItem(progressKey);
                     if (lbVideo.src !== imageUrl) {
                         lbVideo.src = imageUrl;
                         lbVideo.load();
@@ -7159,7 +7620,7 @@
             if(lbTitle) lbTitle.innerText = img.title;
 
             const lbDetails = document.getElementById('lightboxDetails');
-            if(lbDetails) lbDetails.innerText = `${isVideo ? 'סרטון' : 'תמונה'} • ${formatDate(img.date)} • תיקייה: ${f ? f.name : 'כללי'}`;
+            if(lbDetails) lbDetails.innerText = `${isVideo ? `סרטון${formatMediaDuration(img.duration) ? ` (${formatMediaDuration(img.duration)})` : ''}` : 'תמונה'} • ${formatDate(img.date)} • תיקייה: ${f ? f.name : 'כללי'}`;
 
             const lbDownload = document.getElementById('lightboxDownload');
             if(lbDownload) {
