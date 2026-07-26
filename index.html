@@ -6,6 +6,7 @@
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <meta name="theme-color" content="#090b10">
     <meta name="description" content="גלריית שמחת התורה — אירועים, טיולים ורגעים מהישיבה, מסודרים בארכיון דיגיטלי אחד.">
+    <link rel="manifest" href="./manifest.webmanifest">
     <title>ארכיון הרגעים | גלריית שמחת התורה</title>
     <script>
         (() => {
@@ -111,6 +112,11 @@
             font-family: 'Assistant', sans-serif;
             min-height: 100vh;
             overflow-x: hidden;
+        }
+
+        .gallery-card {
+            content-visibility: auto;
+            contain-intrinsic-size: 360px 430px;
         }
 
         /* רקע דינמי בהיר, יוקרתי, מרגיע ונע בעדינות */
@@ -1744,7 +1750,7 @@
                     <div class="relative flex-1">
                         <label for="searchInput" class="sr-only">חיפוש תמונות לפי שם</label>
                         <span class="search-icon absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none"><i data-lucide="search" class="w-5 h-5"></i></span>
-                        <input type="search" id="searchInput" oninput="handleSearch(this.value)" placeholder="חיפוש בארכיון..." autocomplete="off" class="w-full rounded-xl py-2.5 pr-10 pl-4 text-sm focus:outline-none transition-all">
+                        <input type="search" id="searchInput" oninput="handleSearch(this.value)" placeholder="שם, תיקייה, תאריך או מעלה..." autocomplete="off" class="w-full rounded-xl py-2.5 pr-10 pl-4 text-sm focus:outline-none transition-all">
                     </div>
                     <button type="button" onclick="openFaceSearchModal()" title="חיפוש תמונות לפי פנים" class="face-search-button p-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 font-bold text-xs">
                         <i data-lucide="sparkles" class="w-4 h-4"></i><span>חיפוש פרצוף</span>
@@ -1754,6 +1760,16 @@
                     </button>
                 </div>
                 <div class="flex items-center gap-2 text-xs font-medium self-end sm:self-auto">
+                    <label for="gallerySort" class="sr-only">מיון תמונות</label>
+                    <select id="gallerySort" onchange="setGallerySort(this.value)" class="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[10px] font-bold text-slate-300">
+                        <option value="newest">החדשות קודם</option>
+                        <option value="oldest">הישנות קודם</option>
+                        <option value="name">לפי שם</option>
+                    </select>
+                    <button type="button" onclick="startGallerySlideshow()" class="btn-secondary-dark rounded-xl px-3 py-2 flex items-center gap-1.5 text-[10px] font-bold" title="הפעלת מצגת">
+                        <i data-lucide="play" class="w-3.5 h-3.5"></i>
+                        מצגת
+                    </button>
                     <span id="imageCounter" class="px-3 py-1.5 rounded-full font-bold">טוען...</span>
                 </div>
             </div>
@@ -1900,6 +1916,32 @@
                     </div>
                 </div>
 
+                <div class="hidden super-admin-only admin-control-card rounded-2xl overflow-hidden">
+                    <button type="button" onclick="openAdminTaskWindow('accActivityCenter')" class="w-full px-4 py-3 text-xs font-bold text-slate-200 flex items-center justify-between transition-all">
+                        <span class="flex items-center gap-2 text-cyan-300"><i data-lucide="activity" class="w-4 h-4"></i> מרכז פעילות</span>
+                        <i data-lucide="arrow-left" class="w-4 h-4 text-cyan-300/70"></i>
+                    </button>
+                    <div id="accActivityCenter" class="accordion-content px-3 space-y-3">
+                        <div id="activitySummary" class="grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
+                        <div class="flex items-center justify-between">
+                            <p class="text-[10px] font-bold text-slate-400">פעולות אחרונות</p>
+                            <button type="button" onclick="renderActivityLogs()" class="text-[9px] text-cyan-300 hover:underline">רענן</button>
+                        </div>
+                        <div id="activityLogList" class="space-y-2"></div>
+                    </div>
+                </div>
+
+                <div class="hidden super-admin-only admin-control-card rounded-2xl overflow-hidden">
+                    <button type="button" onclick="openAdminTaskWindow('accTrash')" class="w-full px-4 py-3 text-xs font-bold text-slate-200 flex items-center justify-between transition-all">
+                        <span class="flex items-center gap-2 text-orange-300"><i data-lucide="archive-restore" class="w-4 h-4"></i> סל מחזור (<span id="trashItemsCountBadge">0</span>)</span>
+                        <i data-lucide="arrow-left" class="w-4 h-4 text-orange-300/70"></i>
+                    </button>
+                    <div id="accTrash" class="accordion-content px-3 space-y-3">
+                        <p class="text-[10px] text-slate-400 leading-relaxed">פריטים שנמחקו נשמרים כאן עד לשחזור או למחיקה סופית.</p>
+                        <div id="trashItemsList" class="space-y-2"></div>
+                    </div>
+                </div>
+
                 <p class="admin-section-label">תוכן הגלריה</p>
 
                 <!-- אישור ממתינות -->
@@ -1928,6 +1970,18 @@
 
                 <p class="admin-section-label">כלי מערכת</p>
 
+                <div class="admin-control-card rounded-2xl overflow-hidden">
+                    <button type="button" onclick="openAdminTaskWindow('accSystemHealth')" class="w-full hover:bg-white/5 px-4 py-3 text-xs font-bold text-slate-200 flex items-center justify-between transition-all">
+                        <span class="flex items-center gap-2 text-emerald-300"><i data-lucide="shield-check" class="w-4 h-4"></i> בדיקת תקינות המערכת</span>
+                        <i data-lucide="arrow-left" class="w-4 h-4 text-emerald-300/70"></i>
+                    </button>
+                    <div id="accSystemHealth" class="accordion-content px-4 space-y-3">
+                        <p class="text-[10px] text-slate-400">בדיקה מהירה של Firebase, האחסון, זיהוי הפנים וחיבור Drive.</p>
+                        <button type="button" onclick="runSystemHealthCheck()" class="w-full py-2.5 btn-primary-gold rounded-xl text-xs font-bold">הרץ בדיקה</button>
+                        <div id="systemHealthResults" class="space-y-2"></div>
+                    </div>
+                </div>
+
                 <!-- העלאה חכמה / יצירת תיקייה -->
                 <div class="admin-control-card rounded-2xl overflow-hidden mt-2">
                     <button type="button" onclick="openAdminTaskWindow('accAddSmart')" class="w-full hover:bg-white/5 px-4 py-3 text-xs font-bold text-slate-200 flex items-center justify-between transition-all">
@@ -1947,13 +2001,15 @@
                             <div class="border-t border-white/10 pt-3 space-y-2">
                                 <label class="block">
                                     <span class="text-[10px] font-bold text-slate-300 block mb-1">העלאת תמונות מרובות:</span>
-                                    <input type="file" id="adminMultiFiles" multiple accept="image/*" class="w-full text-xs rounded-lg p-1.5 cursor-pointer text-slate-400 bg-white/5 border border-white/10">
+                                    <input type="file" id="adminMultiFiles" multiple accept="image/*" onchange="renderSelectedUploadQueue(['adminMultiFiles','adminFolderUpload'], 'adminUploadQueue')" class="w-full text-xs rounded-lg p-1.5 cursor-pointer text-slate-400 bg-white/5 border border-white/10">
                                 </label>
                                 <label class="block pt-1">
                                     <span class="text-[10px] font-bold text-amber-400 block mb-1">העלאת תיקייה שלמה:</span>
-                                    <input type="file" id="adminFolderUpload" webkitdirectory directory multiple accept="image/*" class="w-full text-xs rounded-lg p-1.5 cursor-pointer text-amber-400 bg-white/5 border border-amber-500/25">
+                                    <input type="file" id="adminFolderUpload" webkitdirectory directory multiple accept="image/*" onchange="renderSelectedUploadQueue(['adminMultiFiles','adminFolderUpload'], 'adminUploadQueue')" class="w-full text-xs rounded-lg p-1.5 cursor-pointer text-amber-400 bg-white/5 border border-amber-500/25">
                                 </label>
                             </div>
+
+                            <div id="adminUploadQueue" class="hidden max-h-48 overflow-y-auto space-y-1.5 rounded-xl border border-white/10 bg-black/10 p-2" aria-live="polite"></div>
 
                             <div id="adminUploadProgress" class="hidden text-center bg-white/5 rounded-lg p-2 border border-white/10">
                                 <div class="w-4 h-4 border-2 border-amber-400 border-t-transparent rounded-full animate-spin mx-auto mb-1"></div>
@@ -2052,14 +2108,15 @@
                     </label>
                     <label class="block">
                         <span class="text-[10px] font-bold text-slate-300 mb-1 block">1. תמונות בודדות מתוך תיקייה:</span>
-                        <input type="file" id="userMultiFiles" multiple accept="image/*" class="w-full text-xs rounded-xl p-2 cursor-pointer text-slate-400 bg-white/5 border border-white/10">
+                        <input type="file" id="userMultiFiles" multiple accept="image/*" onchange="renderSelectedUploadQueue(['userMultiFiles','userFolderUpload'], 'userUploadQueue')" class="w-full text-xs rounded-xl p-2 cursor-pointer text-slate-400 bg-white/5 border border-white/10">
                     </label>
                     <div class="relative py-1"><div class="absolute inset-0 flex items-center"><div class="w-full border-t border-white/10"></div></div><div class="relative flex justify-center"><span class="bg-slate-950 px-2 text-[10px] text-slate-500 font-bold">או</span></div></div>
                     <label class="block">
                         <span class="text-[10px] font-bold text-amber-400 mb-1 block">2. העלאת תיקייה שלמה (מומלץ):</span>
-                        <input type="file" id="userFolderUpload" webkitdirectory directory multiple accept="image/*" class="w-full text-xs rounded-xl p-2 cursor-pointer focus:ring-2 ring-amber-500 bg-white/5 border border-amber-500/20 text-slate-400">
+                        <input type="file" id="userFolderUpload" webkitdirectory directory multiple accept="image/*" onchange="renderSelectedUploadQueue(['userMultiFiles','userFolderUpload'], 'userUploadQueue')" class="w-full text-xs rounded-xl p-2 cursor-pointer focus:ring-2 ring-amber-500 bg-white/5 border border-amber-500/20 text-slate-400">
                     </label>
                 </div>
+                <div id="userUploadQueue" class="hidden max-h-52 overflow-y-auto space-y-1.5 rounded-xl border border-white/10 bg-black/10 p-2" aria-live="polite"></div>
                 <div id="userUploadProgress" class="hidden text-center bg-white/5 rounded-xl p-3 border border-white/10 mt-2">
                     <div class="w-5 h-5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
                     <p class="text-[10px] font-bold text-amber-400" id="userUploadProgressText">מעלה תמונות לענן... נא להמתין</p>
@@ -2081,6 +2138,9 @@
                 <p id="lightboxDetails" class="text-xs text-amber-400">תאריך • קטגוריה</p>
             </div>
             <div class="flex items-center gap-3">
+                <button type="button" id="slideshowToggle" onclick="toggleGallerySlideshow()" title="הפעלת מצגת אוטומטית" aria-label="הפעלת מצגת אוטומטית" class="p-2 btn-secondary-dark rounded-full transition-all">
+                    <i data-lucide="play" class="w-6 h-6"></i>
+                </button>
                 <a id="lightboxDownload" href="#" download target="_blank" rel="noopener" title="הורדת תמונה" aria-label="הורדת התמונה" class="p-2 btn-secondary-dark rounded-full transition-all">
                     <i data-lucide="download" class="w-6 h-6"></i>
                 </a>
@@ -2373,9 +2433,15 @@
                         <p id="conversationSubtitle" class="text-[10px] sm:text-xs text-slate-400 truncate">כל ההודעות נשמרות בשיחה אחת</p>
                     </div>
                 </div>
-                <button type="button" onclick="closeModal('conversationModal')" class="w-11 h-11 btn-secondary-dark rounded-xl flex items-center justify-center shrink-0" aria-label="סגירת הצ׳אט">
-                    <i data-lucide="x" class="w-5 h-5"></i>
-                </button>
+                <div class="flex items-center gap-2">
+                    <button id="conversationResolveButton" type="button" onclick="toggleConversationResolved()" class="hidden px-3 h-11 btn-secondary-dark rounded-xl items-center justify-center gap-2 text-[10px] font-bold" aria-label="שינוי מצב הפנייה">
+                        <i data-lucide="circle-check-big" class="w-4 h-4"></i>
+                        <span>סמן כטופל</span>
+                    </button>
+                    <button type="button" onclick="closeModal('conversationModal')" class="w-11 h-11 btn-secondary-dark rounded-xl flex items-center justify-center shrink-0" aria-label="סגירת הצ׳אט">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
             </header>
             <div id="conversationMessages" class="conversation-stream flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-3" aria-live="polite">
                 <div class="h-full flex items-center justify-center text-sm text-slate-500">טוען את השיחה…</div>
@@ -2429,7 +2495,7 @@
         // גישה גלובלית לפונקציות פיירבייס מכל מקום בקוד
         window.db = null;
         window.appId = typeof __app_id !== 'undefined' ? __app_id : 'org-gallery';
-        window.firestoreModules = { collection, doc, getDoc, setDoc, deleteDoc, updateDoc };
+        window.firestoreModules = { collection, doc, getDoc, getDocs, setDoc, deleteDoc, updateDoc };
 
         // Firestore Lite משתמש בבקשות HTTPS רגילות. הרענון המחזורי מחליף את החיבור
         // המתמשך של onSnapshot, שעלול להיחסם ברשתות מסוימות.
@@ -2556,6 +2622,7 @@
 
         function setDriveConnectionUI(email = '') {
             const connected = Boolean(driveAccessToken);
+            window.driveConnectionActive = connected;
             const status = document.getElementById('driveConnectionStatus');
             const connectButton = document.getElementById('connectDriveBtn');
             const syncButton = document.getElementById('driveSyncBtn');
@@ -2879,6 +2946,7 @@
                 }
 
                 setDriveSyncProgress(total || 1, total || 1, `הסנכרון הושלם: ${addedOrUpdated} נוספו או עודכנו, ${unchanged} ללא שינוי${failed ? `, ${failed} נכשלו` : ''}.`);
+                await window.logActivity('synced_drive', 'folder', rootFolderId, driveContent.root?.name || 'Google Drive', `${addedOrUpdated} נוספו או עודכנו, ${failed} נכשלו`);
                 window.showNotification(`סנכרון Drive הושלם: ${addedOrUpdated} תמונות נוספו או עודכנו.`, true);
                 window.populateFolderSelects?.();
             } catch (error) {
@@ -2975,11 +3043,15 @@
             window.state.pendingImages = [];
             window.state.allUsers = [];
             window.state.deletionRequests = [];
+            window.state.trashItems = [];
+            window.state.activityLogs = [];
             if (typeof window.renderPendingUsers === 'function') window.renderPendingUsers();
             if (typeof window.renderPendingImages === 'function') window.renderPendingImages();
             if (typeof window.renderManagedUsers === 'function') window.renderManagedUsers();
             if (typeof window.renderAdminMessageReplies === 'function') window.renderAdminMessageReplies();
             if (typeof window.renderDeletionRequests === 'function') window.renderDeletionRequests();
+            if (typeof window.renderTrashItems === 'function') window.renderTrashItems();
+            if (typeof window.renderActivityLogs === 'function') window.renderActivityLogs();
             if (typeof window.updatePendingUsersBadge === 'function') window.updatePendingUsersBadge();
             if (typeof window.updatePendingBadge === 'function') window.updatePendingBadge();
         }
@@ -3031,6 +3103,22 @@
                     .sort((a, b) => (b.requestedAt || 0) - (a.requestedAt || 0));
                 window.renderDeletionRequests();
                 window.updateAdminOverview();
+            }, reportFirestoreError));
+
+            window.adminUnsubscribers.push(onSnapshot(collection(window.db, 'artifacts', window.appId, 'public', 'data', 'trashItems'), (snapshot) => {
+                window.state.trashItems = snapshot.docs
+                    .map(d => ({ id: d.id, ...d.data() }))
+                    .sort((a, b) => (b.deletedAt || 0) - (a.deletedAt || 0));
+                window.renderTrashItems?.();
+                window.updateAdminOverview?.();
+            }, reportFirestoreError));
+
+            window.adminUnsubscribers.push(onSnapshot(collection(window.db, 'artifacts', window.appId, 'public', 'data', 'activityLogs'), (snapshot) => {
+                window.state.activityLogs = snapshot.docs
+                    .map(d => ({ id: d.id, ...d.data() }))
+                    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
+                    .slice(0, 100);
+                window.renderActivityLogs?.();
             }, reportFirestoreError));
         }
 
@@ -3336,7 +3424,7 @@
     <script>
         // --- 1. Global State ---
         window.state = {
-            folders: window.DEFAULT_GALLERY_FOLDERS.map(folder => ({ ...folder })), images: [], pendingImages: [], pendingUsers: [], allUsers: [], deletionRequests: [], activeFolderId: 'all', searchQuery: '',
+            folders: window.DEFAULT_GALLERY_FOLDERS.map(folder => ({ ...folder })), images: [], pendingImages: [], pendingUsers: [], allUsers: [], deletionRequests: [], trashItems: [], activityLogs: [], activeFolderId: 'all', searchQuery: '', gallerySort: 'newest',
             currentLightboxIndex: -1, tempSearchResults: null,
             isLocked: true, isAdminLoggedIn: false, isSuperAdmin: false, isGoogleUser: false, currentUser: null,
             userProfile: null, userRole: 'guest', userApprovalStatus: 'signed_out'
@@ -3433,6 +3521,16 @@
             if (!stream || !modal || modal.classList.contains('hidden')) return;
             const profile = activeConversationProfile();
             const entries = conversationEntries(profile);
+            const resolveButton = document.getElementById('conversationResolveButton');
+            if (resolveButton) {
+                const visible = activeConversationMode === 'admin';
+                const resolved = profile?.supportStatus === 'resolved';
+                resolveButton.classList.toggle('hidden', !visible);
+                resolveButton.classList.toggle('flex', visible);
+                resolveButton.innerHTML = resolved
+                    ? '<i data-lucide="rotate-ccw" class="w-4 h-4"></i><span>פתח מחדש</span>'
+                    : '<i data-lucide="circle-check-big" class="w-4 h-4"></i><span>סמן כטופל</span>';
+            }
             stream.replaceChildren();
             if (!entries.length) {
                 const empty = document.createElement('div');
@@ -3503,6 +3601,7 @@
             const subtitle = document.getElementById('conversationSubtitle');
             if (title) title.textContent = 'צ׳אט עם מנהל הגלריה';
             if (subtitle) subtitle.textContent = 'אפשר לשלוח פנייה ולהמשיך את השיחה כאן';
+            document.getElementById('conversationResolveButton')?.classList.add('hidden');
             document.getElementById('floatingProfilePanel')?.classList.remove('active');
             openModal('conversationModal');
             window.renderActiveConversation();
@@ -3525,6 +3624,24 @@
             openModal('conversationModal');
             window.renderActiveConversation();
             markConversationRead().catch(error => console.warn('Marking admin chat read failed:', error));
+        };
+
+        window.toggleConversationResolved = async function() {
+            if (!checkSuperAdminPermission() || activeConversationMode !== 'admin') return;
+            const profile = activeConversationProfile();
+            if (!profile) return;
+            const resolved = profile.supportStatus === 'resolved';
+            const { doc, setDoc } = window.firestoreModules;
+            await setDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'userProfiles', profile.uid), {
+                supportStatus: resolved ? 'open' : 'resolved',
+                supportResolvedAt: resolved ? null : Date.now(),
+                supportResolvedBy: resolved ? null : (window.state.currentUser?.uid || '')
+            }, { merge: true });
+            profile.supportStatus = resolved ? 'open' : 'resolved';
+            window.renderActiveConversation();
+            window.renderAdminMessageReplies?.();
+            await window.logActivity(resolved ? 'reopened_support' : 'resolved_support', 'user', profile.uid, profile.displayName || profile.email || profile.uid);
+            window.showNotification(resolved ? 'הפנייה נפתחה מחדש.' : 'הפנייה סומנה כטופלה.');
         };
 
         window.handleConversationKeydown = function(event) {
@@ -3567,8 +3684,12 @@
                     readByAdmin: fromAdmin
                 };
                 const updatedMessages = [message, ...currentMessages].slice(0, 250);
-                await setDoc(profileRef, { messages: updatedMessages }, { merge: true });
+                await setDoc(profileRef, {
+                    messages: updatedMessages,
+                    ...(fromAdmin ? {} : { supportStatus: 'open' })
+                }, { merge: true });
                 profile.messages = updatedMessages;
+                if (!fromAdmin) profile.supportStatus = 'open';
                 if (input) input.value = '';
                 window.renderActiveConversation();
                 window.renderFloatingInbox?.();
@@ -4198,10 +4319,27 @@
                 icon: 'trash-2',
                 superAdminOnly: true
             },
+            accActivityCenter: {
+                title: 'מרכז פעילות',
+                description: 'תמונת מצב ויומן הפעולות האחרונות במערכת',
+                icon: 'activity',
+                superAdminOnly: true
+            },
+            accTrash: {
+                title: 'סל מחזור',
+                description: 'שחזור פריטים או מחיקה סופית מהמערכת',
+                icon: 'archive-restore',
+                superAdminOnly: true
+            },
             accPending: {
                 title: 'אישור תמונות',
                 description: 'בחירת תמונות ממתינות והעברתן לגלריה',
                 icon: 'images'
+            },
+            accSystemHealth: {
+                title: 'בדיקת תקינות',
+                description: 'בדיקת החיבורים והשירותים של הגלריה',
+                icon: 'shield-check'
             },
             accAddSmart: {
                 title: 'העלאת תמונות',
@@ -4269,6 +4407,9 @@
                 window.renderManagedUsers?.();
             }
             if (contentId === 'accDeletionRequests') window.renderDeletionRequests?.();
+            if (contentId === 'accActivityCenter') window.renderActivityLogs?.();
+            if (contentId === 'accTrash') window.renderTrashItems?.();
+            if (contentId === 'accSystemHealth') window.runSystemHealthCheck?.();
             if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
         };
 
@@ -4483,6 +4624,79 @@
         // עדכן לכתובת ה-Worker שלך, למשל: https://simchas-gallery-api.<subdomain>.workers.dev
         const R2_WORKER_BASE_URL = 'https://simchas-gallery-api.0534169095.workers.dev';
 
+        window.runSystemHealthCheck = async function() {
+            const container = document.getElementById('systemHealthResults');
+            if (!container) return;
+            container.innerHTML = '<p class="text-xs text-cyan-300 text-center py-3">בודק את שירותי המערכת…</p>';
+
+            const checks = [
+                {
+                    label: 'Firebase והתחברות',
+                    run: async () => {
+                        if (!window.db) throw new Error('מסד הנתונים עדיין לא מחובר');
+                        if (!window.state.currentUser) throw new Error('אין משתמש מחובר');
+                        return 'מחובר';
+                    }
+                },
+                {
+                    label: 'כללי Firestore החדשים',
+                    run: async () => {
+                        if (!window.state.isSuperAdmin) return 'בדיקה מלאה זמינה למנהל־על';
+                        const { collection, getDocs } = window.firestoreModules;
+                        await getDocs(collection(window.db, 'artifacts', window.appId, 'public', 'data', 'trashItems'));
+                        return 'סל המחזור מורשה';
+                    }
+                },
+                {
+                    label: 'Cloudflare R2',
+                    run: async () => {
+                        const response = await fetch(`${R2_WORKER_BASE_URL}/health`);
+                        const payload = await response.json().catch(() => ({}));
+                        if (!response.ok || payload.bucketConnected !== true) throw new Error(payload.message || 'האחסון אינו זמין');
+                        return 'האחסון מחובר';
+                    }
+                },
+                {
+                    label: 'זיהוי פנים',
+                    run: async () => {
+                        if (typeof window.faceapi === 'undefined') throw new Error('הספרייה לא נטענה');
+                        return 'הספרייה נטענה';
+                    }
+                },
+                {
+                    label: 'Google Drive',
+                    run: async () => window.driveConnectionActive ? 'מחובר כעת' : 'לא מחובר — חבר בעת הצורך'
+                }
+            ];
+
+            const results = [];
+            for (const check of checks) {
+                try {
+                    results.push({ label: check.label, ok: true, message: await check.run() });
+                } catch (error) {
+                    results.push({ label: check.label, ok: false, message: error.message || 'הבדיקה נכשלה' });
+                }
+            }
+            container.replaceChildren();
+            results.forEach(result => {
+                const row = document.createElement('div');
+                row.className = `flex items-center gap-3 rounded-xl border p-3 ${result.ok ? 'border-emerald-400/15 bg-emerald-400/5' : 'border-red-400/20 bg-red-400/5'}`;
+                row.innerHTML = `<i data-lucide="${result.ok ? 'circle-check' : 'circle-alert'}" class="w-4 h-4 ${result.ok ? 'text-emerald-300' : 'text-red-300'}"></i>`;
+                const text = document.createElement('div');
+                text.className = 'min-w-0';
+                const title = document.createElement('p');
+                title.className = 'text-[10px] font-bold text-slate-100';
+                title.textContent = result.label;
+                const detail = document.createElement('p');
+                detail.className = `text-[9px] ${result.ok ? 'text-emerald-200/70' : 'text-red-200/70'}`;
+                detail.textContent = result.message;
+                text.append(title, detail);
+                row.appendChild(text);
+                container.appendChild(row);
+            });
+            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+        };
+
         async function r2Request(path, options = {}) {
             const token = await window.getFirebaseIdToken();
             const headers = new Headers(options.headers || {});
@@ -4644,6 +4858,229 @@
             }
             const { doc, deleteDoc } = window.firestoreModules;
             await deleteDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'pendingImages', imageId));
+        };
+
+        window.logActivity = async function(action, targetType, targetId, targetName, details = '') {
+            if (!window.db || !window.state.currentUser?.uid) return;
+            try {
+                const { doc, setDoc } = window.firestoreModules;
+                const logId = `log_${Date.now()}_${crypto.randomUUID().replace(/-/g, '').slice(0, 12)}`;
+                await setDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'activityLogs', logId), {
+                    id: logId,
+                    action: String(action || 'activity').slice(0, 60),
+                    targetType: String(targetType || '').slice(0, 40),
+                    targetId: safeRecordId(targetId),
+                    targetName: String(targetName || '').slice(0, 160),
+                    details: String(details || '').slice(0, 400),
+                    actorUid: window.state.currentUser.uid,
+                    actorName: window.state.currentUser.displayName || window.state.currentUser.email || 'משתמש',
+                    actorRole: window.state.userRole || 'viewer',
+                    createdAt: Date.now()
+                });
+            } catch (error) {
+                console.warn('Activity log write failed:', error);
+            }
+        };
+
+        const trashCollectionByType = {
+            image: 'images',
+            pendingImage: 'pendingImages',
+            folder: 'folders',
+            user: 'userProfiles'
+        };
+
+        window.moveRecordToTrash = async function(type, record, options = {}) {
+            if (!checkSuperAdminPermission()) return;
+            const collectionName = trashCollectionByType[type];
+            const originalId = safeRecordId(type === 'user' ? record?.uid : record?.id);
+            if (!collectionName || !originalId || !record) throw new Error('הפריט למחיקה אינו תקין.');
+
+            const { doc, setDoc, deleteDoc } = window.firestoreModules;
+            const trashId = `trash_${Date.now()}_${crypto.randomUUID().replace(/-/g, '').slice(0, 10)}`;
+            const trashRecord = {
+                id: trashId,
+                originalType: type,
+                originalId,
+                originalCollection: collectionName,
+                targetName: String(options.targetName || record.title || record.name || record.displayName || record.email || 'פריט').slice(0, 160),
+                record,
+                relatedImageIds: Array.isArray(options.relatedImageIds) ? options.relatedImageIds.map(safeRecordId).filter(Boolean) : [],
+                deletedAt: Date.now(),
+                deletedBy: window.state.currentUser?.uid || '',
+                deletedByName: window.state.currentUser?.displayName || window.state.currentUser?.email || 'מנהל־על'
+            };
+
+            await setDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'trashItems', trashId), trashRecord);
+            await deleteDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', collectionName, originalId));
+            window.state.trashItems = [trashRecord, ...(window.state.trashItems || [])];
+            window.renderTrashItems?.();
+            await window.logActivity('moved_to_trash', type, originalId, trashRecord.targetName);
+            return trashRecord;
+        };
+
+        window.moveImageToTrash = async function(id) {
+            const image = (window.state.images || []).find(item => safeRecordId(item.id) === safeRecordId(id));
+            if (!image) throw new Error('התמונה לא נמצאה.');
+            await window.moveRecordToTrash('image', image);
+        };
+
+        window.movePendingImageToTrash = async function(id) {
+            const image = (window.state.pendingImages || []).find(item => safeRecordId(item.id) === safeRecordId(id));
+            if (!image) throw new Error('התמונה הממתינה לא נמצאה.');
+            await window.moveRecordToTrash('pendingImage', image);
+        };
+
+        window.moveFolderToTrash = async function(id) {
+            const folderId = safeRecordId(id);
+            const folder = (window.state.folders || []).find(item => safeRecordId(item.id) === folderId);
+            if (!folder) throw new Error('התיקייה לא נמצאה.');
+            const relatedImages = (window.state.images || []).filter(image => safeRecordId(image.folderId) === folderId);
+            await Promise.all(relatedImages.map(image => window.saveImageToCloud({ ...image, folderId: '4' })));
+            await window.moveRecordToTrash('folder', folder, {
+                relatedImageIds: relatedImages.map(image => image.id)
+            });
+            if (window.state.activeFolderId === folderId) window.state.activeFolderId = 'all';
+        };
+
+        window.moveUserToTrash = async function(uid) {
+            const profile = (window.state.allUsers || []).find(user => safeRecordId(user.uid) === safeRecordId(uid));
+            if (!profile) throw new Error('המשתמש לא נמצא.');
+            await window.moveRecordToTrash('user', profile);
+        };
+
+        window.restoreTrashItem = async function(trashId, confirmed = false) {
+            if (!checkSuperAdminPermission()) return;
+            const item = (window.state.trashItems || []).find(entry => safeRecordId(entry.id) === safeRecordId(trashId));
+            if (!item) return;
+            if (!confirmed) {
+                showConfirm('שחזור פריט', `לשחזר את "${item.targetName || 'הפריט'}" למקום המקורי?`, () => window.restoreTrashItem(trashId, true));
+                return;
+            }
+            const collectionName = trashCollectionByType[item.originalType];
+            if (!collectionName || !item.record) throw new Error('נתוני השחזור אינם תקינים.');
+            const { doc, setDoc, deleteDoc } = window.firestoreModules;
+            await setDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', collectionName, safeRecordId(item.originalId)), item.record);
+            if (item.originalType === 'folder' && Array.isArray(item.relatedImageIds)) {
+                await Promise.all(item.relatedImageIds.map(imageId => {
+                    const image = (window.state.images || []).find(entry => safeRecordId(entry.id) === safeRecordId(imageId));
+                    return image ? window.saveImageToCloud({ ...image, folderId: item.originalId }) : Promise.resolve();
+                }));
+            }
+            await deleteDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'trashItems', safeRecordId(item.id)));
+            window.state.trashItems = (window.state.trashItems || []).filter(entry => entry.id !== item.id);
+            window.renderTrashItems();
+            await window.logActivity('restored', item.originalType, item.originalId, item.targetName);
+            window.showNotification('הפריט שוחזר בהצלחה.');
+        };
+
+        window.purgeTrashItem = async function(trashId, confirmed = false) {
+            if (!checkSuperAdminPermission()) return;
+            const item = (window.state.trashItems || []).find(entry => safeRecordId(entry.id) === safeRecordId(trashId));
+            if (!item) return;
+            if (!confirmed) {
+                showConfirm('מחיקה סופית', `למחוק לצמיתות את "${item.targetName || 'הפריט'}"? לאחר מכן לא יהיה אפשר לשחזר.`, () => window.purgeTrashItem(trashId, true));
+                return;
+            }
+            if (['image', 'pendingImage'].includes(item.originalType) && item.record?.r2Key) {
+                await window.deleteImageFromR2(item.record);
+            }
+            const { doc, deleteDoc } = window.firestoreModules;
+            await deleteDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'trashItems', safeRecordId(item.id)));
+            window.state.trashItems = (window.state.trashItems || []).filter(entry => entry.id !== item.id);
+            window.renderTrashItems();
+            await window.logActivity('purged', item.originalType, item.originalId, item.targetName);
+            window.showNotification('הפריט נמחק לצמיתות.');
+        };
+
+        window.renderTrashItems = function() {
+            const list = document.getElementById('trashItemsList');
+            const badge = document.getElementById('trashItemsCountBadge');
+            const items = window.state.trashItems || [];
+            if (badge) badge.textContent = String(items.length);
+            if (!list) return;
+            list.innerHTML = '';
+            if (!items.length) {
+                list.innerHTML = '<p class="text-xs text-center text-slate-500 py-6">סל המחזור ריק.</p>';
+                return;
+            }
+            const typeLabels = { image: 'תמונה', pendingImage: 'תמונה ממתינה', folder: 'תיקייה', user: 'משתמש' };
+            items.forEach(item => {
+                const card = document.createElement('article');
+                card.className = 'rounded-xl border border-orange-400/15 bg-orange-400/5 p-3 space-y-2';
+                const title = document.createElement('p');
+                title.className = 'text-[11px] font-bold text-slate-100';
+                title.textContent = `${typeLabels[item.originalType] || 'פריט'} — ${item.targetName || item.originalId}`;
+                const meta = document.createElement('p');
+                meta.className = 'text-[9px] text-slate-400';
+                meta.textContent = `${formatDate(item.deletedAt)} · נמחק על ידי ${item.deletedByName || 'מנהל־על'}`;
+                const actions = document.createElement('div');
+                actions.className = 'grid grid-cols-2 gap-2';
+                const restore = document.createElement('button');
+                restore.type = 'button';
+                restore.className = 'py-2 rounded-lg bg-emerald-600 text-white text-[10px] font-bold';
+                restore.textContent = 'שחזר';
+                restore.onclick = () => window.restoreTrashItem(item.id);
+                const purge = document.createElement('button');
+                purge.type = 'button';
+                purge.className = 'py-2 rounded-lg border border-red-500/30 text-red-300 text-[10px] font-bold';
+                purge.textContent = 'מחק לצמיתות';
+                purge.onclick = () => window.purgeTrashItem(item.id);
+                actions.append(restore, purge);
+                card.append(title, meta, actions);
+                list.appendChild(card);
+            });
+        };
+
+        window.renderActivityLogs = function() {
+            const list = document.getElementById('activityLogList');
+            const summary = document.getElementById('activitySummary');
+            const logs = window.state.activityLogs || [];
+            if (summary) {
+                const cards = [
+                    ['users', (window.state.pendingUsers || []).length, 'הצטרפות'],
+                    ['image-plus', (window.state.pendingImages || []).length, 'לאישור'],
+                    ['trash-2', (window.state.deletionRequests || []).length, 'בקשות מחיקה'],
+                    ['archive-restore', (window.state.trashItems || []).length, 'בסל']
+                ];
+                summary.innerHTML = cards.map(([icon, value, label]) => `
+                    <div class="rounded-xl border border-white/10 bg-white/5 p-3 text-center">
+                        <i data-lucide="${icon}" class="w-4 h-4 mx-auto mb-1 text-cyan-300"></i>
+                        <strong class="block text-lg text-white">${value}</strong>
+                        <span class="text-[9px] text-slate-400">${label}</span>
+                    </div>`).join('');
+            }
+            if (!list) return;
+            list.innerHTML = '';
+            if (!logs.length) {
+                list.innerHTML = '<p class="text-xs text-center text-slate-500 py-6">עדיין אין פעולות מתועדות.</p>';
+            } else {
+                const actionLabels = {
+                    moved_to_trash: 'העביר לסל המחזור',
+                    restored: 'שחזר פריט',
+                    purged: 'מחק לצמיתות',
+                    approved_user: 'אישר משתמש',
+                    changed_role: 'שינה דרגה',
+                    changed_block: 'שינה חסימה',
+                    approved_images: 'אישר תמונות',
+                    uploaded_images: 'העלה תמונות',
+                    synced_drive: 'סנכרן Drive',
+                    resolved_support: 'סימן פנייה כטופלה',
+                    reopened_support: 'פתח פנייה מחדש'
+                };
+                logs.slice(0, 50).forEach(log => {
+                    const row = document.createElement('article');
+                    row.className = 'rounded-xl border border-white/10 bg-white/5 p-3';
+                    const title = document.createElement('p');
+                    title.className = 'text-[11px] font-bold text-slate-100';
+                    title.textContent = `${log.actorName || 'משתמש'} — ${actionLabels[log.action] || log.action || 'פעולה'}`;
+                    const meta = document.createElement('p');
+                    meta.className = 'text-[9px] text-slate-400 mt-1';
+                    meta.textContent = `${log.targetName || log.targetId || ''}${log.details ? ` · ${log.details}` : ''} · ${formatDate(log.createdAt)}`;
+                    row.append(title, meta);
+                    list.appendChild(row);
+                });
+            }
+            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
         };
 
         // --- 3. Admin UI Update Routing ---
@@ -4974,6 +5411,39 @@
 
         function handleSearch(val) { window.state.searchQuery = val; window.renderImages(); }
 
+        window.setGallerySort = function(sort) {
+            window.state.gallerySort = ['newest', 'oldest', 'name'].includes(sort) ? sort : 'newest';
+            window.renderImages();
+        };
+
+        function getFilteredSortedImages() {
+            let filtered = window.state.tempSearchResults !== null ? [...window.state.tempSearchResults] : [...window.state.images];
+            if (window.state.tempSearchResults === null && window.state.activeFolderId !== 'all') {
+                filtered = filtered.filter(img => img.folderId === window.state.activeFolderId);
+            }
+            if (window.state.searchQuery) {
+                const q = window.state.searchQuery.toLowerCase();
+                filtered = filtered.filter(img => {
+                    const folderName = window.state.folders.find(folder => folder.id === img.folderId)?.name || '';
+                    return [
+                        img.title,
+                        img.date,
+                        folderName,
+                        img.uploadedByName,
+                        img.originalFolderName
+                    ].some(value => String(value || '').toLowerCase().includes(q));
+                });
+            }
+            if (window.state.gallerySort === 'oldest') {
+                filtered.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+            } else if (window.state.gallerySort === 'name') {
+                filtered.sort((a, b) => String(a.title || '').localeCompare(String(b.title || ''), 'he'));
+            } else {
+                filtered.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            }
+            return filtered;
+        }
+
         window.renderFolders = function() {
             if (typeof window.updateAdminOverview === 'function') window.updateAdminOverview();
             const folderList = document.getElementById('folderList'); if (!folderList) return; folderList.innerHTML = '';
@@ -5000,9 +5470,7 @@
             if (typeof window.updateAdminOverview === 'function') window.updateAdminOverview();
             const grid = document.getElementById('photosGrid'); const emptyState = document.getElementById('emptyState');
             if (!grid || !emptyState) return; grid.innerHTML = '';
-            let filtered = window.state.tempSearchResults !== null ? window.state.tempSearchResults : window.state.images;
-            if (window.state.tempSearchResults === null && window.state.activeFolderId !== 'all') filtered = filtered.filter(img => img.folderId === window.state.activeFolderId);
-            if (window.state.searchQuery) { const q = window.state.searchQuery.toLowerCase(); filtered = filtered.filter(img => String(img.title || '').toLowerCase().includes(q)); }
+            const filtered = getFilteredSortedImages();
 
             const imageCounter = document.getElementById('imageCounter');
             if (imageCounter) { imageCounter.classList.remove('hidden'); imageCounter.textContent = `${filtered.length} תמונות`; }
@@ -5048,11 +5516,72 @@
             return Boolean(file && (file.type.startsWith('image/') || /\.(?:png|jpe?g|webp|gif)$/i.test(file.name)));
         }
 
+        window.renderSelectedUploadQueue = function(inputIds, containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            const files = (inputIds || []).flatMap(id => Array.from(document.getElementById(id)?.files || [])).filter(isSupportedImageFile);
+            container.replaceChildren();
+            container.classList.toggle('hidden', files.length === 0);
+            files.forEach((file, index) => {
+                const row = document.createElement('div');
+                row.dataset.uploadIndex = String(index);
+                row.className = 'flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-2.5 py-2';
+                const icon = document.createElement('span');
+                icon.className = 'upload-queue-icon text-amber-400';
+                icon.innerHTML = '<i data-lucide="image" class="w-3.5 h-3.5"></i>';
+                const body = document.createElement('div');
+                body.className = 'min-w-0 flex-1';
+                const name = document.createElement('p');
+                name.className = 'text-[10px] font-bold text-slate-200 truncate';
+                name.textContent = file.webkitRelativePath || file.name;
+                const size = document.createElement('p');
+                size.className = 'text-[8px] text-slate-500';
+                size.textContent = `${Math.max(1, Math.round(file.size / 1024))}KB`;
+                body.append(name, size);
+                const status = document.createElement('span');
+                status.className = 'upload-queue-status text-[9px] text-slate-400';
+                status.textContent = 'ממתין';
+                row.append(icon, body, status);
+                container.appendChild(row);
+            });
+            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+        };
+
+        function updateUploadQueueItem(containerId, index, state, label) {
+            const row = document.querySelector(`#${containerId} [data-upload-index="${index}"]`);
+            if (!row) return;
+            const status = row.querySelector('.upload-queue-status');
+            const icon = row.querySelector('.upload-queue-icon');
+            if (status) {
+                status.textContent = label;
+                status.className = `upload-queue-status text-[9px] ${
+                    state === 'success' ? 'text-emerald-300' :
+                    state === 'error' ? 'text-red-300' :
+                    state === 'active' ? 'text-cyan-300' : 'text-slate-400'
+                }`;
+            }
+            if (icon) {
+                icon.className = `upload-queue-icon ${
+                    state === 'success' ? 'text-emerald-300' :
+                    state === 'error' ? 'text-red-300' :
+                    state === 'active' ? 'text-cyan-300' : 'text-amber-400'
+                }`;
+                icon.innerHTML = `<i data-lucide="${
+                    state === 'success' ? 'circle-check' :
+                    state === 'error' ? 'circle-x' :
+                    state === 'active' ? 'loader-circle' : 'image'
+                }" class="w-3.5 h-3.5 ${state === 'active' ? 'animate-spin' : ''}"></i>`;
+            }
+            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+        }
+
         async function processFilesWithFolders(files, targetFolderId = 'auto', isAdmin = false) {
             const newImages = []; let processedCount = 0;
             const progressEl = document.getElementById(isAdmin ? 'adminUploadProgressText' : 'userUploadProgressText');
+            const queueId = isAdmin ? 'adminUploadQueue' : 'userUploadQueue';
             for (let i = 0; i < files.length; i++) {
                 const file = files[i]; let destFolderId = targetFolderId === 'auto' ? null : targetFolderId; let folderName = "כללי";
+                updateUploadQueueItem(queueId, i, 'active', 'מעבד');
                 if (file.webkitRelativePath) {
                     const parts = file.webkitRelativePath.split('/');
                     if (parts.length > 1) {
@@ -5071,10 +5600,14 @@
                 const base64 = await compressAndConvertImage(file, 800, 800, 0.6);
                 if (base64) {
                     newImages.push({
+                        uploadQueueIndex: i,
                         id: `img_${crypto.randomUUID()}`,
                         folderId: destFolderId || '4', title: file.name.replace(/\.[^.]+$/, ''), url: base64,
                         date: new Date().toISOString().split('T')[0], createdAt: Date.now(), originalFolderName: folderName
                     });
+                    updateUploadQueueItem(queueId, i, 'ready', 'מוכן');
+                } else {
+                    updateUploadQueueItem(queueId, i, 'error', 'עיבוד נכשל');
                 }
                 processedCount++;
                 if (progressEl) progressEl.innerText = `מעבד: ${Math.round((processedCount / files.length) * 100)}%`;
@@ -5109,13 +5642,27 @@
                 if(pText) pText.innerText = 'מכין את הקבצים להעלאה...';
                 const newImages = await processFilesWithFolders(allFiles, targetFolderId, true);
                 if (newImages.length === 0) throw new Error('לא נמצאו קובצי תמונה תקינים.');
+                let uploadedCount = 0;
+                let failedCount = 0;
                 for (let index = 0; index < newImages.length; index++) {
                     if(pText) pText.innerText = `מעלה לאחסון: ${index + 1} מתוך ${newImages.length}`;
-                    await window.saveImageToCloud(newImages[index]);
+                    const { uploadQueueIndex, ...imageRecord } = newImages[index];
+                    updateUploadQueueItem('adminUploadQueue', uploadQueueIndex, 'active', 'מעלה');
+                    try {
+                        await window.saveImageToCloud(imageRecord);
+                        uploadedCount++;
+                        updateUploadQueueItem('adminUploadQueue', uploadQueueIndex, 'success', 'הושלם');
+                    } catch (error) {
+                        failedCount++;
+                        updateUploadQueueItem('adminUploadQueue', uploadQueueIndex, 'error', 'נכשל — נסה שוב');
+                        console.warn('Single admin upload failed:', error);
+                    }
                 }
+                if (!uploadedCount) throw new Error('העלאת הקבצים נכשלה. ניתן לנסות שוב.');
                 if(filesInput) filesInput.value = '';
                 if(folderInput) folderInput.value = '';
-                window.showNotification(`הועלו ${newImages.length} תמונות לגלריה בענן!`);
+                await window.logActivity('uploaded_images', 'image', '', `${uploadedCount} תמונות`, failedCount ? `${failedCount} נכשלו` : 'העלאה דרך לוח הניהול');
+                window.showNotification(`הועלו ${uploadedCount} תמונות לגלריה${failedCount ? `; ${failedCount} נכשלו וניתן לנסות שוב` : ''}.`);
             } catch (error) {
                 console.error('Admin upload failed:', error);
                 window.showNotification(error.message || 'העלאת התמונות נכשלה. נסה שוב.', false);
@@ -5166,18 +5713,32 @@
                 if(pText) pText.innerText = 'מכין את הקבצים להעלאה...';
                 const newImages = await processFilesWithFolders(allFiles, targetFolderId, false);
                 if (newImages.length === 0) throw new Error('לא נמצאו קובצי תמונה תקינים.');
+                let uploadedCount = 0;
+                let failedCount = 0;
                 for (let index = 0; index < newImages.length; index++) {
                     if(pText) pText.innerText = `${canUploadDirectly ? 'מעלה לגלריה' : 'שולח לאישור'}: ${index + 1} מתוך ${newImages.length}`;
-                    if (canUploadDirectly) await window.saveImageToCloud(newImages[index]);
-                    else await window.savePendingImageCloud(newImages[index]);
+                    const { uploadQueueIndex, ...imageRecord } = newImages[index];
+                    updateUploadQueueItem('userUploadQueue', uploadQueueIndex, 'active', canUploadDirectly ? 'מעלה' : 'שולח');
+                    try {
+                        if (canUploadDirectly) await window.saveImageToCloud(imageRecord);
+                        else await window.savePendingImageCloud(imageRecord);
+                        uploadedCount++;
+                        updateUploadQueueItem('userUploadQueue', uploadQueueIndex, 'success', 'הושלם');
+                    } catch (error) {
+                        failedCount++;
+                        updateUploadQueueItem('userUploadQueue', uploadQueueIndex, 'error', 'נכשל — נסה שוב');
+                        console.warn('Single user upload failed:', error);
+                    }
                 }
-                closeModal('userUploadModal');
+                if (!uploadedCount) throw new Error('העלאת הקבצים נכשלה. ניתן לנסות שוב.');
+                await window.logActivity('uploaded_images', 'image', '', `${uploadedCount} תמונות`, `${canUploadDirectly ? 'העלאה ישירה' : 'נשלחו לאישור'}${failedCount ? `; ${failedCount} נכשלו` : ''}`);
                 window.showNotification(canUploadDirectly
-                    ? `${newImages.length} תמונות הועלו בהצלחה לגלריה!`
-                    : `${newImages.length} תמונות נשלחו לאישור מנהל.`
+                    ? `${uploadedCount} תמונות הועלו בהצלחה לגלריה${failedCount ? `; ${failedCount} נכשלו` : ''}!`
+                    : `${uploadedCount} תמונות נשלחו לאישור מנהל${failedCount ? `; ${failedCount} נכשלו` : ''}.`
                 );
                 if(filesInput) filesInput.value = '';
                 if(folderInput) folderInput.value = '';
+                if (!failedCount) closeModal('userUploadModal');
             } catch (error) {
                 console.error('User upload failed:', error);
                 window.showNotification(error.message || 'העלאת התמונות נכשלה. נסה שוב.', false);
@@ -5264,6 +5825,7 @@
                 roleChangedAt: Date.now(),
                 roleChangedBy: window.state.currentUser?.uid || ''
             }, { merge: true });
+            await window.logActivity('changed_role', 'user', uid, profile.displayName || profile.email || uid, `דרגה חדשה: ${role}`);
             window.showNotification('דרגת המשתמש עודכנה בהצלחה.');
         };
 
@@ -5298,6 +5860,7 @@
                 blockedAt: Date.now(),
                 blockedBy: window.state.currentUser?.uid || ''
             }, { merge: true });
+            await window.logActivity('changed_block', 'user', uid, profile.displayName || profile.email || uid, isBlocked ? 'החסימה הוסרה' : 'המשתמש נחסם');
             window.showNotification(isBlocked ? 'חסימת המשתמש הוסרה.' : 'המשתמש נחסם.');
         };
 
@@ -5317,8 +5880,7 @@
                 );
                 return;
             }
-            const { doc, deleteDoc } = window.firestoreModules;
-            await deleteDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'userProfiles', uid));
+            await window.moveUserToTrash(uid);
             adminMessageRecipients.delete(safeRecordId(uid));
             window.state.allUsers = (window.state.allUsers || []).filter(user => user.uid !== uid);
             window.state.pendingUsers = (window.state.pendingUsers || []).filter(user => user.uid !== uid);
@@ -5327,7 +5889,7 @@
             window.renderAdminMessageUsers();
             window.renderAdminMessageReplies();
             window.updatePendingUsersBadge();
-            window.showNotification('המשתמש וההודעות שלו נמחקו מהאתר.');
+            window.showNotification('המשתמש הועבר לסל המחזור.');
         };
 
         window.renderManagedUsers = function() {
@@ -5472,13 +6034,11 @@
             if (!request) return;
             if (approved) {
                 if (request.targetType === 'image') {
-                    await window.deleteImageCloud(request.targetId);
+                    await window.moveImageToTrash(request.targetId);
                 } else if (request.targetType === 'pendingImage') {
-                    await window.deletePendingImageCloud(request.targetId);
+                    await window.movePendingImageToTrash(request.targetId);
                 } else if (request.targetType === 'folder') {
-                    const imagesToMove = window.state.images.filter(image => safeRecordId(image.folderId) === safeRecordId(request.targetId));
-                    await Promise.all(imagesToMove.map(image => window.saveImageToCloud({ ...image, folderId: '4' })));
-                    await window.deleteFolderCloud(request.targetId);
+                    await window.moveFolderToTrash(request.targetId);
                 }
             }
             const { doc, setDoc } = window.firestoreModules;
@@ -5487,7 +6047,7 @@
                 resolvedAt: Date.now(),
                 resolvedBy: window.state.currentUser?.uid || ''
             }, { merge: true });
-            window.showNotification(approved ? 'בקשת המחיקה אושרה ובוצעה.' : 'בקשת המחיקה נדחתה.');
+            window.showNotification(approved ? 'בקשת המחיקה אושרה והפריט הועבר לסל המחזור.' : 'בקשת המחיקה נדחתה.');
         };
 
         
@@ -5643,6 +6203,7 @@
                     approvedAt: Date.now(),
                     approvedBy: window.state.currentUser?.uid || 'system-admin'
                 }, { merge: true });
+                await window.logActivity('approved_user', 'user', uid, profile.displayName || profile.email || uid, roleLabels[role]);
                 window.showNotification(`${profile.displayName || 'המשתמש'} אושר בתור ${roleLabels[role]}.`);
             } catch (error) {
                 console.error('Approving user failed:', error);
@@ -5744,6 +6305,7 @@
                     approvedCount++;
                 }
             }
+            await window.logActivity('approved_images', 'image', '', `${approvedCount} תמונות`);
             window.showNotification(`אושרו ${approvedCount} תמונות בהצלחה לענן!`);
         }
 
@@ -5761,9 +6323,9 @@
                 });
                 return;
             }
-            showConfirm('דחיית תמונות', 'למחוק לצמיתות את התמונות הממתינות מהענן?', async () => {
-                await Promise.all(Array.from(checkboxes, cb => window.deletePendingImageCloud(cb.value)));
-                window.showNotification('התמונות נדחו ונמחקו מהענן.');
+            showConfirm('דחיית תמונות', 'להעביר את התמונות הממתינות לסל המחזור?', async () => {
+                await Promise.all(Array.from(checkboxes, cb => window.movePendingImageToTrash(cb.value)));
+                window.showNotification('התמונות הועברו לסל המחזור.');
             });
         }
 
@@ -5782,15 +6344,9 @@
                 });
                 return;
             }
-            showConfirm('מחיקת תיקייה', 'האם למחוק את התיקייה? התמונות יועברו לתיקייה הכללית.', async () => {
-                const imagesToMove = window.state.images.filter(img => img.folderId === folderId);
-                await Promise.all(imagesToMove.map(img => {
-                    img.folderId = '4';
-                    return window.saveImageToCloud(img);
-                }));
-                await window.deleteFolderCloud(folderId);
-                if (window.state.activeFolderId === folderId) window.state.activeFolderId = 'all';
-                window.showNotification('התיקייה נמחקה והתמונות הועברו.');
+            showConfirm('העברת תיקייה לסל', 'להעביר את התיקייה לסל המחזור? התמונות יועברו זמנית לתיקייה הכללית.', async () => {
+                await window.moveFolderToTrash(folderId);
+                window.showNotification('התיקייה הועברה לסל המחזור.');
             });
         }
 
@@ -5806,7 +6362,7 @@
                 });
                 return;
             }
-            showConfirm('מחיקת תמונה', 'האם למחוק תמונה זו מהענן לצמיתות?', () => window.deleteImageCloud(id));
+            showConfirm('העברת תמונה לסל', 'להעביר את התמונה לסל המחזור? ניתן יהיה לשחזר אותה.', () => window.moveImageToTrash(id));
         }
 
         function changeImageFolder(id) {
@@ -5848,12 +6404,11 @@
         }
 
         // --- 8. Lightbox Display ---
+        let gallerySlideshowTimer = null;
+
         function openLightbox(imageId) {
             imageId = safeRecordId(imageId);
-            let filtered = window.state.tempSearchResults !== null ? window.state.tempSearchResults : window.state.images;
-            if (window.state.tempSearchResults === null && window.state.activeFolderId !== 'all') filtered = filtered.filter(img => img.folderId === window.state.activeFolderId);
-            if (window.state.searchQuery) { const q = window.state.searchQuery.toLowerCase(); filtered = filtered.filter(img => String(img.title || '').toLowerCase().includes(q)); }
-            currentFilteredImages = filtered;
+            currentFilteredImages = getFilteredSortedImages();
             window.state.currentLightboxIndex = currentFilteredImages.findIndex(img => safeRecordId(img.id) === imageId);
             if (window.state.currentLightboxIndex === -1) return;
             updateLightbox(); openModal('lightboxModal');
@@ -5866,7 +6421,46 @@
         }
 
         window.closeLightbox = function() {
+            if (gallerySlideshowTimer) {
+                window.clearInterval(gallerySlideshowTimer);
+                gallerySlideshowTimer = null;
+                updateSlideshowButton();
+            }
             closeModal('lightboxModal');
+        };
+
+        function updateSlideshowButton() {
+            const button = document.getElementById('slideshowToggle');
+            if (!button) return;
+            const running = Boolean(gallerySlideshowTimer);
+            button.setAttribute('aria-label', running ? 'עצירת מצגת אוטומטית' : 'הפעלת מצגת אוטומטית');
+            button.title = running ? 'עצירת מצגת' : 'הפעלת מצגת';
+            button.innerHTML = `<i data-lucide="${running ? 'pause' : 'play'}" class="w-6 h-6"></i>`;
+            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+        }
+
+        window.toggleGallerySlideshow = function() {
+            if (gallerySlideshowTimer) {
+                window.clearInterval(gallerySlideshowTimer);
+                gallerySlideshowTimer = null;
+            } else {
+                if (currentFilteredImages.length < 2) {
+                    window.showNotification('נדרשות לפחות שתי תמונות להפעלת מצגת.', false);
+                    return;
+                }
+                gallerySlideshowTimer = window.setInterval(() => navigateLightbox(1), 4000);
+            }
+            updateSlideshowButton();
+        };
+
+        window.startGallerySlideshow = function() {
+            const images = getFilteredSortedImages();
+            if (!images.length) {
+                window.showNotification('אין תמונות להצגת מצגת.', false);
+                return;
+            }
+            openLightbox(images[0].id);
+            if (images.length > 1 && !gallerySlideshowTimer) window.toggleGallerySlideshow();
         };
 
         function updateLightbox() {
@@ -6522,6 +7116,9 @@
                 }
                 if (showConstructionNotice && typeof window.showNotification === 'function') {
                     setTimeout(() => window.showNotification('לתשומת לב: האתר עדיין בבנייה וייתכנו תקלות זמניות.', true, 'warning'), 700);
+                }
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.register('./sw.js').catch(error => console.warn('Service worker registration failed:', error));
                 }
             } catch (error) {
                 console.error('UI initialization error:', error);
