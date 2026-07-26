@@ -3,6 +3,8 @@ const FIREBASE_PROJECT_ID = "simchas-bb35c";
 const APP_ID = "org-gallery";
 const INITIAL_SUPER_ADMIN_EMAIL_SHA256 = "d2632af59d29239eef52f10e1cfbf38e27c65c55470b355134b1cd1fb4f809d6";
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
+const OPENAI_VISION_MODEL = "gpt-5.4-mini";
 
 const ALLOWED_ORIGINS = new Set([
   "https://0534169095-star.github.io",
@@ -290,6 +292,118 @@ async function deleteImage(request, env, pathname) {
   return json(request, { success: true, key });
 }
 
+function safeAiSearchImage(value) {
+  const id = safeImageId(value?.id);
+  const title = String(value?.title || "תמונה").trim().slice(0, 120);
+  const folder = String(value?.folder || "כללי").trim().slice(0, 80);
+  const date = String(value?.date || "").trim().slice(0, 20);
+  let url;
+  try {
+    url = new URL(String(value?.url || ""));
+  } catch {
+    throw apiError("אחת מכתובות התמונות אינה תקינה.", 400, "invalid_image_url");
+  }
+  if (url.protocol !== "https:") {
+    throw apiError("כתובת תמונה חייבת להשתמש בחיבור מאובטח.", 400, "invalid_image_url");
+  }
+  return { id, title, folder, date, url: url.toString() };
+}
+
+function extractOpenAIOutputText(payload) {
+  for (const item of payload?.output || []) {
+    for (const content of item?.content || []) {
+      if (content?.type === "output_text" && typeof content.text === "string") {
+        return content.text;
+      }
+    }
+  }
+  return "";
+}
+
+async function aiImageSearch(request, env) {
+  await requireUser(request, ["viewer", "uploader", "admin", "super_admin"]);
+  if (!env.OPENAI_API_KEY) {
+    throw apiError("חיפוש ה־AI עדיין לא הוגדר בשרת.", 503, "openai_key_missing");
+  }
+
+  const payload = await request.json().catch(() => ({}));
+  const query = String(payload.query || "").trim().slice(0, 240);
+  if (query.length < 3) {
+    throw apiError("יש לכתוב תיאור באורך של שלוש אותיות לפחות.", 400, "query_too_short");
+  }
+  if (!Array.isArray(payload.images) || payload.images.length === 0 || payload.images.length > 8) {
+    throw apiError("ניתן לסרוק בין תמונה אחת לשמונה תמונות בכל קבוצה.", 400, "invalid_image_batch");
+  }
+
+  const images = payload.images.map(safeAiSearchImage);
+  const knownIds = new Set(images.map(image => image.id));
+  const content = [{
+    type: "input_text",
+    text: `מצא אילו תמונות מתאימות לבקשת החיפוש הבאה בעברית: "${query}". החזר רק מזהים של תמונות שיש להן התאמה חזותית ברורה או סבירה. אל תחזיר תמונה רק בגלל שם הקובץ.`
+  }];
+
+  images.forEach(image => {
+    content.push({
+      type: "input_text",
+      text: `IMAGE_ID=${image.id}; כותרת=${image.title}; תיקייה=${image.folder}; תאריך=${image.date || "לא ידוע"}`
+    });
+    content.push({
+      type: "input_image",
+      image_url: image.url,
+      detail: "low"
+    });
+  });
+
+  const openAIResponse = await fetch(OPENAI_RESPONSES_URL, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${env.OPENAI_API_KEY}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model: OPENAI_VISION_MODEL,
+      store: false,
+      input: [{ role: "user", content }],
+      text: {
+        format: {
+          type: "json_schema",
+          name: "gallery_image_search",
+          strict: true,
+          schema: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              matches: {
+                type: "array",
+                items: { type: "string" }
+              }
+            },
+            required: ["matches"]
+          }
+        }
+      }
+    })
+  });
+
+  const openAIPayload = await openAIResponse.json().catch(() => ({}));
+  if (!openAIResponse.ok) {
+    console.error("OpenAI search request failed", openAIResponse.status, openAIPayload?.error?.code || "unknown");
+    throw apiError("מנוע חיפוש ה־AI אינו זמין כרגע.", 502, "openai_request_failed");
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(extractOpenAIOutputText(openAIPayload));
+  } catch {
+    throw apiError("מנוע ה־AI החזיר תשובה לא תקינה.", 502, "invalid_openai_response");
+  }
+  const matches = Array.isArray(parsed?.matches)
+    ? [...new Set(parsed.matches.map(safeImageId).filter(id => knownIds.has(id)))]
+    : [];
+
+  return json(request, { success: true, matches });
+}
+
 export default {
   async fetch(request, env) {
     if (request.method === "OPTIONS") {
@@ -320,6 +434,9 @@ export default {
       }
       if (request.method === "POST" && url.pathname === "/approve") {
         return await approveImage(request, env);
+      }
+      if (request.method === "POST" && url.pathname === "/ai-search") {
+        return await aiImageSearch(request, env);
       }
       if (request.method === "GET" && url.pathname.startsWith("/media/")) {
         return await serveImage(request, env, url.pathname);
