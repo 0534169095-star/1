@@ -67,6 +67,12 @@
             return '';
         }
 
+        function isVideoRecord(record) {
+            return record?.mediaType === 'video'
+                || /^video\/(?:mp4|webm)$/i.test(String(record?.mimeType || ''))
+                || /\.(?:mp4|webm)(?:[?#].*)?$/i.test(String(record?.url || record?.title || ''));
+        }
+
         // פונקציית שגיאה מובנית המציגה תמונה חלופית אסתטית במידה והקישור נשבר
         function handleImageError(imgElement) {
             imgElement.onerror = null;
@@ -1925,9 +1931,9 @@
 
                 <div id="userUploadAccessCard" class="hidden luxury-action-card p-5 text-center">
                     <div class="luxury-icon-circle w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3"><i data-lucide="cloud-upload" class="w-6 h-6"></i></div>
-                    <h4 id="userUploadAccessTitle" class="font-bold mb-1.5">העלאת תמונות לגלריה</h4>
-                    <p id="userUploadAccessText" class="text-[11px] mb-4 leading-relaxed">בחר תמונות להעלאה בהתאם לדרגת ההרשאה שלך.</p>
-                    <button type="button" onclick="openModal('userUploadModal')" class="w-full py-2.5 btn-primary-gold rounded-xl text-xs font-bold flex items-center justify-center gap-2"><i data-lucide="arrow-up-circle" class="w-4 h-4"></i> העלה תמונות</button>
+                    <h4 id="userUploadAccessTitle" class="font-bold mb-1.5">העלאת תמונות וסרטונים</h4>
+                    <p id="userUploadAccessText" class="text-[11px] mb-4 leading-relaxed">בחר תמונות או סרטונים להעלאה בהתאם לדרגת ההרשאה שלך.</p>
+                    <button type="button" onclick="openModal('userUploadModal')" class="w-full py-2.5 btn-primary-gold rounded-xl text-xs font-bold flex items-center justify-center gap-2"><i data-lucide="arrow-up-circle" class="w-4 h-4"></i> העלה מדיה</button>
                 </div>
 
             </div>
@@ -1947,13 +1953,13 @@
 
                 <button type="button" onclick="openModal('userUploadModal')" class="w-full py-3 btn-primary-gold rounded-xl text-xs font-extrabold flex items-center justify-center gap-2" style="order: 2">
                     <i data-lucide="cloud-upload" class="w-4 h-4"></i>
-                    העלאת תמונות
+                    העלאת מדיה
                 </button>
 
                 <section class="admin-overview" aria-label="סיכום נתוני הגלריה" style="order: 3">
                     <div class="admin-stat"><span class="admin-stat-icon"><i data-lucide="users" class="w-5 h-5"></i></span><div><strong id="adminOverviewUsersCount">0</strong><span>בקשות הצטרפות</span></div></div>
                     <div class="admin-stat"><span class="admin-stat-icon"><i data-lucide="image-plus" class="w-5 h-5"></i></span><div><strong id="adminOverviewPendingCount">0</strong><span>תמונות לאישור</span></div></div>
-                    <div class="admin-stat"><span class="admin-stat-icon"><i data-lucide="images" class="w-5 h-5"></i></span><div><strong id="adminOverviewImagesCount">0</strong><span>תמונות בגלריה</span></div></div>
+                    <div class="admin-stat"><span class="admin-stat-icon"><i data-lucide="images" class="w-5 h-5"></i></span><div><strong id="adminOverviewImagesCount">0</strong><span>פריטים בגלריה</span></div></div>
                     <div class="admin-stat"><span class="admin-stat-icon"><i data-lucide="folders" class="w-5 h-5"></i></span><div><strong id="adminOverviewFoldersCount">0</strong><span>תיקיות</span></div></div>
                 </section>
 
@@ -1962,7 +1968,7 @@
                         <span class="admin-topic-icon"><i data-lucide="images" class="w-5 h-5"></i></span>
                         <span>
                             <strong>תמונות ותיקיות</strong>
-                            <small>העלאה, סנכרון, אישורים, תיקיות ומחיקה</small>
+                            <small>תמונות, סרטונים, סנכרון, תיקיות ומחיקה</small>
                         </span>
                     </button>
                     <button type="button" onclick="openAdminCategory('users')" class="admin-topic-card hidden super-admin-only" style="--topic-color:#64d8e5;--topic-border:rgba(100,216,229,.35);--topic-glow:rgba(100,216,229,.11)">
@@ -2094,7 +2100,7 @@
                         <i id="accDriveSyncArrow" data-lucide="chevron-down" class="w-4 h-4 text-amber-500/70"></i>
                     </button>
                     <div id="accDriveSync" class="accordion-content px-4 space-y-3">
-                        <p class="text-[10px] text-slate-400 leading-relaxed">חבר חשבון Drive, הדבק קישור לתיקייה וסנכרן את התמונות ותיקיות המשנה ישירות לגלריה.</p>
+                        <p class="text-[10px] text-slate-400 leading-relaxed">חבר חשבון Drive, הדבק קישור לתיקייה וסנכרן תמונות, סרטונים ותיקיות משנה ישירות לגלריה.</p>
 
                         <div id="driveConnectionStatus" role="status" class="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[10px] font-semibold text-slate-400">
                             Google Drive עדיין לא מחובר
@@ -2126,7 +2132,7 @@
                             <i data-lucide="folder-sync" class="w-4 h-4"></i>
                             סנכרן עכשיו
                         </button>
-                        <p class="pb-1 text-[9px] text-slate-400 leading-relaxed">הסנכרון מוסיף ומעדכן בלבד. הוא לא מוחק מהגלריה תמונות שהוסרו מ־Drive.</p>
+                        <p class="pb-1 text-[9px] text-slate-400 leading-relaxed">הסנכרון מוסיף ומעדכן בלבד. הוא לא מוחק מהגלריה קבצים שהוסרו מ־Drive. סרטוני MP4 ו־WebM מוגבלים ל־100MB.</p>
                     </div>
                 </div>
 
@@ -2159,33 +2165,33 @@
     </div>
 
     <!-- USER UPLOAD MODAL -->
-    <div id="userUploadModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden" role="dialog" aria-modal="true" aria-label="העלאת תמונות">
+    <div id="userUploadModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden" role="dialog" aria-modal="true" aria-label="העלאת תמונות וסרטונים">
         <div class="rounded-3xl w-full max-w-md overflow-hidden transform transition-all modal-animate-popup">
             <div class="bg-gradient-to-r from-amber-500/20 to-transparent border-b border-amber-500/30 p-5 flex justify-between items-center text-white">
-                <h3 class="font-bold text-lg flex items-center gap-2"><i data-lucide="cloud-upload" class="w-5 h-5"></i> העלאת תמונות</h3>
+                <h3 class="font-bold text-lg flex items-center gap-2"><i data-lucide="cloud-upload" class="w-5 h-5"></i> העלאת תמונות וסרטונים</h3>
                 <button type="button" onclick="closeModal('userUploadModal')" class="hover:text-amber-400" aria-label="סגירת חלון ההעלאה"><i data-lucide="x" class="w-6 h-6"></i></button>
             </div>
             <div class="p-6 space-y-5">
-                <p id="userUploadModeText" class="text-[11px] text-slate-400 leading-relaxed bg-white/5 p-3 rounded-xl border border-white/5">בחר תיקיית יעד ולאחר מכן תמונות בודדות או תיקייה שלמה.</p>
+                <p id="userUploadModeText" class="text-[11px] text-slate-400 leading-relaxed bg-white/5 p-3 rounded-xl border border-white/5">בחר תיקיית יעד ולאחר מכן תמונות, סרטוני MP4/WebM או תיקייה שלמה. גודל סרטון מרבי: 100MB.</p>
                 <div class="space-y-3">
                     <label class="block">
                         <span class="text-[10px] font-bold text-slate-300 mb-1 block">תיקיית יעד בגלריה:</span>
                         <select id="userTargetFolderSelect" class="w-full text-xs rounded-xl py-2 px-3 focus:ring-amber-500"></select>
                     </label>
                     <label class="block">
-                        <span class="text-[10px] font-bold text-slate-300 mb-1 block">1. תמונות בודדות מתוך תיקייה:</span>
-                        <input type="file" id="userMultiFiles" multiple accept="image/*" onchange="renderSelectedUploadQueue(['userMultiFiles','userFolderUpload'], 'userUploadQueue')" class="w-full text-xs rounded-xl p-2 cursor-pointer text-slate-400 bg-white/5 border border-white/10">
+                        <span class="text-[10px] font-bold text-slate-300 mb-1 block">1. תמונות או סרטונים בודדים:</span>
+                        <input type="file" id="userMultiFiles" multiple accept="image/*,video/mp4,video/webm,.mp4,.webm" onchange="renderSelectedUploadQueue(['userMultiFiles','userFolderUpload'], 'userUploadQueue')" class="w-full text-xs rounded-xl p-2 cursor-pointer text-slate-400 bg-white/5 border border-white/10">
                     </label>
                     <div class="relative py-1"><div class="absolute inset-0 flex items-center"><div class="w-full border-t border-white/10"></div></div><div class="relative flex justify-center"><span class="bg-slate-950 px-2 text-[10px] text-slate-500 font-bold">או</span></div></div>
                     <label class="block">
                         <span class="text-[10px] font-bold text-amber-400 mb-1 block">2. העלאת תיקייה שלמה (מומלץ):</span>
-                        <input type="file" id="userFolderUpload" webkitdirectory directory multiple accept="image/*" onchange="renderSelectedUploadQueue(['userMultiFiles','userFolderUpload'], 'userUploadQueue')" class="w-full text-xs rounded-xl p-2 cursor-pointer focus:ring-2 ring-amber-500 bg-white/5 border border-amber-500/20 text-slate-400">
+                        <input type="file" id="userFolderUpload" webkitdirectory directory multiple accept="image/*,video/mp4,video/webm,.mp4,.webm" onchange="renderSelectedUploadQueue(['userMultiFiles','userFolderUpload'], 'userUploadQueue')" class="w-full text-xs rounded-xl p-2 cursor-pointer focus:ring-2 ring-amber-500 bg-white/5 border border-amber-500/20 text-slate-400">
                     </label>
                 </div>
                 <div id="userUploadQueue" class="hidden max-h-52 overflow-y-auto space-y-1.5 rounded-xl border border-white/10 bg-black/10 p-2" aria-live="polite"></div>
                 <div id="userUploadProgress" class="hidden text-center bg-white/5 rounded-xl p-3 border border-white/10 mt-2">
                     <div class="w-5 h-5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                    <p class="text-[10px] font-bold text-amber-400" id="userUploadProgressText">מעלה תמונות לענן... נא להמתין</p>
+                    <p class="text-[10px] font-bold text-amber-400" id="userUploadProgressText">מעלה קבצים לענן... נא להמתין</p>
                 </div>
                 <div class="pt-4 flex justify-end gap-2 border-t border-white/10 mt-4">
                     <button type="button" onclick="closeModal('userUploadModal')" class="px-5 py-2 btn-secondary-dark rounded-xl text-xs font-semibold">ביטול</button>
@@ -2197,7 +2203,7 @@
 
 
     <!-- LIGHTBOX Modal -->
-    <div id="lightboxModal" class="fixed inset-0 bg-black/95 backdrop-blur-xl z-50 flex flex-col justify-between p-4 hidden animate-fade-in" role="dialog" aria-modal="true" aria-label="תצוגת תמונה מלאה">
+    <div id="lightboxModal" class="fixed inset-0 bg-black/95 backdrop-blur-xl z-50 flex flex-col justify-between p-4 hidden animate-fade-in" role="dialog" aria-modal="true" aria-label="תצוגת מדיה מלאה">
         <div class="flex justify-between items-center text-white p-3 bg-slate-950/80 backdrop-blur-md rounded-2xl border border-amber-500/30 shadow-md">
             <div>
                 <h4 id="lightboxTitle" class="font-bold text-lg text-white">שם התמונה</h4>
@@ -2207,7 +2213,7 @@
                 <button type="button" id="slideshowToggle" onclick="toggleGallerySlideshow()" title="הפעלת מצגת אוטומטית" aria-label="הפעלת מצגת אוטומטית" class="p-2 btn-secondary-dark rounded-full transition-all">
                     <i data-lucide="play" class="w-6 h-6"></i>
                 </button>
-                <a id="lightboxDownload" href="#" download target="_blank" rel="noopener" title="הורדת תמונה" aria-label="הורדת התמונה" class="p-2 btn-secondary-dark rounded-full transition-all">
+                <a id="lightboxDownload" href="#" download target="_blank" rel="noopener" title="הורדת קובץ" aria-label="הורדת קובץ המדיה" class="p-2 btn-secondary-dark rounded-full transition-all">
                     <i data-lucide="download" class="w-6 h-6"></i>
                 </a>
                 <button type="button" onclick="closeLightbox()" class="p-2 btn-secondary-dark rounded-full transition-all" aria-label="סגירת התצוגה המלאה">
@@ -2221,6 +2227,7 @@
             </button>
             <div class="w-full h-full flex items-center justify-center p-4 bg-slate-950/20 rounded-2xl border border-white/5 shadow-inner">
                 <img id="lightboxImage" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" decoding="async" alt="תצוגת תמונה" class="max-w-full max-h-full object-contain rounded-2xl shadow-xl modal-animate-popup animate-fade-in" onerror="handleImageError(this)">
+                <video id="lightboxVideo" controls playsinline preload="metadata" class="hidden max-w-full max-h-full rounded-2xl shadow-xl modal-animate-popup animate-fade-in bg-black"></video>
             </div>
             <button type="button" onclick="navigateLightbox(1)" class="p-3 bg-black/50 hover:bg-amber-500/20 text-white rounded-full transition-all absolute left-4 z-10 border border-amber-500/30 shadow-sm" aria-label="התמונה הבאה">
                 <i data-lucide="chevron-left" class="w-8 h-8"></i>
@@ -2911,7 +2918,7 @@
             }
 
             const folders = [{ id: root.id, name: root.name || 'Google Drive', path: root.name || 'Google Drive' }];
-            const images = [];
+            const mediaFiles = [];
             for (let index = 0; index < folders.length; index++) {
                 const currentFolder = folders[index];
                 setDriveSyncProgress(0, 0, `סורק את התיקייה: ${currentFolder.path}`);
@@ -2924,18 +2931,29 @@
                             name: item.name || 'תיקייה ללא שם',
                             path: `${currentFolder.path} / ${item.name || 'תיקייה ללא שם'}`
                         });
-                    } else if (String(item.mimeType || '').startsWith('image/')) {
-                        if (images.length >= 500) throw new Error('נמצאו יותר מ־500 תמונות. פצל את התיקייה וסנכרן כל חלק בנפרד.');
-                        images.push({ ...item, parentFolder: currentFolder });
+                    } else if (
+                        String(item.mimeType || '').startsWith('image/')
+                        || ['video/mp4', 'video/webm'].includes(String(item.mimeType || '').toLowerCase())
+                    ) {
+                        if (mediaFiles.length >= 500) throw new Error('נמצאו יותר מ־500 קובצי מדיה. פצל את התיקייה וסנכרן כל חלק בנפרד.');
+                        mediaFiles.push({ ...item, parentFolder: currentFolder });
                     }
                 }
             }
-            return { root, folders, images };
+            return { root, folders, mediaFiles };
         }
 
-        async function downloadDriveImage(fileData) {
+        async function downloadDriveMedia(fileData) {
             const response = await driveFetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileData.id)}?alt=media&supportsAllDrives=true`);
             const blob = await response.blob();
+            const isVideo = ['video/mp4', 'video/webm'].includes(String(fileData.mimeType || blob.type || '').toLowerCase());
+            if (isVideo) {
+                if (blob.size > 100 * 1024 * 1024) throw new Error('הסרטון גדול מ־100MB ולכן דולג.');
+                return new File([blob], fileData.name || `drive-${fileData.id}.mp4`, {
+                    type: blob.type || fileData.mimeType || 'video/mp4',
+                    lastModified: Date.parse(fileData.modifiedTime || '') || Date.now()
+                });
+            }
             if (blob.size > 50 * 1024 * 1024) throw new Error('התמונה גדולה מ־50MB ולכן דולגה.');
             const file = new File([blob], fileData.name || `drive-${fileData.id}.jpg`, {
                 type: blob.type || fileData.mimeType || 'image/jpeg',
@@ -2965,7 +2983,7 @@
             if (!confirmed) {
                 window.showConfirm(
                     'התחלת סנכרון Drive',
-                    `המערכת תייבא תמונות מהתיקייה שבחרת${includeSubfolders ? ' וגם מתיקיות המשנה' : ''}. להמשיך?`,
+                    `המערכת תייבא תמונות וסרטונים מהתיקייה שבחרת${includeSubfolders ? ' וגם מתיקיות המשנה' : ''}. להמשיך?`,
                     () => window.startGoogleDriveSync(true)
                 );
                 return;
@@ -2993,19 +3011,20 @@
                 let addedOrUpdated = 0;
                 let unchanged = 0;
                 let failed = 0;
-                const total = driveContent.images.length;
+                const total = driveContent.mediaFiles.length;
 
                 for (let index = 0; index < total; index++) {
-                    const driveImage = driveContent.images[index];
-                    const imageId = makeDriveRecordId('driveimage', driveImage.id);
-                    const folderId = makeDriveRecordId('drivefolder', driveImage.parentFolder.id);
-                    const existing = (window.state.images || []).find(image => image.driveFileId === driveImage.id || image.id === imageId);
-                    setDriveSyncProgress(index, total, `מסנכרן ${index + 1} מתוך ${total}: ${driveImage.name || 'תמונה'}`);
+                    const driveMedia = driveContent.mediaFiles[index];
+                    const imageId = makeDriveRecordId('driveimage', driveMedia.id);
+                    const folderId = makeDriveRecordId('drivefolder', driveMedia.parentFolder.id);
+                    const existing = (window.state.images || []).find(image => image.driveFileId === driveMedia.id || image.id === imageId);
+                    const mediaType = String(driveMedia.mimeType || '').startsWith('video/') ? 'video' : 'image';
+                    setDriveSyncProgress(index, total, `מסנכרן ${index + 1} מתוך ${total}: ${driveMedia.name || 'קובץ מדיה'}`);
 
                     try {
-                        if (existing && existing.driveModifiedTime === driveImage.modifiedTime) {
+                        if (existing && existing.driveModifiedTime === driveMedia.modifiedTime) {
                             if (existing.folderId !== folderId) {
-                                await window.saveImageToCloud({ ...existing, folderId, driveFolderId: driveImage.parentFolder.id });
+                                await window.saveImageToCloud({ ...existing, folderId, driveFolderId: driveMedia.parentFolder.id });
                                 addedOrUpdated++;
                             } else {
                                 unchanged++;
@@ -3013,31 +3032,34 @@
                             continue;
                         }
 
-                        const dataUrl = await downloadDriveImage(driveImage);
-                        const modifiedAt = Date.parse(driveImage.modifiedTime || '') || Date.now();
+                        const downloadedMedia = await downloadDriveMedia(driveMedia);
+                        const modifiedAt = Date.parse(driveMedia.modifiedTime || '') || Date.now();
                         await window.saveImageToCloud({
                             id: imageId,
                             folderId,
-                            title: String(driveImage.name || 'תמונה מ־Drive').replace(/\.[^.]+$/, ''),
-                            url: dataUrl,
+                            title: String(driveMedia.name || 'קובץ מ־Drive').replace(/\.[^.]+$/, ''),
+                            url: typeof downloadedMedia === 'string' ? downloadedMedia : '',
+                            sourceFile: downloadedMedia instanceof File ? downloadedMedia : undefined,
+                            mediaType,
+                            mimeType: driveMedia.mimeType || '',
                             date: new Date(modifiedAt).toISOString().split('T')[0],
                             createdAt: modifiedAt,
-                            driveFileId: driveImage.id,
-                            driveFolderId: driveImage.parentFolder.id,
-                            driveModifiedTime: driveImage.modifiedTime || '',
+                            driveFileId: driveMedia.id,
+                            driveFolderId: driveMedia.parentFolder.id,
+                            driveModifiedTime: driveMedia.modifiedTime || '',
                             syncedFromDrive: true
                         });
                         addedOrUpdated++;
                     } catch (error) {
                         if (error.driveAuthExpired) throw error;
                         failed++;
-                        console.warn(`Drive image sync skipped: ${driveImage.name || driveImage.id}`, error);
+                        console.warn(`Drive media sync skipped: ${driveMedia.name || driveMedia.id}`, error);
                     }
                 }
 
                 setDriveSyncProgress(total || 1, total || 1, `הסנכרון הושלם: ${addedOrUpdated} נוספו או עודכנו, ${unchanged} ללא שינוי${failed ? `, ${failed} נכשלו` : ''}.`);
                 await window.logActivity('synced_drive', 'folder', rootFolderId, driveContent.root?.name || 'Google Drive', `${addedOrUpdated} נוספו או עודכנו, ${failed} נכשלו`);
-                window.showNotification(`סנכרון Drive הושלם: ${addedOrUpdated} תמונות נוספו או עודכנו.`, true);
+                window.showNotification(`סנכרון Drive הושלם: ${addedOrUpdated} קבצים נוספו או עודכנו.`, true);
                 window.populateFolderSelects?.();
             } catch (error) {
                 console.error('Google Drive sync failed:', error);
@@ -4402,11 +4424,11 @@
                 description: 'כל הפעולות הקשורות לתוכן הגלריה במקום אחד',
                 icon: 'images',
                 actions: [
-                    { label: 'העלאת תמונות', description: 'העלאת תמונות בודדות או תיקייה שלמה', icon: 'cloud-upload', type: 'modal', target: 'userUploadModal' },
-                    { label: 'בקשות העלאה לאישור', description: 'בדיקה ואישור של תמונות שנשלחו ממשתמשים', icon: 'image-plus', type: 'task', target: 'accPending' },
-                    { label: 'סנכרון Google Drive', description: 'ייבוא תמונות ותיקיות ישירות מחשבון Drive', icon: 'folder-sync', type: 'task', target: 'accDriveSync' },
+                    { label: 'העלאת תמונות וסרטונים', description: 'העלאת קבצים בודדים או תיקייה שלמה', icon: 'cloud-upload', type: 'modal', target: 'userUploadModal' },
+                    { label: 'בקשות העלאה לאישור', description: 'בדיקה ואישור של קבצים שנשלחו ממשתמשים', icon: 'image-plus', type: 'task', target: 'accPending' },
+                    { label: 'סנכרון Google Drive', description: 'ייבוא תמונות, סרטונים ותיקיות מחשבון Drive', icon: 'folder-sync', type: 'task', target: 'accDriveSync' },
                     { label: 'יצירת תיקייה חדשה', description: 'הוספת תיקייה חדשה וסמל מתאים לגלריה', icon: 'folder-plus', type: 'task', target: 'accEmptyFolder' },
-                    { label: 'ניהול ומחיקת תמונות', description: 'מעבר לגלריה להעברה בין תיקיות או למחיקה', icon: 'image-minus', type: 'gallery' },
+                    { label: 'ניהול ומחיקת מדיה', description: 'מעבר לגלריה להעברה בין תיקיות או למחיקה', icon: 'image-minus', type: 'gallery' },
                     { label: 'בקשות מחיקה', description: 'אישור בקשות מחיקה שנשלחו ממנהלי דרגה 3', icon: 'trash-2', type: 'task', target: 'accDeletionRequests', superAdminOnly: true },
                     { label: 'סל מחזור', description: 'שחזור תמונות ותיקיות או מחיקה סופית', icon: 'archive-restore', type: 'task', target: 'accTrash', superAdminOnly: true }
                 ]
@@ -4527,7 +4549,7 @@
             },
             accPending: {
                 title: 'אישור תמונות',
-                description: 'בחירת תמונות ממתינות והעברתן לגלריה',
+                description: 'בחירת תמונות וסרטונים ממתינים והעברתם לגלריה',
                 icon: 'images'
             },
             accSystemHealth: {
@@ -4537,7 +4559,7 @@
             },
             accDriveSync: {
                 title: 'סנכרון Google Drive',
-                description: 'ייבוא תמונות ותיקיות מחשבון Drive',
+                description: 'ייבוא תמונות, סרטונים ותיקיות מחשבון Drive',
                 icon: 'folder-sync'
             },
             accEmptyFolder: {
@@ -4903,25 +4925,47 @@
             return payload;
         }
 
-        window.uploadImageToR2 = async function(base64Data, imgId, title = 'תמונה') {
-            const imageBlob = dataUrlToBlob(base64Data);
-            const cleanTitle = String(title || 'תמונה').replace(/[\\/:*?"<>|]+/g, '-').trim().slice(0, 100) || 'תמונה';
+        window.uploadMediaToR2 = async function(mediaBlob, imgId, title = 'קובץ מדיה') {
+            if (!(mediaBlob instanceof Blob)) throw new Error('קובץ המדיה אינו תקין.');
+            const isVideo = String(mediaBlob.type || '').startsWith('video/');
+            if (isVideo && mediaBlob.size > 100 * 1024 * 1024) throw new Error('גודל הסרטון חייב להיות עד 100MB.');
+            const cleanTitle = String(title || 'קובץ מדיה').replace(/[\\/:*?"<>|]+/g, '-').trim().slice(0, 100) || 'קובץ מדיה';
             const form = new FormData();
-            form.append('file', imageBlob, `${safeRecordId(imgId) || 'image'}.jpg`);
+            const extension = mediaBlob.type === 'video/webm' ? 'webm' : (isVideo ? 'mp4' : 'jpg');
+            form.append('file', mediaBlob, `${safeRecordId(imgId) || 'media'}.${extension}`);
             form.append('imageId', safeRecordId(imgId));
             form.append('title', cleanTitle);
             const result = await r2Request('/upload', {
                 method: 'POST',
                 body: form
             });
-            if (!result?.url || !result?.key) throw new Error('שרת האחסון לא החזיר כתובת לתמונה.');
+            if (!result?.url || !result?.key) throw new Error('שרת האחסון לא החזיר כתובת לקובץ.');
             return {
                 url: result.url,
                 r2Key: result.key,
                 r2OwnerUid: window.state.currentUser?.uid || '',
-                r2Stored: true
+                r2Stored: true,
+                mediaType: result.mediaType || (isVideo ? 'video' : 'image'),
+                mimeType: result.mimeType || mediaBlob.type || ''
             };
         };
+
+        window.uploadImageToR2 = async function(base64Data, imgId, title = 'תמונה') {
+            return window.uploadMediaToR2(dataUrlToBlob(base64Data), imgId, title);
+        };
+
+        async function prepareMediaRecordForCloud(record, mediaId) {
+            const { sourceFile, ...cleanRecord } = record;
+            if (sourceFile instanceof Blob) {
+                const storedMedia = await window.uploadMediaToR2(sourceFile, mediaId, cleanRecord.title);
+                return { ...cleanRecord, ...storedMedia };
+            }
+            if (cleanRecord.url && cleanRecord.url.startsWith('data:')) {
+                const storedImage = await window.uploadImageToR2(cleanRecord.url, mediaId, cleanRecord.title);
+                return { ...cleanRecord, ...storedImage };
+            }
+            return cleanRecord;
+        }
 
         window.deleteImageFromR2 = async function(imageRecord) {
             const key = String(imageRecord?.r2Key || '').trim();
@@ -4974,16 +5018,12 @@
 
             const imageId = safeRecordId(imgData?.id);
             if (!imageId) throw new Error('מזהה התמונה אינו תקין.');
-            const imageRecord = { ...imgData, id: imageId };
-
-            if (imageRecord.url && imageRecord.url.startsWith('data:')) {
-                try {
-                    const storedImage = await window.uploadImageToR2(imageRecord.url, imageId, imageRecord.title);
-                    Object.assign(imageRecord, storedImage);
-                } catch(e) {
-                    console.error('R2 upload failed:', e);
-                    throw new Error(e.message || 'העלאת התמונה לאחסון נכשלה.');
-                }
+            let imageRecord;
+            try {
+                imageRecord = await prepareMediaRecordForCloud({ ...imgData, id: imageId }, imageId);
+            } catch(e) {
+                console.error('R2 upload failed:', e);
+                throw new Error(e.message || 'העלאת הקובץ לאחסון נכשלה.');
             }
 
             const { doc, setDoc } = window.firestoreModules;
@@ -5013,7 +5053,7 @@
             }
             const imageId = safeRecordId(imgData?.id);
             if (!imageId) throw new Error('מזהה התמונה אינו תקין.');
-            const imageRecord = {
+            let imageRecord = {
                 ...imgData,
                 id: imageId,
                 status: 'pending',
@@ -5022,14 +5062,11 @@
                 uploadedByEmail: window.state.currentUser?.email || ''
             };
 
-            if (imageRecord.url && imageRecord.url.startsWith('data:')) {
-                try {
-                    const storedImage = await window.uploadImageToR2(imageRecord.url, imageId, imageRecord.title);
-                    Object.assign(imageRecord, storedImage);
-                } catch(e) {
-                    console.error('R2 upload failed:', e);
-                    throw new Error(e.message || 'העלאת התמונה לאחסון נכשלה.');
-                }
+            try {
+                imageRecord = await prepareMediaRecordForCloud(imageRecord, imageId);
+            } catch(e) {
+                console.error('R2 upload failed:', e);
+                throw new Error(e.message || 'העלאת הקובץ לאחסון נכשלה.');
             }
 
             const { doc, setDoc } = window.firestoreModules;
@@ -5665,7 +5702,7 @@
             const filtered = getFilteredSortedImages();
 
             const imageCounter = document.getElementById('imageCounter');
-            if (imageCounter) { imageCounter.classList.remove('hidden'); imageCounter.textContent = `${filtered.length} תמונות`; }
+            if (imageCounter) { imageCounter.classList.remove('hidden'); imageCounter.textContent = `${filtered.length} פריטים`; }
 
             if (filtered.length === 0) { grid.classList.add('hidden'); emptyState.classList.remove('hidden'); emptyState.classList.add('flex'); return; }
             grid.classList.remove('hidden'); emptyState.classList.add('hidden'); emptyState.classList.remove('flex');
@@ -5675,12 +5712,18 @@
                 if (!imageId) return;
                 const folder = window.state.folders.find(f => f.id === img.folderId);
                 const imageUrl = safeImageUrl(img.url);
-                const title = escapeHtml(img.title || 'תמונה ללא שם');
+                const isVideo = isVideoRecord(img);
+                const title = escapeHtml(img.title || (isVideo ? 'סרטון ללא שם' : 'תמונה ללא שם'));
+                const mediaHtml = isVideo
+                    ? `<video src="${escapeHtml(imageUrl)}" muted playsinline preload="metadata" class="w-full h-full object-cover gallery-card-img bg-black"></video>
+                       <span class="absolute inset-0 flex items-center justify-center pointer-events-none"><span class="w-14 h-14 rounded-full bg-black/65 border border-white/30 text-white flex items-center justify-center shadow-xl"><i data-lucide="play" class="w-6 h-6 fill-current"></i></span></span>
+                       <span class="absolute top-3 right-3 rounded-full bg-black/70 border border-white/20 px-2.5 py-1 text-[9px] font-bold text-white flex items-center gap-1"><i data-lucide="video" class="w-3 h-3"></i> סרטון</span>`
+                    : `<img src="${escapeHtml(imageUrl)}" loading="lazy" decoding="async" alt="${title}" class="w-full h-full object-cover gallery-card-img" onerror="handleImageError(this)">`;
                 const actionHtml = !isEditBlocked ? `<div class="gallery-actions mt-4 pt-3 border-t border-slate-200 flex items-center justify-between opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity"><button type="button" onclick="changeImageFolder('${imageId}')" class="text-xs font-semibold px-2.5 py-1.5 rounded-lg flex items-center gap-1"><i data-lucide="folder-sync" class="w-3.5 h-3.5"></i>העבר</button><button type="button" onclick="handleDeleteImage('${imageId}')" class="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg" aria-label="מחיקת ${title}"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>` : '';
                 grid.insertAdjacentHTML('beforeend', `
                     <article class="overflow-hidden flex flex-col group relative fade-up gallery-card" style="--card-index:${Math.min(index, 12)}">
                         <button type="button" class="gallery-media" onclick="openLightbox('${imageId}')" aria-label="פתיחת ${title} בתצוגה גדולה">
-                            <img src="${escapeHtml(imageUrl)}" loading="lazy" decoding="async" alt="${title}" class="w-full h-full object-cover gallery-card-img" onerror="handleImageError(this)">
+                            ${mediaHtml}
                             <span class="gallery-number">${String(index + 1).padStart(2, '0')}</span>
                             <span class="gallery-view"><i data-lucide="maximize-2" class="w-3.5 h-3.5"></i> תצוגה מלאה</span>
                         </button>
@@ -5704,14 +5747,25 @@
         }
 
         // --- 7. Uploads & Approvals ---
-        function isSupportedImageFile(file) {
-            return Boolean(file && (file.type.startsWith('image/') || /\.(?:png|jpe?g|webp|gif)$/i.test(file.name)));
+        function isSupportedVideoFile(file) {
+            return Boolean(file && (
+                ['video/mp4', 'video/webm'].includes(String(file.type || '').toLowerCase())
+                || /\.(?:mp4|webm)$/i.test(file.name)
+            ));
+        }
+
+        function isSupportedMediaFile(file) {
+            return Boolean(file && (
+                file.type.startsWith('image/')
+                || /\.(?:png|jpe?g|webp|gif)$/i.test(file.name)
+                || isSupportedVideoFile(file)
+            ));
         }
 
         window.renderSelectedUploadQueue = function(inputIds, containerId) {
             const container = document.getElementById(containerId);
             if (!container) return;
-            const files = (inputIds || []).flatMap(id => Array.from(document.getElementById(id)?.files || [])).filter(isSupportedImageFile);
+            const files = (inputIds || []).flatMap(id => Array.from(document.getElementById(id)?.files || [])).filter(isSupportedMediaFile);
             container.replaceChildren();
             container.classList.toggle('hidden', files.length === 0);
             files.forEach((file, index) => {
@@ -5720,7 +5774,7 @@
                 row.className = 'flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-2.5 py-2';
                 const icon = document.createElement('span');
                 icon.className = 'upload-queue-icon text-amber-400';
-                icon.innerHTML = '<i data-lucide="image" class="w-3.5 h-3.5"></i>';
+                icon.innerHTML = `<i data-lucide="${isSupportedVideoFile(file) ? 'video' : 'image'}" class="w-3.5 h-3.5"></i>`;
                 const body = document.createElement('div');
                 body.className = 'min-w-0 flex-1';
                 const name = document.createElement('p');
@@ -5728,7 +5782,9 @@
                 name.textContent = file.webkitRelativePath || file.name;
                 const size = document.createElement('p');
                 size.className = 'text-[8px] text-slate-500';
-                size.textContent = `${Math.max(1, Math.round(file.size / 1024))}KB`;
+                size.textContent = file.size >= 1024 * 1024
+                    ? `${(file.size / (1024 * 1024)).toFixed(1)}MB`
+                    : `${Math.max(1, Math.round(file.size / 1024))}KB`;
                 body.append(name, size);
                 const status = document.createElement('span');
                 status.className = 'upload-queue-status text-[9px] text-slate-400';
@@ -5789,17 +5845,34 @@
                         }
                     }
                 }
-                const base64 = await compressAndConvertImage(file, 800, 800, 0.6);
-                if (base64) {
+                const isVideo = isSupportedVideoFile(file);
+                if (isVideo && file.size > 100 * 1024 * 1024) {
+                    updateUploadQueueItem(queueId, i, 'error', 'מעל 100MB');
+                } else if (isVideo) {
+                    const videoMimeType = file.type || (/\.webm$/i.test(file.name) ? 'video/webm' : 'video/mp4');
+                    const videoFile = file.type ? file : new File([file], file.name, { type: videoMimeType, lastModified: file.lastModified });
                     newImages.push({
                         uploadQueueIndex: i,
                         id: `img_${crypto.randomUUID()}`,
-                        folderId: destFolderId || '4', title: file.name.replace(/\.[^.]+$/, ''), url: base64,
+                        folderId: destFolderId || '4', title: file.name.replace(/\.[^.]+$/, ''), url: '',
+                        sourceFile: videoFile, mediaType: 'video', mimeType: videoMimeType,
                         date: new Date().toISOString().split('T')[0], createdAt: Date.now(), originalFolderName: folderName
                     });
                     updateUploadQueueItem(queueId, i, 'ready', 'מוכן');
                 } else {
-                    updateUploadQueueItem(queueId, i, 'error', 'עיבוד נכשל');
+                    const base64 = await compressAndConvertImage(file, 800, 800, 0.6);
+                    if (base64) {
+                        newImages.push({
+                            uploadQueueIndex: i,
+                            id: `img_${crypto.randomUUID()}`,
+                            folderId: destFolderId || '4', title: file.name.replace(/\.[^.]+$/, ''), url: base64,
+                            mediaType: 'image', mimeType: 'image/jpeg',
+                            date: new Date().toISOString().split('T')[0], createdAt: Date.now(), originalFolderName: folderName
+                        });
+                        updateUploadQueueItem(queueId, i, 'ready', 'מוכן');
+                    } else {
+                        updateUploadQueueItem(queueId, i, 'error', 'עיבוד נכשל');
+                    }
                 }
                 processedCount++;
                 if (progressEl) progressEl.innerText = `מעבד: ${Math.round((processedCount / files.length) * 100)}%`;
@@ -5814,9 +5887,9 @@
             let allFiles = [];
             if (filesInput && filesInput.files.length > 0) allFiles = [...allFiles, ...Array.from(filesInput.files)];
             if (folderInput && folderInput.files.length > 0) allFiles = [...allFiles, ...Array.from(folderInput.files)];
-            allFiles = allFiles.filter(isSupportedImageFile);
+            allFiles = allFiles.filter(isSupportedMediaFile);
 
-            if (allFiles.length === 0) { window.showNotification('נא לבחור תמונות/תיקיות', false); return; }
+            if (allFiles.length === 0) { window.showNotification('נא לבחור תמונות, סרטונים או תיקייה', false); return; }
             if (!confirmed) {
                 showConfirm(
                     'העלאת קבצים לגלריה',
@@ -5833,7 +5906,7 @@
             try {
                 if(pText) pText.innerText = 'מכין את הקבצים להעלאה...';
                 const newImages = await processFilesWithFolders(allFiles, targetFolderId, true);
-                if (newImages.length === 0) throw new Error('לא נמצאו קובצי תמונה תקינים.');
+                if (newImages.length === 0) throw new Error('לא נמצאו קובצי מדיה תקינים.');
                 let uploadedCount = 0;
                 let failedCount = 0;
                 for (let index = 0; index < newImages.length; index++) {
@@ -5853,8 +5926,8 @@
                 if (!uploadedCount) throw new Error('העלאת הקבצים נכשלה. ניתן לנסות שוב.');
                 if(filesInput) filesInput.value = '';
                 if(folderInput) folderInput.value = '';
-                await window.logActivity('uploaded_images', 'image', '', `${uploadedCount} תמונות`, failedCount ? `${failedCount} נכשלו` : 'העלאה דרך לוח הניהול');
-                window.showNotification(`הועלו ${uploadedCount} תמונות לגלריה${failedCount ? `; ${failedCount} נכשלו וניתן לנסות שוב` : ''}.`);
+                await window.logActivity('uploaded_images', 'media', '', `${uploadedCount} קבצים`, failedCount ? `${failedCount} נכשלו` : 'העלאה דרך לוח הניהול');
+                window.showNotification(`הועלו ${uploadedCount} קבצים לגלריה${failedCount ? `; ${failedCount} נכשלו וניתן לנסות שוב` : ''}.`);
             } catch (error) {
                 console.error('Admin upload failed:', error);
                 window.showNotification(error.message || 'העלאת התמונות נכשלה. נסה שוב.', false);
@@ -5881,15 +5954,15 @@
             let allFiles = [];
             if (filesInput && filesInput.files.length > 0) allFiles = [...allFiles, ...Array.from(filesInput.files)];
             if (folderInput && folderInput.files.length > 0) allFiles = [...allFiles, ...Array.from(folderInput.files)];
-            allFiles = allFiles.filter(isSupportedImageFile);
+            allFiles = allFiles.filter(isSupportedMediaFile);
 
-            if (allFiles.length === 0) { window.showNotification('נא לבחור תמונות', false); return; }
+            if (allFiles.length === 0) { window.showNotification('נא לבחור תמונות או סרטונים', false); return; }
             if (!confirmed) {
                 showConfirm(
                     canUploadDirectly ? 'העלאת תמונות לגלריה' : 'שליחת תמונות לאישור',
                     canUploadDirectly
-                        ? `להעלות ${allFiles.length} תמונות ישירות לגלריה?`
-                        : `לשלוח ${allFiles.length} תמונות לאישור מנהל?`,
+                        ? `להעלות ${allFiles.length} קבצים ישירות לגלריה?`
+                        : `לשלוח ${allFiles.length} קבצים לאישור מנהל?`,
                     () => submitUserUpload(true)
                 );
                 return;
@@ -5904,7 +5977,7 @@
             try {
                 if(pText) pText.innerText = 'מכין את הקבצים להעלאה...';
                 const newImages = await processFilesWithFolders(allFiles, targetFolderId, false);
-                if (newImages.length === 0) throw new Error('לא נמצאו קובצי תמונה תקינים.');
+                if (newImages.length === 0) throw new Error('לא נמצאו קובצי מדיה תקינים.');
                 let uploadedCount = 0;
                 let failedCount = 0;
                 for (let index = 0; index < newImages.length; index++) {
@@ -5923,10 +5996,10 @@
                     }
                 }
                 if (!uploadedCount) throw new Error('העלאת הקבצים נכשלה. ניתן לנסות שוב.');
-                await window.logActivity('uploaded_images', 'image', '', `${uploadedCount} תמונות`, `${canUploadDirectly ? 'העלאה ישירה' : 'נשלחו לאישור'}${failedCount ? `; ${failedCount} נכשלו` : ''}`);
+                await window.logActivity('uploaded_images', 'media', '', `${uploadedCount} קבצים`, `${canUploadDirectly ? 'העלאה ישירה' : 'נשלחו לאישור'}${failedCount ? `; ${failedCount} נכשלו` : ''}`);
                 window.showNotification(canUploadDirectly
-                    ? `${uploadedCount} תמונות הועלו בהצלחה לגלריה${failedCount ? `; ${failedCount} נכשלו` : ''}!`
-                    : `${uploadedCount} תמונות נשלחו לאישור מנהל${failedCount ? `; ${failedCount} נכשלו` : ''}.`
+                    ? `${uploadedCount} קבצים הועלו בהצלחה לגלריה${failedCount ? `; ${failedCount} נכשלו` : ''}!`
+                    : `${uploadedCount} קבצים נשלחו לאישור מנהל${failedCount ? `; ${failedCount} נכשלו` : ''}.`
                 );
                 if(filesInput) filesInput.value = '';
                 if(folderInput) folderInput.value = '';
@@ -6422,18 +6495,22 @@
         window.renderPendingImages = function() {
             const list = document.getElementById('pendingList'); if (!list) return; list.innerHTML = '';
             const pending = window.state.pendingImages || [];
-            if (pending.length === 0) { list.innerHTML = '<p class="text-xs text-center text-slate-500 py-4">אין תמונות ממתינות לאישור.</p>'; return; }
+            if (pending.length === 0) { list.innerHTML = '<p class="text-xs text-center text-slate-500 py-4">אין קבצי מדיה ממתינים לאישור.</p>'; return; }
             pending.forEach(img => {
                 const imageId = safeRecordId(img.id);
                 const imageUrl = safeImageUrl(img.url);
+                const isVideo = isVideoRecord(img);
+                const preview = isVideo
+                    ? '<span class="w-10 h-10 shrink-0 rounded-lg border border-slate-200 bg-slate-900 text-white flex items-center justify-center"><i data-lucide="video" class="w-4 h-4"></i></span>'
+                    : `<img src="${escapeHtml(imageUrl)}" loading="lazy" decoding="async" alt="" class="w-10 h-10 object-cover rounded-lg border border-slate-200" onerror="handleImageError(this)">`;
                 if (!imageId) return;
                 list.insertAdjacentHTML('beforeend', `
                     <label class="flex items-center gap-3 p-2 hover:bg-amber-100/50 border border-amber-100 rounded-xl cursor-pointer transition-all bg-white shadow-sm">
                         <input type="checkbox" name="pendingImgCheck" value="${imageId}" class="rounded text-amber-500 focus:ring-amber-500 bg-white border-slate-200" checked>
-                        <img src="${escapeHtml(imageUrl)}" loading="lazy" decoding="async" alt="" class="w-10 h-10 object-cover rounded-lg border border-slate-200" onerror="handleImageError(this)">
+                        ${preview}
                         <div class="flex-1 min-w-0">
                             <p class="text-[11px] font-bold text-slate-800 truncate">${escapeHtml(img.title)}</p>
-                            <p class="text-[9px] text-slate-500 truncate">תיקייה מקורית: ${escapeHtml(img.originalFolderName)}</p>
+                            <p class="text-[9px] text-slate-500 truncate">${isVideo ? 'סרטון' : 'תמונה'} · תיקייה מקורית: ${escapeHtml(img.originalFolderName)}</p>
                         </div>
                     </label>`);
             });
@@ -6608,6 +6685,8 @@
 
         function navigateLightbox(step) {
             if (currentFilteredImages.length === 0) return;
+            const activeVideo = document.getElementById('lightboxVideo');
+            if (activeVideo) activeVideo.pause();
             window.state.currentLightboxIndex = (window.state.currentLightboxIndex + step + currentFilteredImages.length) % currentFilteredImages.length;
             updateLightbox();
         }
@@ -6617,6 +6696,12 @@
                 window.clearInterval(gallerySlideshowTimer);
                 gallerySlideshowTimer = null;
                 updateSlideshowButton();
+            }
+            const activeVideo = document.getElementById('lightboxVideo');
+            if (activeVideo) {
+                activeVideo.pause();
+                activeVideo.removeAttribute('src');
+                activeVideo.load();
             }
             closeModal('lightboxModal');
         };
@@ -6636,17 +6721,22 @@
                 window.clearInterval(gallerySlideshowTimer);
                 gallerySlideshowTimer = null;
             } else {
-                if (currentFilteredImages.length < 2) {
+                const slideshowImages = currentFilteredImages.filter(item => !isVideoRecord(item));
+                if (slideshowImages.length < 2) {
                     window.showNotification('נדרשות לפחות שתי תמונות להפעלת מצגת.', false);
                     return;
                 }
+                const currentId = safeRecordId(currentFilteredImages[window.state.currentLightboxIndex]?.id);
+                currentFilteredImages = slideshowImages;
+                window.state.currentLightboxIndex = Math.max(0, slideshowImages.findIndex(item => safeRecordId(item.id) === currentId));
+                updateLightbox();
                 gallerySlideshowTimer = window.setInterval(() => navigateLightbox(1), 4000);
             }
             updateSlideshowButton();
         };
 
         window.startGallerySlideshow = function() {
-            const images = getFilteredSortedImages();
+            const images = getFilteredSortedImages().filter(item => !isVideoRecord(item));
             if (!images.length) {
                 window.showNotification('אין תמונות להצגת מצגת.', false);
                 return;
@@ -6660,9 +6750,26 @@
             const f = window.state.folders.find(fold => fold.id === img.folderId);
 
             const lbImage = document.getElementById('lightboxImage');
+            const lbVideo = document.getElementById('lightboxVideo');
             const imageUrl = safeImageUrl(img.url);
+            const isVideo = isVideoRecord(img);
             document.getElementById('lightboxImageFallback')?.remove();
-            if(lbImage) {
+            if (isVideo) {
+                if (lbImage) lbImage.hidden = true;
+                if (lbVideo) {
+                    lbVideo.classList.remove('hidden');
+                    if (lbVideo.src !== imageUrl) {
+                        lbVideo.src = imageUrl;
+                        lbVideo.load();
+                    }
+                }
+            } else if(lbImage) {
+                if (lbVideo) {
+                    lbVideo.pause();
+                    lbVideo.removeAttribute('src');
+                    lbVideo.load();
+                    lbVideo.classList.add('hidden');
+                }
                 lbImage.hidden = false;
                 lbImage.onerror = () => handleImageError(lbImage);
                 lbImage.src = imageUrl;
@@ -6672,7 +6779,7 @@
             if(lbTitle) lbTitle.innerText = img.title;
 
             const lbDetails = document.getElementById('lightboxDetails');
-            if(lbDetails) lbDetails.innerText = `${formatDate(img.date)} • תיקייה: ${f ? f.name : 'כללי'}`;
+            if(lbDetails) lbDetails.innerText = `${isVideo ? 'סרטון' : 'תמונה'} • ${formatDate(img.date)} • תיקייה: ${f ? f.name : 'כללי'}`;
 
             const lbDownload = document.getElementById('lightboxDownload');
             if(lbDownload) {
@@ -6780,6 +6887,7 @@
             }
 
             const candidates = (window.state.images || [])
+                .filter(image => !isVideoRecord(image))
                 .map(image => {
                     const id = safeRecordId(image.id);
                     const url = safeImageUrl(image.url);
@@ -7020,10 +7128,11 @@
                 const queryDescriptor = queryDet.descriptor;
 
                 const matches = [];
-                const total = window.state.images.length;
+                const searchableImages = window.state.images.filter(item => !isVideoRecord(item));
+                const total = searchableImages.length;
                 let failedImages = 0;
                 for (let i = 0; i < total; i++) {
-                    const imgData = window.state.images[i];
+                    const imgData = searchableImages[i];
                     try {
                         let descriptors = window.descriptorCache[imgData.id];
                         if (!descriptors) {
