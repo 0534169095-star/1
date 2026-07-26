@@ -423,9 +423,19 @@
                 return;
             }
 
-            el('authStatus').textContent = 'בודק הרשאת ניהול…';
+            el('authStatus').textContent = 'בודק הרשאת מנהל־על…';
             try {
-                // שאילתת כל הפרופילים מותרת לפי כללי Firestore רק למנהל.
+                const initialSuperAdmin = user.uid === 'u16HUOqIP7hhUC2Wxbejpb9jWao2' ||
+                    (user.emailVerified && user.email === '0534169095@xn--4dbjbascrao3i.com');
+                const ownProfile = initialSuperAdmin ? null : await getDoc(profileRef(user.uid));
+                const isSuperAdmin = initialSuperAdmin || (
+                    ownProfile?.exists() &&
+                    ownProfile.data()?.status === 'approved' &&
+                    ownProfile.data()?.role === 'super_admin'
+                );
+                if (!isSuperAdmin) throw new Error('SUPER_ADMIN_REQUIRED');
+
+                // רשימת המשתמשים ושליחה אליהן מוגנות למנהל־על בלבד.
                 await loadUsers();
                 el('authCard').classList.add('hidden');
                 el('adminApp').classList.remove('hidden');
@@ -436,8 +446,8 @@
                 el('authCard').classList.remove('hidden');
                 el('adminApp').classList.add('hidden');
                 el('signOutBtn').classList.remove('hidden');
-                el('authStatus').textContent = 'החשבון מחובר, אך אין לו הרשאת מנהל לקריאת רשימת המשתמשים.';
-                notify('אין לחשבון הזה הרשאת מנהל.', false);
+                el('authStatus').textContent = 'החשבון מחובר, אך אין לו הרשאת מנהל־על לשליחת הודעות.';
+                notify('אין לחשבון הזה הרשאת מנהל־על.', false);
             }
             if (window.lucide?.createIcons) window.lucide.createIcons();
         });
