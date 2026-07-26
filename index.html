@@ -994,6 +994,43 @@
         }
         #sidebarAdminPanel .admin-control-card > button:hover { background: rgba(255,255,255,.035) !important; }
         #sidebarAdminPanel .accordion-content.active { padding: 4px 16px 16px !important; }
+        #sidebarAdminPanel .admin-control-card > button {
+            min-height: 54px;
+            padding: 13px 15px !important;
+        }
+        #sidebarAdminPanel .admin-control-card > button [id$="Arrow"] {
+            transform: rotate(90deg);
+        }
+
+        .admin-task-window,
+        .admin-messages-window {
+            background:
+                radial-gradient(circle at 92% 4%, rgba(255, 182, 39, .1), transparent 32%),
+                linear-gradient(155deg, #151a24, #090c12 72%);
+            border: 1px solid rgba(255,255,255,.1);
+            box-shadow: 0 34px 100px rgba(0,0,0,.62);
+        }
+        .admin-task-body .accordion-content {
+            max-height: none !important;
+            overflow: visible !important;
+            padding: 0 !important;
+        }
+        .admin-task-body #pendingList,
+        .admin-task-body #pendingUsersList,
+        .admin-task-body #managedUsersList,
+        .admin-task-body #deletionRequestsList {
+            max-height: none !important;
+        }
+        .admin-message-user-card {
+            border: 1px solid rgba(255,255,255,.08);
+            background: rgba(255,255,255,.025);
+            transition: border-color .2s ease, background-color .2s ease;
+        }
+        .admin-message-user-card:hover,
+        .admin-message-user-card.is-selected {
+            border-color: rgba(255,182,39,.5);
+            background: rgba(255,182,39,.075);
+        }
         #sidebarAdminPanel input,
         #sidebarAdminPanel select { min-height: 42px; font-size: 12px !important; border-radius: 11px !important; }
         #sidebarAdminPanel .admin-logout {
@@ -1366,7 +1403,7 @@
 
                 <!-- אישור משתמשים חדשים ובחירת דרגה -->
                 <div id="superAdminUsersCard" class="hidden super-admin-only admin-control-card rounded-2xl overflow-hidden">
-                    <button type="button" onclick="toggleAccordion('accUserApprovals')" class="w-full hover:bg-white/5 px-4 py-3 text-xs font-bold text-slate-200 flex items-center justify-between transition-all">
+                    <button type="button" onclick="openAdminTaskWindow('accUserApprovals')" class="w-full hover:bg-white/5 px-4 py-3 text-xs font-bold text-slate-200 flex items-center justify-between transition-all">
                         <span class="flex items-center gap-2 text-amber-400"><i data-lucide="users-round" class="w-4 h-4"></i> ניהול משתמשים ובקשות (<span id="pendingUsersCountBadge">0</span>)</span>
                         <i id="accUserApprovalsArrow" data-lucide="chevron-down" class="w-4 h-4 text-amber-500/70"></i>
                     </button>
@@ -1381,7 +1418,7 @@
                 </div>
 
                 <div id="superAdminDeletionRequestsCard" class="hidden super-admin-only admin-control-card border border-red-200 rounded-2xl overflow-hidden bg-white/40 shadow-sm">
-                    <button type="button" onclick="toggleAccordion('accDeletionRequests')" class="w-full px-4 py-3 text-xs font-bold text-slate-800 flex items-center justify-between transition-all">
+                    <button type="button" onclick="openAdminTaskWindow('accDeletionRequests')" class="w-full px-4 py-3 text-xs font-bold text-slate-800 flex items-center justify-between transition-all">
                         <span class="flex items-center gap-2 text-red-400"><i data-lucide="trash-2" class="w-4 h-4"></i> בקשות מחיקה (<span id="deletionRequestsCountBadge">0</span>)</span>
                         <i id="accDeletionRequestsArrow" data-lucide="chevron-down" class="w-4 h-4 text-red-300"></i>
                     </button>
@@ -1393,7 +1430,7 @@
 
                 <!-- אישור ממתינות -->
                 <div class="admin-control-card rounded-2xl overflow-hidden">
-                    <button type="button" onclick="toggleAccordion('accPending')" class="w-full hover:bg-white/5 px-4 py-3 text-xs font-bold text-slate-200 flex items-center justify-between transition-all">
+                    <button type="button" onclick="openAdminTaskWindow('accPending')" class="w-full hover:bg-white/5 px-4 py-3 text-xs font-bold text-slate-200 flex items-center justify-between transition-all">
                         <span class="flex items-center gap-2 text-amber-400"><i data-lucide="bell" class="w-4 h-4"></i> בקשות העלאה לאישור (<span id="pendingCountBadge">0</span>)</span>
                         <i id="accPendingArrow" data-lucide="chevron-down" class="w-4 h-4 text-amber-500/70"></i>
                     </button>
@@ -1417,7 +1454,7 @@
 
                 <!-- העלאה חכמה / יצירת תיקייה -->
                 <div class="admin-control-card rounded-2xl overflow-hidden mt-2">
-                    <button type="button" onclick="toggleAccordion('accAddSmart')" class="w-full hover:bg-white/5 px-4 py-3 text-xs font-bold text-slate-200 flex items-center justify-between transition-all">
+                    <button type="button" onclick="openAdminTaskWindow('accAddSmart')" class="w-full hover:bg-white/5 px-4 py-3 text-xs font-bold text-slate-200 flex items-center justify-between transition-all">
                         <span class="flex items-center gap-2 text-amber-400"><i data-lucide="cloud-upload" class="w-4 h-4"></i> העלאת תמונות מרובות ויצירת תיקיות</span>
                         <i id="accAddSmartArrow" data-lucide="chevron-down" class="w-4 h-4 text-amber-500/70"></i>
                     </button>
@@ -1454,7 +1491,7 @@
 
                 <!-- סנכרון Google Drive -->
                 <div class="admin-control-card rounded-2xl overflow-hidden">
-                    <button type="button" onclick="toggleAccordion('accDriveSync')" class="w-full hover:bg-white/5 px-4 py-3 text-xs font-bold text-slate-200 flex items-center justify-between transition-all">
+                    <button type="button" onclick="openAdminTaskWindow('accDriveSync')" class="w-full hover:bg-white/5 px-4 py-3 text-xs font-bold text-slate-200 flex items-center justify-between transition-all">
                         <span class="flex items-center gap-2 text-amber-400"><i data-lucide="refresh-cw" class="w-4 h-4"></i> סנכרון מ־Google Drive</span>
                         <i id="accDriveSyncArrow" data-lucide="chevron-down" class="w-4 h-4 text-amber-500/70"></i>
                     </button>
@@ -1497,7 +1534,7 @@
 
                 <!-- יצירת תיקייה ריקה -->
                 <div class="admin-control-card rounded-2xl overflow-hidden">
-                    <button type="button" onclick="toggleAccordion('accEmptyFolder')" class="w-full hover:bg-white/5 px-4 py-3 text-xs font-bold text-slate-200 flex items-center justify-between transition-all">
+                    <button type="button" onclick="openAdminTaskWindow('accEmptyFolder')" class="w-full hover:bg-white/5 px-4 py-3 text-xs font-bold text-slate-200 flex items-center justify-between transition-all">
                         <span class="flex items-center gap-2 text-amber-400"><i data-lucide="folder-plus" class="w-4 h-4"></i> יצירת תיקייה ריקה</span>
                         <i id="accEmptyFolderArrow" data-lucide="chevron-down" class="w-4 h-4 text-slate-500/70"></i>
                     </button>
@@ -1720,19 +1757,79 @@
     </div>
 
 
-    <!-- IN-APP SUPER ADMIN MESSAGE CENTER -->
-    <div id="adminMessagesCenterModal" class="fixed inset-0 z-[100] hidden bg-black/80 backdrop-blur-md p-2 sm:p-5" role="dialog" aria-modal="true" aria-label="מרכז שליחת הודעות">
-        <div class="w-full h-full max-w-7xl mx-auto rounded-3xl overflow-hidden border border-white/10 bg-slate-950 shadow-2xl flex flex-col">
-            <div class="flex items-center justify-between gap-3 px-4 sm:px-6 py-3 border-b border-white/10 bg-slate-950">
-                <div>
-                    <h3 class="text-sm sm:text-base font-extrabold text-white">מרכז שליחת הודעות</h3>
-                    <p class="text-[10px] text-slate-400">בחירת משתמשים ושליחת הודעה אישית</p>
+    <!-- ADMIN TASK WINDOW: existing management controls are moved here while open -->
+    <div id="adminTaskModal" class="fixed inset-0 z-[105] hidden bg-black/80 backdrop-blur-md p-3 sm:p-6" role="dialog" aria-modal="true" aria-label="חלון ניהול">
+        <div class="admin-task-window w-full h-full max-w-5xl mx-auto rounded-3xl overflow-hidden flex flex-col modal-animate-popup">
+            <div class="flex items-center justify-between gap-4 px-5 sm:px-7 py-4 border-b border-white/10">
+                <div class="flex items-center gap-3 min-w-0">
+                    <span id="adminTaskIcon" class="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                        <i data-lucide="settings-2" class="w-5 h-5"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <h3 id="adminTaskTitle" class="text-base sm:text-xl font-extrabold text-white truncate">פעולת ניהול</h3>
+                        <p id="adminTaskDescription" class="text-[10px] sm:text-xs text-slate-400 mt-0.5 truncate"></p>
+                    </div>
                 </div>
-                <button type="button" onclick="closeModal('adminMessagesCenterModal')" class="w-10 h-10 btn-secondary-dark rounded-xl flex items-center justify-center" aria-label="סגירת מרכז ההודעות">
+                <button type="button" onclick="closeAdminTaskWindow()" class="w-11 h-11 btn-secondary-dark rounded-xl flex items-center justify-center shrink-0" aria-label="סגירת חלון הניהול">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
-            <iframe id="adminMessagesCenterFrame" data-src="./admin-messages.html" title="מרכז שליחת הודעות למשתמשים" class="w-full flex-1 border-0 bg-slate-950"></iframe>
+            <div id="adminTaskBody" class="admin-task-body flex-1 overflow-y-auto p-5 sm:p-7"></div>
+        </div>
+    </div>
+
+    <!-- NATIVE IN-APP SUPER ADMIN MESSAGE CENTER -->
+    <div id="adminMessagesCenterModal" class="fixed inset-0 z-[110] hidden bg-black/80 backdrop-blur-md p-3 sm:p-6" role="dialog" aria-modal="true" aria-label="מרכז שליחת הודעות">
+        <div class="admin-messages-window w-full h-full max-w-6xl mx-auto rounded-3xl overflow-hidden flex flex-col modal-animate-popup">
+            <div class="flex items-center justify-between gap-4 px-5 sm:px-7 py-4 border-b border-white/10">
+                <div>
+                    <h3 class="text-base sm:text-xl font-extrabold text-white flex items-center gap-2"><i data-lucide="messages-square" class="w-5 h-5 text-amber-400"></i> מרכז שליחת הודעות</h3>
+                    <p class="text-[10px] sm:text-xs text-slate-400 mt-1">פועל בתוך הגלריה ובאותו חשבון Google שכבר מחובר</p>
+                </div>
+                <button type="button" onclick="closeModal('adminMessagesCenterModal')" class="w-11 h-11 btn-secondary-dark rounded-xl flex items-center justify-center shrink-0" aria-label="סגירת מרכז ההודעות">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="flex-1 min-h-0 grid lg:grid-cols-[minmax(0,1fr)_390px]">
+                <section class="min-h-0 flex flex-col border-b lg:border-b-0 lg:border-l border-white/10">
+                    <div class="p-4 sm:p-5 border-b border-white/10 space-y-3">
+                        <div class="flex items-center justify-between gap-3">
+                            <p id="adminMessageUsersSummary" class="text-xs font-bold text-slate-300">טוען משתמשים…</p>
+                            <div class="flex gap-2">
+                                <button type="button" onclick="selectAllAdminMessageUsers()" class="px-3 py-2 btn-secondary-dark rounded-lg text-[10px] font-bold">בחר הכול</button>
+                                <button type="button" onclick="clearAdminMessageUsers()" class="px-3 py-2 btn-secondary-dark rounded-lg text-[10px] font-bold">נקה</button>
+                            </div>
+                        </div>
+                        <label class="relative block">
+                            <i data-lucide="search" class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500"></i>
+                            <input id="adminMessageUserSearch" type="search" autocomplete="off" oninput="renderAdminMessageUsers()" placeholder="חיפוש לפי שם, מייל או דרגה…" class="w-full rounded-xl py-3 pr-10 pl-3 text-sm">
+                        </label>
+                    </div>
+                    <div id="adminMessageUsersList" class="flex-1 overflow-y-auto p-4 sm:p-5 grid sm:grid-cols-2 gap-3 content-start"></div>
+                </section>
+                <aside class="p-5 sm:p-6 overflow-y-auto" aria-label="כתיבת הודעה למשתמשים">
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <h4 class="text-lg font-extrabold text-white">כתיבת הודעה</h4>
+                            <p id="adminMessageSelectionSummary" class="text-xs text-amber-400 mt-1">לא נבחרו נמענים</p>
+                        </div>
+                        <span class="w-11 h-11 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center"><i data-lucide="send" class="w-5 h-5"></i></span>
+                    </div>
+                    <label class="block mt-5">
+                        <span class="text-xs font-bold text-slate-300">תוכן ההודעה</span>
+                        <textarea id="adminBulkMessageText" maxlength="1500" rows="9" oninput="updateAdminMessageCenterUI()" placeholder="כתוב כאן את ההודעה שתופיע באזור האישי…" class="w-full mt-2 rounded-2xl p-4 text-sm leading-7 resize-y"></textarea>
+                    </label>
+                    <div class="flex justify-between text-[10px] text-slate-500 mt-1">
+                        <span>ההודעה תופיע באזור האישי</span>
+                        <span id="adminBulkMessageCharacterCount">0/1500</span>
+                    </div>
+                    <button id="adminBulkMessageSendBtn" type="button" onclick="sendAdminBulkMessages()" disabled class="w-full mt-5 py-3.5 btn-primary-gold rounded-xl font-extrabold flex items-center justify-center gap-2">
+                        <i data-lucide="send-horizontal" class="w-5 h-5"></i>
+                        <span id="adminBulkMessageSendText">שלח הודעה</span>
+                    </button>
+                    <div id="adminBulkMessageProgress" class="hidden mt-4 rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-slate-300" aria-live="polite"></div>
+                </aside>
+            </div>
         </div>
     </div>
 
@@ -2784,15 +2881,181 @@
             if (firstControl) requestAnimationFrame(() => firstControl.focus({ preventScroll: true }));
         }
 
+        const adminMessageRecipients = new Set();
+        let adminMessageSending = false;
+
+        function adminMessageCenterUsers() {
+            const query = String(document.getElementById('adminMessageUserSearch')?.value || '').trim().toLowerCase();
+            const source = Array.isArray(window.state.allUsers) ? window.state.allUsers : [];
+            const unique = new Map();
+            source.forEach(user => {
+                const uid = safeRecordId(user?.uid);
+                if (uid) unique.set(uid, { ...user, uid });
+            });
+            return Array.from(unique.values())
+                .filter(user => {
+                    const haystack = `${user.displayName || ''} ${user.email || ''} ${user.role || ''}`.toLowerCase();
+                    return !query || haystack.includes(query);
+                })
+                .sort((a, b) => String(a.displayName || a.email || '').localeCompare(String(b.displayName || b.email || ''), 'he'));
+        }
+
+        window.updateAdminMessageCenterUI = function() {
+            const text = String(document.getElementById('adminBulkMessageText')?.value || '');
+            const selectedCount = adminMessageRecipients.size;
+            const summary = document.getElementById('adminMessageSelectionSummary');
+            const characterCount = document.getElementById('adminBulkMessageCharacterCount');
+            const sendButton = document.getElementById('adminBulkMessageSendBtn');
+            const sendText = document.getElementById('adminBulkMessageSendText');
+
+            if (summary) summary.textContent = selectedCount ? `${selectedCount} נמענים נבחרו` : 'לא נבחרו נמענים';
+            if (characterCount) characterCount.textContent = `${text.length}/1500`;
+            if (sendText) sendText.textContent = selectedCount > 1 ? `שלח ל־${selectedCount} משתמשים` : 'שלח הודעה';
+            if (sendButton) sendButton.disabled = adminMessageSending || !selectedCount || !text.trim();
+
+            document.querySelectorAll('[data-admin-message-user]').forEach(card => {
+                const selected = adminMessageRecipients.has(card.dataset.adminMessageUser);
+                card.classList.toggle('is-selected', selected);
+                const checkbox = card.querySelector('input[type="checkbox"]');
+                if (checkbox) checkbox.checked = selected;
+            });
+        };
+
+        window.renderAdminMessageUsers = function() {
+            const list = document.getElementById('adminMessageUsersList');
+            const summary = document.getElementById('adminMessageUsersSummary');
+            if (!list) return;
+            const users = adminMessageCenterUsers();
+            list.replaceChildren();
+            if (summary) summary.textContent = `${users.length} משתמשים · ${adminMessageRecipients.size} נבחרו`;
+
+            if (!users.length) {
+                const empty = document.createElement('p');
+                empty.className = 'sm:col-span-2 text-sm text-slate-500 text-center py-10';
+                empty.textContent = 'לא נמצאו משתמשים.';
+                list.appendChild(empty);
+                window.updateAdminMessageCenterUI();
+                return;
+            }
+
+            const roleLabels = {
+                viewer: 'דרגה 1 — צופה',
+                uploader: 'דרגה 2 — מעלה תמונות',
+                admin: 'דרגה 3 — מנהל',
+                super_admin: 'דרגה 4 — מנהל־על'
+            };
+            users.forEach(user => {
+                const card = document.createElement('label');
+                card.dataset.adminMessageUser = user.uid;
+                card.className = 'admin-message-user-card cursor-pointer rounded-2xl p-4 flex gap-3 items-start';
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.className = 'mt-1 accent-amber-400 w-4 h-4 shrink-0';
+                checkbox.checked = adminMessageRecipients.has(user.uid);
+                checkbox.addEventListener('change', () => {
+                    if (checkbox.checked) adminMessageRecipients.add(user.uid);
+                    else adminMessageRecipients.delete(user.uid);
+                    window.updateAdminMessageCenterUI();
+                    if (summary) summary.textContent = `${users.length} משתמשים · ${adminMessageRecipients.size} נבחרו`;
+                });
+
+                const body = document.createElement('div');
+                body.className = 'min-w-0 flex-1';
+                const name = document.createElement('p');
+                name.className = 'font-extrabold text-sm text-white truncate';
+                name.textContent = user.displayName || 'משתמש Google';
+                const email = document.createElement('p');
+                email.className = 'text-[10px] text-slate-400 truncate mt-0.5';
+                email.textContent = user.email || 'ללא כתובת מייל';
+                const role = document.createElement('p');
+                role.className = 'text-[10px] text-amber-400 mt-2';
+                role.textContent = roleLabels[user.role] || 'ללא דרגה';
+                body.append(name, email, role);
+                card.append(checkbox, body);
+                list.appendChild(card);
+            });
+            window.updateAdminMessageCenterUI();
+        };
+
+        window.selectAllAdminMessageUsers = function() {
+            adminMessageCenterUsers().forEach(user => adminMessageRecipients.add(user.uid));
+            window.renderAdminMessageUsers();
+        };
+
+        window.clearAdminMessageUsers = function() {
+            adminMessageRecipients.clear();
+            window.renderAdminMessageUsers();
+        };
+
+        window.sendAdminBulkMessages = async function() {
+            if (!checkSuperAdminPermission() || adminMessageSending) return;
+            const textarea = document.getElementById('adminBulkMessageText');
+            const progress = document.getElementById('adminBulkMessageProgress');
+            const text = String(textarea?.value || '').trim();
+            const recipients = (window.state.allUsers || []).filter(user => adminMessageRecipients.has(safeRecordId(user.uid)));
+            if (!text || !recipients.length) return;
+
+            adminMessageSending = true;
+            if (progress) {
+                progress.classList.remove('hidden');
+                progress.textContent = 'מתחיל לשלוח…';
+            }
+            window.updateAdminMessageCenterUI();
+            let succeeded = 0;
+            const failed = [];
+
+            for (let index = 0; index < recipients.length; index++) {
+                const user = recipients[index];
+                if (progress) progress.textContent = `שולח ${index + 1} מתוך ${recipients.length}: ${user.displayName || user.email || 'משתמש'}…`;
+                try {
+                    const { doc, getDoc, setDoc } = window.firestoreModules;
+                    const profileRef = doc(window.db, 'artifacts', window.appId, 'public', 'data', 'userProfiles', user.uid);
+                    const snapshot = await getDoc(profileRef);
+                    if (!snapshot.exists()) throw new Error('פרופיל המשתמש לא נמצא');
+                    const existingMessages = Array.isArray(snapshot.data().messages) ? snapshot.data().messages : [];
+                    const message = {
+                        id: crypto.randomUUID(),
+                        text,
+                        sender: window.state.currentUser?.displayName || 'מנהל שמחת התורה',
+                        senderUid: window.state.currentUser?.uid || '',
+                        recipientUid: user.uid,
+                        sentAt: Date.now(),
+                        read: false
+                    };
+                    await setDoc(profileRef, { messages: [message, ...existingMessages].slice(0, 100) }, { merge: true });
+                    succeeded++;
+                } catch (error) {
+                    console.error('Admin message send failed:', safeRecordId(user.uid), error);
+                    failed.push(user.displayName || user.email || user.uid);
+                }
+            }
+
+            adminMessageSending = false;
+            if (succeeded && textarea) textarea.value = '';
+            if (succeeded) adminMessageRecipients.clear();
+            window.renderAdminMessageUsers();
+            if (progress) {
+                progress.textContent = failed.length
+                    ? `נשלחו ${succeeded} הודעות; ${failed.length} נכשלו.`
+                    : `השליחה הושלמה בהצלחה ל־${succeeded} משתמשים.`;
+            }
+            window.showNotification(
+                failed.length ? `חלק מההודעות לא נשלחו (${failed.length}).` : `ההודעה נשלחה בהצלחה ל־${succeeded} משתמשים.`,
+                !failed.length
+            );
+        };
+
         window.openAdminMessagesCenter = function() {
             if (!window.state.isSuperAdmin) {
                 window.showNotification('מרכז שליחת ההודעות זמין למנהל־על בלבד.', false);
                 return;
             }
-            const frame = document.getElementById('adminMessagesCenterFrame');
-            if (frame && !frame.getAttribute('src')) frame.setAttribute('src', frame.dataset.src);
             const floatingPanel = document.getElementById('floatingProfilePanel');
             if (floatingPanel) floatingPanel.classList.remove('active');
+            const drawer = document.getElementById('adminDrawer');
+            if (drawer?.classList.contains('translate-x-0')) toggleAdminDrawer();
+            window.renderAdminMessageUsers();
             openModal('adminMessagesCenterModal');
             if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
         };
@@ -3025,6 +3288,7 @@
 
         // שדרוג: סגירת המצלמה בעת סגירת המודאל למניעת דליפת משאבי זיכרון של המצלמה
         function closeModal(id) {
+            if (id === 'adminTaskModal') restoreAdminTaskContent();
             const m = document.getElementById(id);
             if (m) {
                 m.classList.add('hidden');
@@ -3090,6 +3354,95 @@
             if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
         }
         window.toggleAccordion = toggleAccordion;
+
+        const adminTaskDefinitions = {
+            accUserApprovals: {
+                title: 'ניהול משתמשים ובקשות',
+                description: 'אישור משתמשים, שינוי דרגות וחסימת חשבונות',
+                icon: 'users-round',
+                superAdminOnly: true
+            },
+            accDeletionRequests: {
+                title: 'בקשות מחיקה',
+                description: 'בדיקה ואישור של בקשות למחיקת תוכן',
+                icon: 'trash-2',
+                superAdminOnly: true
+            },
+            accPending: {
+                title: 'אישור תמונות',
+                description: 'בחירת תמונות ממתינות והעברתן לגלריה',
+                icon: 'images'
+            },
+            accAddSmart: {
+                title: 'העלאת תמונות',
+                description: 'העלאה מרובה וחלוקה אוטומטית לתיקיות',
+                icon: 'cloud-upload'
+            },
+            accDriveSync: {
+                title: 'סנכרון Google Drive',
+                description: 'ייבוא תמונות ותיקיות מחשבון Drive',
+                icon: 'folder-sync'
+            },
+            accEmptyFolder: {
+                title: 'יצירת תיקייה',
+                description: 'הוספת תיקייה חדשה לארכיון',
+                icon: 'folder-plus'
+            }
+        };
+        let activeAdminTask = null;
+
+        function restoreAdminTaskContent() {
+            if (!activeAdminTask) return;
+            const { content, parent, nextSibling } = activeAdminTask;
+            content.classList.remove('active');
+            if (nextSibling && nextSibling.parentNode === parent) parent.insertBefore(content, nextSibling);
+            else parent.appendChild(content);
+            activeAdminTask = null;
+        }
+
+        window.closeAdminTaskWindow = function() {
+            closeModal('adminTaskModal');
+        };
+
+        window.openAdminTaskWindow = function(contentId) {
+            const definition = adminTaskDefinitions[contentId];
+            const content = document.getElementById(contentId);
+            const body = document.getElementById('adminTaskBody');
+            if (!definition || !content || !body) return;
+            if (definition.superAdminOnly) {
+                if (!checkSuperAdminPermission()) return;
+            } else if (!checkAdminPermission()) {
+                return;
+            }
+
+            restoreAdminTaskContent();
+            activeAdminTask = {
+                content,
+                parent: content.parentNode,
+                nextSibling: content.nextSibling
+            };
+            body.replaceChildren(content);
+            content.classList.add('active');
+
+            const title = document.getElementById('adminTaskTitle');
+            const description = document.getElementById('adminTaskDescription');
+            const icon = document.getElementById('adminTaskIcon');
+            if (title) title.textContent = definition.title;
+            if (description) description.textContent = definition.description;
+            if (icon) icon.innerHTML = `<i data-lucide="${definition.icon}" class="w-5 h-5"></i>`;
+
+            const drawer = document.getElementById('adminDrawer');
+            if (drawer?.classList.contains('translate-x-0')) toggleAdminDrawer();
+            openModal('adminTaskModal');
+
+            if (contentId === 'accPending') window.renderPendingImages?.();
+            if (contentId === 'accUserApprovals') {
+                window.renderPendingUsers?.();
+                window.renderManagedUsers?.();
+            }
+            if (contentId === 'accDeletionRequests') window.renderDeletionRequests?.();
+            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+        };
 
         // מציג פופ-אפ הודעות יוקרתי ומעוצב
         
