@@ -20,6 +20,7 @@ const FACE_ASSETS = new Map([
 ]);
 
 const ALLOWED_ORIGINS = new Set([
+  "https://shmuel-lamed.github.io",
   "https://0534169095-star.github.io",
   "https://xn--4dbjbascrao3i.com",
   "https://www.xn--4dbjbascrao3i.com"
