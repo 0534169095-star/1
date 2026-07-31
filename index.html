@@ -1847,7 +1847,7 @@
             <div class="gallery-toolbar p-4 flex flex-col sm:flex-row gap-4 justify-between items-center shadow-sm">
                 <div class="flex w-full sm:w-auto items-center gap-2">
                     <button type="button" onclick="openFaceSearchModal()" title="חיפוש תמונות לפי פנים" class="face-search-button p-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 font-bold text-xs">
-                        <i data-lucide="sparkles" class="w-4 h-4"></i><span>חיפוש פרצוף</span>
+                        <i data-lucide="sparkles" class="w-4 h-4"></i><span>חיפוש פנים ב־AI</span>
                     </button>
                     <button type="button" onclick="openAiImageSearchModal()" title="חיפוש חכם לפי תיאור התמונה" class="face-search-button p-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 font-bold text-xs">
                         <i data-lucide="brain-circuit" class="w-4 h-4"></i><span>חיפוש AI</span>
@@ -7797,7 +7797,10 @@
         let faceApiModelsLoaded = false;
         let faceApiModelsPromise = null;
         let faceSearchQueryImageSrc = null;
-        const FACE_MATCH_THRESHOLD = 0.55;
+        // מרחק קטן יותר פירושו דמיון גבוה יותר. הסף הגמיש מזהה את אותו אדם
+        // גם בשינויי זווית ותאורה, ועדיין מצמצם התאמות שגויות.
+        const FACE_MATCH_THRESHOLD = 0.62;
+        const FACE_STRONG_MATCH_THRESHOLD = 0.48;
         const FACE_API_CDN_BASE_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.15';
         const FACE_MODEL_BASE_URLS = [
             `${R2_WORKER_BASE_URL}/face-assets/model`,
@@ -8034,7 +8037,7 @@
                 await loadFaceApiModels();
                 if(bar) bar.style.width = '20%';
 
-                if(statusText) statusText.innerText = 'מנתח את הפרצוף שהעלית...';
+                if(statusText) statusText.innerText = 'ה־AI לומד את מאפייני הפנים בתמונה...';
                 const queryImg = await loadImageElement(faceSearchQueryImageSrc);
                 const queryDet = await faceapi.detectSingleFace(queryImg).withFaceLandmarks().withFaceDescriptor();
                 if (!queryDet) {
@@ -8062,12 +8065,23 @@
                             window.descriptorCache[imgData.id] = descriptors;
                         }
 
-                        const isMatch = descriptors.some(desc => {
+                        const distances = descriptors.map(desc => {
                             const floatArray = new Float32Array(desc);
-                            return faceapi.euclideanDistance(floatArray, queryDescriptor) < FACE_MATCH_THRESHOLD;
+                            return faceapi.euclideanDistance(floatArray, queryDescriptor);
                         });
+                        const bestDistance = distances.length ? Math.min(...distances) : Infinity;
 
-                        if (isMatch) matches.push(imgData);
+                        if (bestDistance < FACE_MATCH_THRESHOLD) {
+                            const confidence = Math.max(0, Math.min(100,
+                                Math.round((1 - bestDistance / FACE_MATCH_THRESHOLD) * 55 + 45)
+                            ));
+                            matches.push({
+                                ...imgData,
+                                faceMatchDistance: bestDistance,
+                                faceMatchConfidence: confidence,
+                                faceMatchStrength: bestDistance < FACE_STRONG_MATCH_THRESHOLD ? 'strong' : 'possible'
+                            });
+                        }
                     } catch (error) {
                         failedImages++;
                         console.warn(`Face search skipped image ${safeRecordId(imgData?.id) || i}:`, error);
@@ -8077,6 +8091,7 @@
                 }
 
                 if(bar) bar.style.width = '100%';
+                matches.sort((a, b) => a.faceMatchDistance - b.faceMatchDistance);
                 window.state.tempSearchResults = matches;
                 showFaceResultBanner(matches.length);
                 window.renderImages();
@@ -8117,10 +8132,10 @@
             const textContainer = document.createElement('div');
             const title = document.createElement('h4');
             title.className = "font-bold text-white text-sm";
-            title.textContent = "תוצאות חיפוש פרצוף";
+            title.textContent = "תוצאות חיפוש פנים ב־AI";
             const sub = document.createElement('p');
             sub.className = "text-xs text-amber-400 font-semibold";
-            sub.textContent = `${count} תמונות תואמות`;
+            sub.textContent = `${count} תמונות תואמות — מההתאמה החזקה לחלשה`;
             textContainer.appendChild(title);
             textContainer.appendChild(sub);
             rightContainer.appendChild(textContainer);
