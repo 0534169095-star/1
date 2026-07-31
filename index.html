@@ -7798,36 +7798,62 @@
         let faceApiModelsPromise = null;
         let faceSearchQueryImageSrc = null;
         const FACE_MATCH_THRESHOLD = 0.55;
+        const FACE_API_CDN_BASE_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.15';
+        const FACE_MODEL_BASE_URLS = [
+            `${R2_WORKER_BASE_URL}/face-assets/model`,
+            `${FACE_API_CDN_BASE_URL}/model`
+        ];
 
-        async function ensureFaceApiLibrary() {
-            if (typeof window.faceapi !== 'undefined') return window.faceapi;
-
-            await new Promise((resolve, reject) => {
-                const failedScript = document.querySelector('script[data-face-api-retry]');
-                if (failedScript) failedScript.remove();
-
+        function loadFaceApiScript(src) {
+            return new Promise((resolve, reject) => {
                 const script = document.createElement('script');
                 script.dataset.faceApiRetry = 'true';
-                script.src = `${R2_WORKER_BASE_URL}/face-assets/face-api.js?retry=${Date.now()}`;
+                script.src = src;
                 script.onload = () => typeof window.faceapi !== 'undefined'
                     ? resolve()
                     : reject(new Error('ספריית זיהוי הפנים נטענה ללא הממשק הנדרש'));
                 script.onerror = () => reject(new Error('לא ניתן להוריד את ספריית זיהוי הפנים'));
                 document.head.appendChild(script);
             });
-
-            return window.faceapi;
         }
 
-        async function loadFaceModelWithRetry(network, modelUrl, label) {
-            if (network.isLoaded) return;
-            try {
-                await network.loadFromUri(modelUrl);
-            } catch (firstError) {
-                console.warn(`טעינת מודל ${label} נכשלה, מנסה שוב:`, firstError);
-                await new Promise(resolve => setTimeout(resolve, 700));
-                await network.loadFromUri(modelUrl);
+        async function ensureFaceApiLibrary() {
+            if (typeof window.faceapi !== 'undefined') return window.faceapi;
+
+            document.querySelectorAll('script[data-face-api-retry]').forEach(script => script.remove());
+            const scriptSources = [
+                `${R2_WORKER_BASE_URL}/face-assets/face-api.js?retry=${Date.now()}`,
+                `${FACE_API_CDN_BASE_URL}/dist/face-api.js`
+            ];
+
+            let lastError = null;
+            for (const source of scriptSources) {
+                try {
+                    await loadFaceApiScript(source);
+                    return window.faceapi;
+                } catch (error) {
+                    lastError = error;
+                    console.warn('טעינת ספריית זיהוי הפנים נכשלה ממקור אחד, עובר למקור גיבוי:', error);
+                }
             }
+            throw new Error(lastError?.message || 'לא ניתן להוריד את ספריית זיהוי הפנים');
+        }
+
+        async function loadFaceModelWithRetry(network, modelUrls, label) {
+            if (network.isLoaded) return;
+
+            let lastError = null;
+            for (const modelUrl of modelUrls) {
+                try {
+                    await network.loadFromUri(modelUrl);
+                    return;
+                } catch (error) {
+                    lastError = error;
+                    console.warn(`טעינת מודל ${label} נכשלה מ-${modelUrl}, עובר למקור הבא:`, error);
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+            }
+            throw new Error(`לא ניתן להוריד את מודל ${label}. בדוק את החיבור ונסה שוב.`, { cause: lastError });
         }
 
         async function loadFaceApiModels() {
@@ -7836,11 +7862,9 @@
 
             faceApiModelsPromise = (async () => {
                 const api = await ensureFaceApiLibrary();
-                const modelUrl = `${R2_WORKER_BASE_URL}/face-assets/model`;
-
-                await loadFaceModelWithRetry(api.nets.ssdMobilenetv1, modelUrl, 'איתור פנים');
-                await loadFaceModelWithRetry(api.nets.faceLandmark68Net, modelUrl, 'נקודות פנים');
-                await loadFaceModelWithRetry(api.nets.faceRecognitionNet, modelUrl, 'השוואת פנים');
+                await loadFaceModelWithRetry(api.nets.ssdMobilenetv1, FACE_MODEL_BASE_URLS, 'איתור פנים');
+                await loadFaceModelWithRetry(api.nets.faceLandmark68Net, FACE_MODEL_BASE_URLS, 'נקודות פנים');
+                await loadFaceModelWithRetry(api.nets.faceRecognitionNet, FACE_MODEL_BASE_URLS, 'השוואת פנים');
 
                 if (!api.nets.ssdMobilenetv1.isLoaded
                     || !api.nets.faceLandmark68Net.isLoaded
