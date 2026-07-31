@@ -7795,16 +7795,68 @@
 
         // --- 10. חיפוש פרצוף אמיתי (face-api.js, מקומי בדפדפן, בלי מפתח API) ---
         let faceApiModelsLoaded = false;
+        let faceApiModelsPromise = null;
         let faceSearchQueryImageSrc = null;
         const FACE_MATCH_THRESHOLD = 0.55;
 
+        async function ensureFaceApiLibrary() {
+            if (typeof window.faceapi !== 'undefined') return window.faceapi;
+
+            await new Promise((resolve, reject) => {
+                const failedScript = document.querySelector('script[data-face-api-retry]');
+                if (failedScript) failedScript.remove();
+
+                const script = document.createElement('script');
+                script.dataset.faceApiRetry = 'true';
+                script.src = `${R2_WORKER_BASE_URL}/face-assets/face-api.js?retry=${Date.now()}`;
+                script.onload = () => typeof window.faceapi !== 'undefined'
+                    ? resolve()
+                    : reject(new Error('ספריית זיהוי הפנים נטענה ללא הממשק הנדרש'));
+                script.onerror = () => reject(new Error('לא ניתן להוריד את ספריית זיהוי הפנים'));
+                document.head.appendChild(script);
+            });
+
+            return window.faceapi;
+        }
+
+        async function loadFaceModelWithRetry(network, modelUrl, label) {
+            if (network.isLoaded) return;
+            try {
+                await network.loadFromUri(modelUrl);
+            } catch (firstError) {
+                console.warn(`טעינת מודל ${label} נכשלה, מנסה שוב:`, firstError);
+                await new Promise(resolve => setTimeout(resolve, 700));
+                await network.loadFromUri(modelUrl);
+            }
+        }
+
         async function loadFaceApiModels() {
             if (faceApiModelsLoaded) return;
-            const MODEL_URL = `${R2_WORKER_BASE_URL}/face-assets/model`;
-            await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
-            await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
-            await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
-            faceApiModelsLoaded = true;
+            if (faceApiModelsPromise) return faceApiModelsPromise;
+
+            faceApiModelsPromise = (async () => {
+                const api = await ensureFaceApiLibrary();
+                const modelUrl = `${R2_WORKER_BASE_URL}/face-assets/model`;
+
+                await loadFaceModelWithRetry(api.nets.ssdMobilenetv1, modelUrl, 'איתור פנים');
+                await loadFaceModelWithRetry(api.nets.faceLandmark68Net, modelUrl, 'נקודות פנים');
+                await loadFaceModelWithRetry(api.nets.faceRecognitionNet, modelUrl, 'השוואת פנים');
+
+                if (!api.nets.ssdMobilenetv1.isLoaded
+                    || !api.nets.faceLandmark68Net.isLoaded
+                    || !api.nets.faceRecognitionNet.isLoaded) {
+                    throw new Error('אחד ממודלי זיהוי הפנים לא נטען במלואו');
+                }
+
+                faceApiModelsLoaded = true;
+            })();
+
+            try {
+                await faceApiModelsPromise;
+            } catch (error) {
+                faceApiModelsPromise = null;
+                throw error;
+            }
         }
 
         function loadImageElement(src) {
@@ -8014,8 +8066,13 @@
                     window.showNotification('לא נמצאו תמונות תואמות.', false);
                 }
             } catch (err) {
-                console.error(err);
-                window.showNotification('שגיאה במנוע זיהוי הפנים. בדוק חיבור אינטרנט ונסה שוב.', false);
+                console.error('Face recognition engine failed:', err);
+                const technicalMessage = String(err?.message || '').trim();
+                const userMessage = technicalMessage
+                    ? `זיהוי הפנים נכשל: ${technicalMessage}`
+                    : 'זיהוי הפנים נכשל מסיבה לא ידועה.';
+                if(statusText) statusText.innerText = userMessage;
+                window.showNotification(`${userMessage} נסה שוב בעוד רגע.`, false);
             } finally {
                 if(btn) btn.disabled = false;
                 if(statusEl) statusEl.classList.add('hidden');
