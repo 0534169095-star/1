@@ -3305,7 +3305,10 @@
 
             modal = document.createElement('div');
             modal.id = 'driveFolderPickerModal';
-            modal.className = 'hidden fixed inset-0 z-[100] bg-slate-950/95 backdrop-blur-xl overflow-y-auto';
+            // חלון בחירת התיקיות נפתח מתוך חלון משימת הניהול (z-index 105),
+            // ולכן הוא חייב להופיע בשכבה גבוהה יותר ולא להסתתר מאחוריו.
+            modal.className = 'hidden fixed inset-0 z-[150] bg-slate-950/95 backdrop-blur-xl overflow-y-auto';
+            modal.style.zIndex = '150';
             modal.setAttribute('role', 'dialog');
             modal.setAttribute('aria-modal', 'true');
             modal.setAttribute('aria-labelledby', 'driveFolderPickerTitle');
