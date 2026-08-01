@@ -2975,9 +2975,49 @@
 
         async function driveFetch(url) {
             if (!driveAccessToken) throw new Error('יש לחבר חשבון Google Drive לפני הסנכרון.');
-            const response = await fetch(url, {
-                headers: { Authorization: `Bearer ${driveAccessToken}` }
-            });
+
+            // Google מספקת שני שערים רשמיים לאותו Drive API. אם אחד מהם
+            // אינו זמין בדפדפן, עוברים אוטומטית לשני בלי לבקש הרשאת עריכה.
+            const requestUrls = [String(url)];
+            try {
+                const parsedUrl = new URL(url);
+                if (parsedUrl.hostname === 'www.googleapis.com') {
+                    parsedUrl.hostname = 'content.googleapis.com';
+                    requestUrls.push(parsedUrl.toString());
+                } else if (parsedUrl.hostname === 'content.googleapis.com') {
+                    parsedUrl.hostname = 'www.googleapis.com';
+                    requestUrls.push(parsedUrl.toString());
+                }
+            } catch (error) {}
+
+            let response = null;
+            let networkError = null;
+            for (const requestUrl of [...new Set(requestUrls)]) {
+                try {
+                    response = await fetch(requestUrl, {
+                        method: 'GET',
+                        mode: 'cors',
+                        credentials: 'omit',
+                        cache: 'no-store',
+                        referrerPolicy: 'no-referrer',
+                        headers: {
+                            Authorization: `Bearer ${driveAccessToken}`,
+                            Accept: 'application/json, image/*, video/*, application/octet-stream'
+                        }
+                    });
+                    break;
+                } catch (error) {
+                    networkError = error;
+                    console.warn('Drive API endpoint unavailable:', new URL(requestUrl).hostname, error);
+                }
+            }
+
+            if (!response) {
+                const driveError = new Error('לא ניתן להגיע ל־Google Drive כרגע. נוסו שתי כתובות החיבור של Google. בדוק שהגישה ל־googleapis.com מותרת ונסה שוב.');
+                driveError.cause = networkError;
+                driveError.driveNetworkError = true;
+                throw driveError;
+            }
             if (response.ok) return response;
 
             let apiMessage = '';
@@ -2993,7 +3033,7 @@
                 driveError.message = 'תוקף החיבור ל־Drive הסתיים. התחבר מחדש ונסה שוב.';
                 driveError.driveAuthExpired = true;
             } else if (response.status === 403) {
-                driveError.message = 'אין הרשאה לקרוא את התיקייה, או ש־Google Drive API עדיין לא הופעל בפרויקט.';
+                driveError.message = 'אין לחשבון המחובר הרשאת צפייה בתיקייה, או ש־Google Drive API עדיין לא הופעל בפרויקט.';
             } else if (response.status === 404) {
                 driveError.message = 'תיקיית Drive לא נמצאה או שלא שותפה עם החשבון המחובר.';
             }
