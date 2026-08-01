@@ -2826,13 +2826,14 @@
 
         let auth = null;
         let driveAccessToken = null;
+        let driveAccessTokenExpiresAt = 0;
+        let driveRestorePromise = null;
+        let driveRestoredForUid = '';
         let oneTapInitialized = false;
         let oneTapPromptRequested = false;
         const GOOGLE_ONE_TAP_CLIENT_ID = '601586229891-giorl13mdpu7kfbeb6h2aj6qjpkphmmo.apps.googleusercontent.com';
-        const DRIVE_OAUTH_REDIRECT_URI = 'https://shmuel-lamed.github.io/1/';
-        const DRIVE_SYNC_SCOPE = 'https://www.googleapis.com/auth/drive.readonly';
-        const DRIVE_OAUTH_STATE_KEY = 'simchas_drive_oauth_state';
-        const DRIVE_OAUTH_INTENT_KEY = 'simchas_drive_redirect_intent';
+        const DRIVE_WORKER_BASE_URL = 'https://simchas-gallery-api.0534169095.workers.dev';
+        const driveReturnStatus = new URLSearchParams(window.location.search).get('drive');
         // נשמרות רק טביעות SHA-256 של חשבון מנהל-העל, לא הכתובת או המזהה עצמם.
         const INITIAL_ADMIN_UID_SHA256 = 'b38e92d2900b2c32ddfe921142715cc2becbe7b77d9e911196d7a561574d8b39';
         const INITIAL_SUPER_ADMIN_EMAIL_SHA256 = 'd2632af59d29239eef52f10e1cfbf38e27c65c55470b355134b1cd1fb4f809d6';
@@ -2941,68 +2942,69 @@
 
         function clearDriveConnection() {
             driveAccessToken = null;
+            driveAccessTokenExpiresAt = 0;
+            driveRestoredForUid = '';
             setDriveConnectionUI();
         }
 
-        function createDriveOAuthState() {
-            if (window.crypto?.randomUUID) return window.crypto.randomUUID();
-            const bytes = new Uint8Array(24);
-            window.crypto.getRandomValues(bytes);
-            return Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
-        }
-
-        function startDriveOAuthRedirect(scope, intent) {
-            const oauthState = createDriveOAuthState();
-            sessionStorage.setItem(DRIVE_OAUTH_STATE_KEY, oauthState);
-            sessionStorage.setItem(DRIVE_OAUTH_INTENT_KEY, intent);
-
-            const params = new URLSearchParams({
-                client_id: GOOGLE_ONE_TAP_CLIENT_ID,
-                redirect_uri: DRIVE_OAUTH_REDIRECT_URI,
-                response_type: 'token',
-                scope,
-                state: oauthState,
-                include_granted_scopes: 'true',
-                prompt: 'consent select_account'
-            });
-            const currentEmail = String(window.state?.currentUser?.email || '').trim();
-            if (currentEmail) params.set('login_hint', currentEmail);
-
-            dismissGoogleOneTap();
-            window.location.assign(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
-        }
-
-        function consumeDriveOAuthRedirect() {
-            const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
-            if (!hashParams.has('access_token') && !hashParams.has('error')) return null;
-
-            // אסימון הגישה מגיע במקטע הכתובת. מסירים אותו מיד מהשורה בדפדפן.
-            window.history.replaceState(null, document.title, `${window.location.pathname}${window.location.search}`);
-
-            const expectedState = sessionStorage.getItem(DRIVE_OAUTH_STATE_KEY);
-            const returnedState = hashParams.get('state');
-            const intent = sessionStorage.getItem(DRIVE_OAUTH_INTENT_KEY);
-            sessionStorage.removeItem(DRIVE_OAUTH_STATE_KEY);
-            sessionStorage.removeItem(DRIVE_OAUTH_INTENT_KEY);
-
-            if (!expectedState || !returnedState || returnedState !== expectedState || !intent) {
-                throw new Error('אימות החיבור ל־Google Drive נכשל. נסה להתחבר מחדש.');
+        async function driveWorkerRequest(path, options = {}) {
+            const user = auth?.currentUser;
+            if (!user || user.isAnonymous) throw new Error('יש להתחבר עם חשבון Google תחילה.');
+            const token = await user.getIdToken();
+            const headers = new Headers(options.headers || {});
+            headers.set('Authorization', `Bearer ${token}`);
+            const response = await fetch(`${DRIVE_WORKER_BASE_URL}${path}`, { ...options, headers });
+            const payload = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                const error = new Error(payload?.message || `שגיאת חיבור ל־Drive (${response.status}).`);
+                error.code = payload?.code || 'drive_worker_error';
+                error.status = response.status;
+                throw error;
             }
-
-            const oauthError = hashParams.get('error');
-            if (oauthError) {
-                if (oauthError === 'access_denied') throw new Error('החיבור ל־Google Drive בוטל לפני שניתן אישור.');
-                throw new Error(hashParams.get('error_description') || 'Google לא אישרה את החיבור ל־Drive.');
-            }
-
-            const accessToken = hashParams.get('access_token');
-            if (!accessToken) throw new Error('לא התקבל אישור גישה ל־Google Drive.');
-
-            driveAccessToken = accessToken;
-            return intent;
+            return payload;
         }
 
-        window.connectGoogleDrive = function(confirmed = false) {
+        async function restoreDriveConnection(showSuccessNotice = false, forceRefresh = false) {
+            const user = auth?.currentUser;
+            if (!user || user.isAnonymous || !window.state?.isAdminLoggedIn) return false;
+            if (!forceRefresh && driveAccessToken && driveAccessTokenExpiresAt > Date.now() + 60000) return true;
+            if (!forceRefresh && driveRestoredForUid === user.uid && !driveAccessToken) return false;
+            if (driveRestorePromise) return driveRestorePromise;
+
+            driveRestorePromise = (async () => {
+                try {
+                    const payload = await driveWorkerRequest('/drive/token', { method: 'POST' });
+                    driveRestoredForUid = user.uid;
+                    if (!payload.connected || !payload.accessToken) {
+                        driveAccessToken = null;
+                        driveAccessTokenExpiresAt = 0;
+                        setDriveConnectionUI();
+                        return false;
+                    }
+                    driveAccessToken = payload.accessToken;
+                    driveAccessTokenExpiresAt = Number(payload.expiresAt) || (Date.now() + 50 * 60 * 1000);
+                    setDriveConnectionUI(payload.email || user.email || '');
+                    if (showSuccessNotice) window.showNotification('Google Drive מחובר קבוע ושוחזר אוטומטית.', true);
+                    return true;
+                } catch (error) {
+                    console.error('Restoring persistent Drive connection failed:', error);
+                    driveAccessToken = null;
+                    driveAccessTokenExpiresAt = 0;
+                    driveRestoredForUid = user.uid;
+                    setDriveConnectionUI();
+                    if (showSuccessNotice || error.code === 'drive_oauth_not_configured') {
+                        window.showNotification(error.message || 'לא ניתן לשחזר את החיבור ל־Google Drive.', false);
+                    }
+                    return false;
+                } finally {
+                    driveRestorePromise = null;
+                }
+            })();
+            return driveRestorePromise;
+        }
+        window.restoreDriveConnection = restoreDriveConnection;
+
+        window.connectGoogleDrive = async function(confirmed = false) {
             if (!window.checkAdminPermission?.()) return;
             if (!confirmed) {
                 window.showConfirm(
@@ -3016,7 +3018,10 @@
             const button = document.getElementById('connectDriveBtn');
             if (button) button.disabled = true;
             try {
-                startDriveOAuthRedirect(DRIVE_SYNC_SCOPE, 'sync');
+                const payload = await driveWorkerRequest('/drive/oauth/start', { method: 'POST' });
+                if (!payload.authorizationUrl) throw new Error('לא התקבלה כתובת חיבור משרת Drive.');
+                dismissGoogleOneTap();
+                window.location.assign(payload.authorizationUrl);
             } catch (error) {
                 console.error('Google Drive connection failed:', error);
                 window.showNotification(error.message || 'החיבור ל־Google Drive נכשל.', false);
@@ -3509,6 +3514,9 @@
 
         window.startGoogleDriveSync = async function(confirmed = false) {
             if (!window.checkAdminPermission?.()) return;
+            if (!driveAccessToken || driveAccessTokenExpiresAt <= Date.now() + 60000) {
+                await restoreDriveConnection(false, true);
+            }
             if (!driveAccessToken) {
                 window.showNotification('יש לחבר חשבון Google Drive לפני הסנכרון.', false);
                 return;
@@ -3844,16 +3852,18 @@
                     if (e.code === 'auth/unauthorized-domain') window.showNotification("הדומיין של האתר אינו מורשה ב-Firebase Authentication.", false);
                 }
 
-                try {
-                    const driveIntent = consumeDriveOAuthRedirect();
-                    if (driveIntent) {
-                        setDriveConnectionUI();
-                        window.showNotification('Google Drive חובר בהצלחה. אפשר לסנכרן תיקייה.', true);
+                if (driveReturnStatus) {
+                    const cleanUrl = new URL(window.location.href);
+                    cleanUrl.searchParams.delete('drive');
+                    window.history.replaceState(null, document.title, `${cleanUrl.pathname}${cleanUrl.search}${cleanUrl.hash}`);
+                    if (driveReturnStatus !== 'connected') {
+                        window.showNotification(
+                            driveReturnStatus === 'cancelled'
+                                ? 'החיבור ל־Google Drive בוטל.'
+                                : 'החיבור הקבוע ל־Google Drive לא הושלם. נסה שוב.',
+                            false
+                        );
                     }
-                } catch (error) {
-                    console.error('Google Drive OAuth redirect error:', error);
-                    clearDriveConnection();
-                    window.showNotification(error.message || 'החיבור ל־Google Drive לא הושלם.', false);
                 }
 
                 window.db = getFirestore(app);
@@ -4047,7 +4057,10 @@
 
                     if (approved) startGalleryListeners();
                     else stopGalleryListeners();
-                    if (window.state.isAdminLoggedIn) startAdminListeners();
+                    if (window.state.isAdminLoggedIn) {
+                        startAdminListeners();
+                        restoreDriveConnection(driveReturnStatus === 'connected');
+                    }
                     else {
                         clearDriveConnection();
                         stopAdminListeners();
