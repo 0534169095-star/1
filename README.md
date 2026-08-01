@@ -30,8 +30,18 @@
 | `FIREBASE_API_KEY` | Text | מפתח התצורה הציבורי של Firebase |
 | `RESEND_API_KEY` | Secret | שליחת דוא״ל אמיתי מתוך ניהול המשתמשים |
 | `EMAIL_FROM` | Text | שולח מאומת, למשל `גלריית שמחת התורה <gallery@example.com>` |
+| `GOOGLE_DRIVE_CLIENT_ID` | Secret | Client ID של OAuth עבור חיבור Drive קבוע |
+| `GOOGLE_DRIVE_CLIENT_SECRET` | Secret | Client secret של אותו OAuth client |
+| `GOOGLE_DRIVE_REDIRECT_URI` | Text (אופציונלי) | ברירת המחדל: `https://simchas-gallery-api.0534169095.workers.dev/drive/oauth/callback` |
+| `GOOGLE_DRIVE_SITE_URL` | Text (אופציונלי) | ברירת המחדל: `https://shmuel-lamed.github.io/1/` |
 
 יש לחבר לדלי R2 משתנה Binding בשם `GALLERY_BUCKET`.
+
+ב־Google Cloud, תחת OAuth Client, יש להוסיף ל־**Authorized redirect URIs** את:
+
+`https://simchas-gallery-api.0534169095.workers.dev/drive/oauth/callback`
+
+לאחר חיבור חד־פעמי, ה־refresh token נשמר באזור פרטי ב־R2 ומחודש דרך ה־Worker. הוא אינו נשמר באתר או ב־GitHub.
 
 האחסון מקבל תמונות JPG/PNG/WEBP/GIF עד 10MB וסרטוני MP4/WebM עד 100MB.
 
