@@ -3217,6 +3217,31 @@
             });
         }
 
+        async function downloadDriveMedia(driveMedia) {
+            const fileId = String(driveMedia?.id || '').trim();
+            if (!fileId) throw new Error('לקובץ ב־Drive אין מזהה תקין.');
+
+            const response = await driveFetch(
+                `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media&supportsAllDrives=true`
+            );
+            const blob = await response.blob();
+            if (!blob.size) throw new Error('Google Drive החזיר קובץ ריק.');
+
+            const fileName = String(driveMedia?.name || 'drive-media')
+                .replace(/[\\/:*?"<>|]+/g, '-')
+                .slice(0, 180);
+            const mimeType = String(
+                driveMedia?.mimeType
+                || blob.type
+                || (fileName.toLowerCase().endsWith('.mp4') ? 'video/mp4' : 'image/jpeg')
+            );
+
+            return new File([blob], fileName, {
+                type: mimeType,
+                lastModified: Date.parse(driveMedia?.modifiedTime || '') || Date.now()
+            });
+        }
+
         async function syncDriveMediaFiles(folder, mediaFiles) {
             await saveDriveGalleryFolder(folder);
 
@@ -3459,7 +3484,15 @@
                     button.textContent = 'סנכרן שוב';
                     button.disabled = false;
                 }
-                window.showNotification('התיקייה “' + folder.name + '” סונכרנה בהצלחה.', true);
+                if (result.total > 0 && result.failed === result.total) {
+                    throw new Error('כל ' + result.total + ' הקבצים נכשלו בסנכרון. פתח את כלי המפתחים לפרטי השגיאה.');
+                }
+                window.showNotification(
+                    result.failed
+                        ? 'הסנכרון הושלם חלקית: ' + result.addedOrUpdated + ' הצליחו, ' + result.failed + ' נכשלו.'
+                        : 'התיקייה “' + folder.name + '” סונכרנה בהצלחה.',
+                    result.failed === 0
+                );
             } catch (error) {
                 console.error('Google Drive folder sync failed:', error);
                 if (status) {
