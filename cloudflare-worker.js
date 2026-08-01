@@ -4,6 +4,7 @@ const DEFAULT_FIREBASE_APP_ID = "org-gallery";
 const INITIAL_SUPER_ADMIN_EMAIL_SHA256 = "d2632af59d29239eef52f10e1cfbf38e27c65c55470b355134b1cd1fb4f809d6";
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
+const MAX_CHAT_FILE_BYTES = 25 * 1024 * 1024;
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
 const OPENAI_VISION_MODEL = "gpt-5.4-mini";
 const FACE_API_VERSION = "1.7.15";
@@ -35,7 +36,38 @@ const ALLOWED_IMAGE_TYPES = new Map([
 
 const ALLOWED_VIDEO_TYPES = new Map([
   ["video/mp4", "mp4"],
-  ["video/webm", "webm"]
+  ["video/webm", "webm"],
+  ["video/quicktime", "mov"]
+]);
+
+const ALLOWED_CHAT_FILE_TYPES = new Map([
+  ["application/pdf", "pdf"],
+  ["application/msword", "doc"],
+  ["application/vnd.openxmlformats-officedocument.wordprocessingml.document", "docx"],
+  ["application/vnd.ms-excel", "xls"],
+  ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "xlsx"],
+  ["application/vnd.ms-powerpoint", "ppt"],
+  ["application/vnd.openxmlformats-officedocument.presentationml.presentation", "pptx"],
+  ["text/plain", "txt"],
+  ["text/csv", "csv"],
+  ["application/json", "json"],
+  ["application/zip", "zip"],
+  ["application/x-zip-compressed", "zip"],
+  ["application/vnd.rar", "rar"],
+  ["application/x-rar-compressed", "rar"],
+  ["application/x-7z-compressed", "7z"],
+  ["audio/mpeg", "mp3"],
+  ["audio/mp4", "m4a"],
+  ["audio/x-m4a", "m4a"],
+  ["audio/wav", "wav"],
+  ["audio/x-wav", "wav"],
+  ["audio/ogg", "ogg"]
+]);
+
+const ALLOWED_CHAT_EXTENSIONS = new Set([
+  "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx",
+  "txt", "csv", "json", "zip", "rar", "7z",
+  "mp3", "m4a", "wav", "ogg"
 ]);
 
 function corsHeaders(request) {
@@ -208,24 +240,56 @@ async function uploadImage(request, env) {
   const form = await request.formData();
   const file = form.get("file");
   if (!file || typeof file.arrayBuffer !== "function") {
-    throw apiError("לא צורף קובץ תמונה.", 400, "file_missing");
+    throw apiError("לא צורף קובץ.", 400, "file_missing");
   }
 
-  const mimeType = String(file.type || "").toLowerCase();
+  const mimeType = String(file.type || "application/octet-stream").toLowerCase();
+  const originalName = String(file.name || form.get("title") || "קובץ")
+    .replace(/[\r\n"\\/]+/g, "-")
+    .trim()
+    .slice(0, 180) || "קובץ";
+  const requestedExtension = originalName.includes(".")
+    ? originalName.split(".").pop().toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 10)
+    : "";
+  const isChatAttachment = String(form.get("context") || "") === "chat";
+  const isImage = ALLOWED_IMAGE_TYPES.has(mimeType);
   const isVideo = ALLOWED_VIDEO_TYPES.has(mimeType);
-  const extension = ALLOWED_IMAGE_TYPES.get(mimeType) || ALLOWED_VIDEO_TYPES.get(mimeType);
-  if (!extension) {
-    throw apiError("סוג הקובץ אינו נתמך. אפשר להעלות JPG, PNG, WEBP, GIF, MP4 או WEBM.", 415, "unsupported_file_type");
+  let extension = ALLOWED_IMAGE_TYPES.get(mimeType) || ALLOWED_VIDEO_TYPES.get(mimeType);
+
+  if (!extension && isChatAttachment) {
+    extension = ALLOWED_CHAT_FILE_TYPES.get(mimeType);
+    if (!extension && mimeType === "application/octet-stream" && ALLOWED_CHAT_EXTENSIONS.has(requestedExtension)) {
+      extension = requestedExtension;
+    }
   }
-  const maximumBytes = isVideo ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES;
+  if (!extension) {
+    throw apiError(
+      isChatAttachment
+        ? "סוג הקובץ אינו נתמך. אפשר לצרף תמונות, וידאו, שמע, PDF, מסמכי Office, טקסט וקובצי ZIP."
+        : "סוג הקובץ אינו נתמך. אפשר להעלות JPG, PNG, WEBP, GIF, MP4, WEBM או MOV.",
+      415,
+      "unsupported_file_type"
+    );
+  }
+
+  const maximumBytes = isChatAttachment
+    ? MAX_CHAT_FILE_BYTES
+    : (isVideo ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES);
   if (!Number.isFinite(file.size) || file.size <= 0 || file.size > maximumBytes) {
-    throw apiError(isVideo ? "גודל הסרטון חייב להיות עד 100MB." : "גודל התמונה חייב להיות עד 10MB.", 413, "file_too_large");
+    throw apiError(
+      isChatAttachment
+        ? "גודל הקובץ בצ׳אט חייב להיות עד 25MB."
+        : (isVideo ? "גודל הסרטון חייב להיות עד 100MB." : "גודל התמונה חייב להיות עד 10MB."),
+      413,
+      "file_too_large"
+    );
   }
 
   const imageId = safeImageId(form.get("imageId"));
-  const title = String(form.get("title") || "תמונה").trim().slice(0, 120);
+  const title = String(form.get("title") || originalName).trim().slice(0, 120);
   const state = user.role === "viewer" ? "pending" : "approved";
   const key = `${state}/${user.uid}/${imageId}.${extension}`;
+  const mediaType = isImage ? "image" : (isVideo ? "video" : "file");
 
   await env.GALLERY_BUCKET.put(key, await file.arrayBuffer(), {
     httpMetadata: { contentType: mimeType },
@@ -234,7 +298,9 @@ async function uploadImage(request, env) {
       uploaderRole: user.role,
       imageId,
       title,
-      mediaType: isVideo ? "video" : "image",
+      originalName,
+      mediaType,
+      context: isChatAttachment ? "chat" : "gallery",
       state,
       uploadedAt: new Date().toISOString()
     }
@@ -244,8 +310,10 @@ async function uploadImage(request, env) {
     success: true,
     key,
     state,
-    mediaType: isVideo ? "video" : "image",
+    mediaType,
     mimeType,
+    fileName: originalName,
+    size: file.size,
     url: mediaUrl(request, key)
   }, 201);
 }
@@ -287,6 +355,12 @@ async function serveImage(request, env, pathname) {
   headers.set("ETag", object.httpEtag);
   headers.set("X-Content-Type-Options", "nosniff");
   headers.set("Accept-Ranges", "bytes");
+  if (object.customMetadata?.mediaType === "file") {
+    const downloadName = String(object.customMetadata?.originalName || object.customMetadata?.title || "file")
+      .replace(/[\r\n"\\/]+/g, "-")
+      .slice(0, 180);
+    headers.set("Content-Disposition", `attachment; filename*=UTF-8''${encodeURIComponent(downloadName)}`);
+  }
   if (requestedRange) {
     headers.set("Content-Range", `bytes ${requestedRange.offset}-${requestedRange.offset + requestedRange.length - 1}/${requestedRange.total}`);
     headers.set("Content-Length", String(requestedRange.length));
