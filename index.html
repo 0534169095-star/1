@@ -2244,8 +2244,8 @@
                         </div>
 
                         <button type="button" id="driveSyncBtn" onclick="startGoogleDriveSync()" disabled class="w-full py-2.5 btn-primary-gold rounded-xl text-xs font-bold flex items-center justify-center gap-2">
-                            <i data-lucide="folder-sync" class="w-4 h-4"></i>
-                            סנכרן עכשיו
+                            <i data-lucide="folders" class="w-4 h-4"></i>
+                            פתח תיקיות לסנכרון
                         </button>
                         <p class="pb-1 text-[9px] text-slate-400 leading-relaxed">הסנכרון מוסיף ומעדכן בלבד. הוא לא מוחק מהגלריה קבצים שהוסרו מ־Drive. סרטוני MP4 ו־WebM מוגבלים ל־100MB.</p>
                     </div>
@@ -3068,58 +3068,327 @@
             return results;
         }
 
-        async function collectDriveContent(rootFolderId, includeSubfolders) {
+        let driveFolderPickerState = {
+            rootFolderId: '',
+            rootName: '',
+            folders: []
+        };
+
+        async function collectDriveFolders(rootFolderId, includeSubfolders) {
             const root = await getDriveFileMetadata(rootFolderId);
             if (root.mimeType !== 'application/vnd.google-apps.folder') {
                 throw new Error('הקישור חייב להפנות לתיקייה ב־Google Drive.');
             }
 
-            const folders = [{ id: root.id, name: root.name || 'Google Drive', path: root.name || 'Google Drive' }];
-            const mediaFiles = [];
-            for (let index = 0; index < folders.length; index++) {
-                const currentFolder = folders[index];
-                setDriveSyncProgress(0, 0, `סורק את התיקייה: ${currentFolder.path}`);
-                const children = await listDriveFolderChildren(currentFolder.id);
-                for (const item of children) {
-                    if (item.mimeType === 'application/vnd.google-apps.folder' && includeSubfolders) {
-                        if (folders.length >= 150) throw new Error('נמצאו יותר מדי תיקיות משנה. ניתן לסנכרן עד 150 תיקיות בכל פעם.');
+            const rootFolder = {
+                id: root.id,
+                name: root.name || 'Google Drive',
+                path: root.name || 'Google Drive',
+                depth: 0
+            };
+            const folders = [rootFolder];
+
+            if (includeSubfolders) {
+                for (let index = 0; index < folders.length; index++) {
+                    const currentFolder = folders[index];
+                    setDriveSyncProgress(index, folders.length, 'מחפש תיקיות בתוך: ' + currentFolder.path);
+                    const children = await listDriveFolderChildren(currentFolder.id);
+                    for (const item of children) {
+                        if (item.mimeType !== 'application/vnd.google-apps.folder') continue;
+                        if (folders.length >= 500) {
+                            throw new Error('נמצאו יותר מ־500 תיקיות משנה. בחר תיקיית Drive פנימית יותר ונסה שוב.');
+                        }
                         folders.push({
                             id: item.id,
                             name: item.name || 'תיקייה ללא שם',
-                            path: `${currentFolder.path} / ${item.name || 'תיקייה ללא שם'}`
+                            path: currentFolder.path + ' / ' + (item.name || 'תיקייה ללא שם'),
+                            depth: currentFolder.depth + 1
                         });
-                    } else if (
-                        String(item.mimeType || '').startsWith('image/')
-                        || ['video/mp4', 'video/webm'].includes(String(item.mimeType || '').toLowerCase())
-                    ) {
-                        if (mediaFiles.length >= 500) throw new Error('נמצאו יותר מ־500 קובצי מדיה. פצל את התיקייה וסנכרן כל חלק בנפרד.');
-                        mediaFiles.push({ ...item, parentFolder: currentFolder });
                     }
                 }
             }
-            return { root, folders, mediaFiles };
+
+            return { root, folders };
         }
 
-        async function downloadDriveMedia(fileData) {
-            const response = await driveFetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileData.id)}?alt=media&supportsAllDrives=true`);
-            const blob = await response.blob();
-            const isVideo = ['video/mp4', 'video/webm'].includes(String(fileData.mimeType || blob.type || '').toLowerCase());
-            if (isVideo) {
-                if (blob.size > 100 * 1024 * 1024) throw new Error('הסרטון גדול מ־100MB ולכן דולג.');
-                return new File([blob], fileData.name || `drive-${fileData.id}.mp4`, {
-                    type: blob.type || fileData.mimeType || 'video/mp4',
-                    lastModified: Date.parse(fileData.modifiedTime || '') || Date.now()
+        async function collectSingleDriveFolderMedia(folder) {
+            setDriveSyncProgress(0, 0, 'קורא את הקבצים בתיקייה: ' + folder.path);
+            const children = await listDriveFolderChildren(folder.id);
+            return children
+                .filter(function(item) {
+                    return String(item.mimeType || '').startsWith('image/')
+                        || ['video/mp4', 'video/webm'].includes(String(item.mimeType || '').toLowerCase());
+                })
+                .map(function(item) {
+                    return { ...item, parentFolder: folder };
                 });
-            }
-            if (blob.size > 50 * 1024 * 1024) throw new Error('התמונה גדולה מ־50MB ולכן דולגה.');
-            const file = new File([blob], fileData.name || `drive-${fileData.id}.jpg`, {
-                type: blob.type || fileData.mimeType || 'image/jpeg',
-                lastModified: Date.parse(fileData.modifiedTime || '') || Date.now()
-            });
-            const compressed = await window.compressAndConvertImage(file, 1200, 1200, 0.75);
-            if (!compressed) throw new Error('לא ניתן היה לעבד את קובץ התמונה.');
-            return compressed;
         }
+
+        async function saveDriveGalleryFolder(folder) {
+            const folderName = folder.path.length > 60 ? '…' + folder.path.slice(-59) : folder.path;
+            await window.saveFolderToCloud({
+                id: makeDriveRecordId('drivefolder', folder.id),
+                name: folderName,
+                icon: 'folder-sync',
+                isDefault: false,
+                driveFolderId: folder.id,
+                syncedFromDrive: true
+            });
+        }
+
+        async function syncDriveMediaFiles(folder, mediaFiles) {
+            await saveDriveGalleryFolder(folder);
+
+            let addedOrUpdated = 0;
+            let unchanged = 0;
+            let failed = 0;
+            const total = mediaFiles.length;
+
+            for (let index = 0; index < total; index++) {
+                const driveMedia = mediaFiles[index];
+                const imageId = makeDriveRecordId('driveimage', driveMedia.id);
+                const folderId = makeDriveRecordId('drivefolder', folder.id);
+                const existing = (window.state.images || []).find(function(image) {
+                    return image.driveFileId === driveMedia.id || image.id === imageId;
+                });
+                const mediaType = String(driveMedia.mimeType || '').startsWith('video/') ? 'video' : 'image';
+                setDriveSyncProgress(
+                    index,
+                    total,
+                    'מסנכרן ' + (index + 1) + ' מתוך ' + total + ': ' + (driveMedia.name || 'קובץ מדיה')
+                );
+
+                try {
+                    if (existing && existing.driveModifiedTime === driveMedia.modifiedTime) {
+                        if (existing.folderId !== folderId) {
+                            await window.saveImageToCloud({
+                                ...existing,
+                                folderId,
+                                driveFolderId: folder.id
+                            });
+                            addedOrUpdated++;
+                        } else {
+                            unchanged++;
+                        }
+                        continue;
+                    }
+
+                    const downloadedMedia = await downloadDriveMedia(driveMedia);
+                    const modifiedAt = Date.parse(driveMedia.modifiedTime || '') || Date.now();
+                    await window.saveImageToCloud({
+                        id: imageId,
+                        folderId,
+                        title: String(driveMedia.name || 'קובץ מ־Drive').replace(/\.[^.]+$/, ''),
+                        url: typeof downloadedMedia === 'string' ? downloadedMedia : '',
+                        sourceFile: downloadedMedia instanceof File ? downloadedMedia : undefined,
+                        mediaType,
+                        mimeType: driveMedia.mimeType || '',
+                        date: new Date(modifiedAt).toISOString().split('T')[0],
+                        createdAt: modifiedAt,
+                        driveFileId: driveMedia.id,
+                        driveFolderId: folder.id,
+                        driveRootFolderId: driveFolderPickerState.rootFolderId || folder.id,
+                        driveModifiedTime: driveMedia.modifiedTime || '',
+                        syncedFromDrive: true
+                    });
+                    addedOrUpdated++;
+                } catch (error) {
+                    if (error.driveAuthExpired) throw error;
+                    failed++;
+                    console.warn('Drive media sync skipped: ' + (driveMedia.name || driveMedia.id), error);
+                }
+            }
+
+            setDriveSyncProgress(
+                total || 1,
+                total || 1,
+                'הסנכרון הושלם: ' + addedOrUpdated + ' נוספו או עודכנו, ' + unchanged + ' ללא שינוי'
+                    + (failed ? ', ' + failed + ' נכשלו' : '') + '.'
+            );
+
+            await window.logActivity(
+                'synced_drive',
+                'folder',
+                folder.id,
+                folder.name || 'Google Drive',
+                addedOrUpdated + ' נוספו או עודכנו, ' + failed + ' נכשלו'
+            );
+
+            window.populateFolderSelects?.();
+            return { addedOrUpdated, unchanged, failed, total };
+        }
+
+        function ensureDriveFolderPickerModal() {
+            let modal = document.getElementById('driveFolderPickerModal');
+            if (modal) return modal;
+
+            modal = document.createElement('div');
+            modal.id = 'driveFolderPickerModal';
+            modal.className = 'hidden fixed inset-0 z-[100] bg-slate-950/95 backdrop-blur-xl overflow-y-auto';
+            modal.setAttribute('role', 'dialog');
+            modal.setAttribute('aria-modal', 'true');
+            modal.setAttribute('aria-labelledby', 'driveFolderPickerTitle');
+
+            const page = document.createElement('div');
+            page.className = 'min-h-screen w-full max-w-6xl mx-auto px-4 py-6 sm:px-8 sm:py-10';
+
+            const header = document.createElement('div');
+            header.className = 'sticky top-0 z-10 mb-6 rounded-2xl border border-white/10 bg-slate-950/90 p-4 shadow-2xl backdrop-blur-xl flex items-center justify-between gap-4';
+
+            const headingWrap = document.createElement('div');
+            const title = document.createElement('h2');
+            title.id = 'driveFolderPickerTitle';
+            title.className = 'text-xl sm:text-2xl font-black text-white';
+            title.textContent = 'תיקיות Google Drive';
+            const subtitle = document.createElement('p');
+            subtitle.id = 'driveFolderPickerSubtitle';
+            subtitle.className = 'mt-1 text-xs sm:text-sm text-slate-400';
+            subtitle.textContent = 'בחר תיקייה וסנכרן אותה בנפרד.';
+            headingWrap.append(title, subtitle);
+
+            const closeButton = document.createElement('button');
+            closeButton.type = 'button';
+            closeButton.className = 'shrink-0 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-white hover:bg-white/10';
+            closeButton.textContent = 'סגור';
+            closeButton.addEventListener('click', window.closeDriveFolderPicker);
+
+            header.append(headingWrap, closeButton);
+
+            const list = document.createElement('div');
+            list.id = 'driveFolderPickerList';
+            list.className = 'grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3';
+
+            page.append(header, list);
+            modal.append(page);
+            document.body.append(modal);
+            return modal;
+        }
+
+        function renderDriveFolderPicker() {
+            const modal = ensureDriveFolderPickerModal();
+            const list = modal.querySelector('#driveFolderPickerList');
+            const subtitle = modal.querySelector('#driveFolderPickerSubtitle');
+            if (!list) return;
+
+            list.innerHTML = '';
+            if (subtitle) {
+                subtitle.textContent = 'נמצאו ' + driveFolderPickerState.folders.length
+                    + ' תיקיות. לחץ על “סנכרן תיקייה” ליד כל תיקייה בנפרד.';
+            }
+
+            driveFolderPickerState.folders.forEach(function(folder, index) {
+                const card = document.createElement('article');
+                card.className = 'rounded-2xl border border-white/10 bg-white/5 p-4 shadow-xl transition hover:border-amber-400/40';
+                card.dataset.driveFolderId = folder.id;
+
+                const top = document.createElement('div');
+                top.className = 'flex items-start gap-3';
+
+                const icon = document.createElement('div');
+                icon.className = 'grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-amber-400/10 text-amber-400';
+                icon.innerHTML = '<i data-lucide="folder" class="h-5 w-5"></i>';
+
+                const text = document.createElement('div');
+                text.className = 'min-w-0 flex-1';
+                const name = document.createElement('h3');
+                name.className = 'truncate text-sm font-black text-white';
+                name.textContent = folder.name;
+                const path = document.createElement('p');
+                path.className = 'mt-1 line-clamp-2 text-[11px] leading-5 text-slate-400';
+                path.textContent = folder.path;
+                text.append(name, path);
+                top.append(icon, text);
+
+                const status = document.createElement('p');
+                status.id = 'drive-folder-status-' + index;
+                status.className = 'mt-4 min-h-5 text-[11px] font-semibold text-slate-400';
+                status.textContent = 'מוכן לסנכרון';
+
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.id = 'drive-folder-sync-' + index;
+                button.className = 'mt-2 w-full rounded-xl bg-amber-400 px-4 py-3 text-xs font-black text-slate-950 hover:bg-amber-300 disabled:cursor-wait disabled:opacity-60';
+                button.textContent = 'סנכרן תיקייה';
+                button.addEventListener('click', function() {
+                    window.syncDriveFolderById(folder.id);
+                });
+
+                card.append(top, status, button);
+                list.append(card);
+            });
+
+            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+        }
+
+        window.openDriveFolderPicker = function() {
+            const modal = ensureDriveFolderPickerModal();
+            renderDriveFolderPicker();
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        };
+
+        window.closeDriveFolderPicker = function() {
+            const modal = document.getElementById('driveFolderPickerModal');
+            if (modal) modal.classList.add('hidden');
+            document.body.style.overflow = '';
+        };
+
+        window.syncDriveFolderById = async function(folderId) {
+            if (!window.checkAdminPermission?.()) return;
+            if (!driveAccessToken) {
+                window.showNotification('יש לחבר חשבון Google Drive לפני הסנכרון.', false);
+                return;
+            }
+
+            const folderIndex = driveFolderPickerState.folders.findIndex(function(folder) {
+                return folder.id === folderId;
+            });
+            const folder = driveFolderPickerState.folders[folderIndex];
+            if (!folder) {
+                window.showNotification('התיקייה לא נמצאה ברשימת הסנכרון.', false);
+                return;
+            }
+
+            const button = document.getElementById('drive-folder-sync-' + folderIndex);
+            const status = document.getElementById('drive-folder-status-' + folderIndex);
+            if (button) {
+                button.disabled = true;
+                button.textContent = 'מסנכרן...';
+            }
+            if (status) {
+                status.className = 'mt-4 min-h-5 text-[11px] font-semibold text-amber-400';
+                status.textContent = 'קורא קבצים מהתיקייה...';
+            }
+
+            try {
+                const mediaFiles = await collectSingleDriveFolderMedia(folder);
+                if (status) status.textContent = 'נמצאו ' + mediaFiles.length + ' קבצי מדיה. מסנכרן...';
+                const result = await syncDriveMediaFiles(folder, mediaFiles);
+
+                if (status) {
+                    status.className = 'mt-4 min-h-5 text-[11px] font-semibold text-emerald-400';
+                    status.textContent = 'הושלם: ' + result.addedOrUpdated + ' נוספו או עודכנו, '
+                        + result.unchanged + ' ללא שינוי'
+                        + (result.failed ? ', ' + result.failed + ' נכשלו' : '');
+                }
+                if (button) {
+                    button.textContent = 'סנכרן שוב';
+                    button.disabled = false;
+                }
+                window.showNotification('התיקייה “' + folder.name + '” סונכרנה בהצלחה.', true);
+            } catch (error) {
+                console.error('Google Drive folder sync failed:', error);
+                if (status) {
+                    status.className = 'mt-4 min-h-5 text-[11px] font-semibold text-red-400';
+                    status.textContent = error.message || 'סנכרון התיקייה נכשל.';
+                }
+                if (button) {
+                    button.textContent = 'נסה שוב';
+                    button.disabled = !driveAccessToken;
+                }
+                window.showNotification(error.message || 'סנכרון התיקייה נכשל.', false);
+            }
+        };
 
         window.startGoogleDriveSync = async function(confirmed = false) {
             if (!window.checkAdminPermission?.()) return;
@@ -3139,12 +3408,15 @@
             const includeSubfolders = document.getElementById('driveIncludeSubfolders')?.checked !== false;
             if (!confirmed) {
                 window.showConfirm(
-                    'התחלת סנכרון Drive',
-                    `המערכת תייבא תמונות וסרטונים מהתיקייה שבחרת${includeSubfolders ? ' וגם מתיקיות המשנה' : ''}. להמשיך?`,
-                    () => window.startGoogleDriveSync(true)
+                    'חיפוש תיקיות ב־Drive',
+                    includeSubfolders
+                        ? 'המערכת תסרוק את התיקייה ותפתח דף עם כל תיקיות המשנה, כדי שתוכל לסנכרן כל אחת בנפרד. להמשיך?'
+                        : 'המערכת תסנכרן רק את התיקייה שבחרת. להמשיך?',
+                    function() { window.startGoogleDriveSync(true); }
                 );
                 return;
             }
+
             const syncButton = document.getElementById('driveSyncBtn');
             const connectButton = document.getElementById('connectDriveBtn');
             if (syncButton) syncButton.disabled = true;
@@ -3152,72 +3424,30 @@
             setDriveSyncProgress(0, 0, 'קורא את מבנה התיקיות מ־Drive...');
 
             try {
-                const driveContent = await collectDriveContent(rootFolderId, includeSubfolders);
-                for (const folder of driveContent.folders) {
-                    const folderName = folder.path.length > 60 ? `…${folder.path.slice(-59)}` : folder.path;
-                    await window.saveFolderToCloud({
-                        id: makeDriveRecordId('drivefolder', folder.id),
-                        name: folderName,
-                        icon: 'folder-sync',
-                        isDefault: false,
-                        driveFolderId: folder.id,
-                        syncedFromDrive: true
-                    });
+                const driveFolders = await collectDriveFolders(rootFolderId, includeSubfolders);
+                driveFolderPickerState = {
+                    rootFolderId,
+                    rootName: driveFolders.root?.name || 'Google Drive',
+                    folders: driveFolders.folders
+                };
+
+                if (includeSubfolders && driveFolders.folders.length > 1) {
+                    setDriveSyncProgress(
+                        driveFolders.folders.length,
+                        driveFolders.folders.length,
+                        'נמצאו ' + driveFolders.folders.length + ' תיקיות. בחר מהדף שנפתח איזו תיקייה לסנכרן.'
+                    );
+                    window.openDriveFolderPicker();
+                    window.showNotification('נפתח דף עם כל תיקיות ה־Drive. סנכרן כל תיקייה בנפרד.', true);
+                } else {
+                    const folder = driveFolders.folders[0];
+                    const mediaFiles = await collectSingleDriveFolderMedia(folder);
+                    const result = await syncDriveMediaFiles(folder, mediaFiles);
+                    window.showNotification(
+                        'סנכרון Drive הושלם: ' + result.addedOrUpdated + ' קבצים נוספו או עודכנו.',
+                        true
+                    );
                 }
-
-                let addedOrUpdated = 0;
-                let unchanged = 0;
-                let failed = 0;
-                const total = driveContent.mediaFiles.length;
-
-                for (let index = 0; index < total; index++) {
-                    const driveMedia = driveContent.mediaFiles[index];
-                    const imageId = makeDriveRecordId('driveimage', driveMedia.id);
-                    const folderId = makeDriveRecordId('drivefolder', driveMedia.parentFolder.id);
-                    const existing = (window.state.images || []).find(image => image.driveFileId === driveMedia.id || image.id === imageId);
-                    const mediaType = String(driveMedia.mimeType || '').startsWith('video/') ? 'video' : 'image';
-                    setDriveSyncProgress(index, total, `מסנכרן ${index + 1} מתוך ${total}: ${driveMedia.name || 'קובץ מדיה'}`);
-
-                    try {
-                        if (existing && existing.driveModifiedTime === driveMedia.modifiedTime) {
-                            if (existing.folderId !== folderId) {
-                                await window.saveImageToCloud({ ...existing, folderId, driveFolderId: driveMedia.parentFolder.id });
-                                addedOrUpdated++;
-                            } else {
-                                unchanged++;
-                            }
-                            continue;
-                        }
-
-                        const downloadedMedia = await downloadDriveMedia(driveMedia);
-                        const modifiedAt = Date.parse(driveMedia.modifiedTime || '') || Date.now();
-                        await window.saveImageToCloud({
-                            id: imageId,
-                            folderId,
-                            title: String(driveMedia.name || 'קובץ מ־Drive').replace(/\.[^.]+$/, ''),
-                            url: typeof downloadedMedia === 'string' ? downloadedMedia : '',
-                            sourceFile: downloadedMedia instanceof File ? downloadedMedia : undefined,
-                            mediaType,
-                            mimeType: driveMedia.mimeType || '',
-                            date: new Date(modifiedAt).toISOString().split('T')[0],
-                            createdAt: modifiedAt,
-                            driveFileId: driveMedia.id,
-                            driveFolderId: driveMedia.parentFolder.id,
-                            driveModifiedTime: driveMedia.modifiedTime || '',
-                            syncedFromDrive: true
-                        });
-                        addedOrUpdated++;
-                    } catch (error) {
-                        if (error.driveAuthExpired) throw error;
-                        failed++;
-                        console.warn(`Drive media sync skipped: ${driveMedia.name || driveMedia.id}`, error);
-                    }
-                }
-
-                setDriveSyncProgress(total || 1, total || 1, `הסנכרון הושלם: ${addedOrUpdated} נוספו או עודכנו, ${unchanged} ללא שינוי${failed ? `, ${failed} נכשלו` : ''}.`);
-                await window.logActivity('synced_drive', 'folder', rootFolderId, driveContent.root?.name || 'Google Drive', `${addedOrUpdated} נוספו או עודכנו, ${failed} נכשלו`);
-                window.showNotification(`סנכרון Drive הושלם: ${addedOrUpdated} קבצים נוספו או עודכנו.`, true);
-                window.populateFolderSelects?.();
             } catch (error) {
                 console.error('Google Drive sync failed:', error);
                 setDriveSyncProgress(0, 1, error.message || 'סנכרון Drive נכשל.');
