@@ -4174,10 +4174,10 @@
             const entries = [];
             const messages = Array.isArray(profile?.messages) ? profile.messages : [];
             messages.forEach((message, index) => {
-                if (!message || !String(message.text || '').trim()) return;
+                if (!message || (!String(message.text || '').trim() && !normalizeConversationAttachment(message.attachment))) return;
                 entries.push({
                     id: safeRecordId(message.id) || `legacy_${index}`,
-                    text: String(message.text),
+                    text: String(message.text || ''),
                     direction: messageDirection(message),
                     sentAt: message.sentAt || 0,
                     sender: message.sender || (messageDirection(message) === 'user_to_admin' ? profile.displayName : 'מנהל הגלריה'),
@@ -4185,10 +4185,10 @@
                     read: messageDirection(message) === 'user_to_admin' ? message.readByAdmin === true : message.read === true,
                     readAt: messageDirection(message) === 'user_to_admin' ? message.readByAdminAt : message.readAt
                 });
-                if (message.reply?.text) {
+                if (message.reply && (String(message.reply.text || '').trim() || normalizeConversationAttachment(message.reply.attachment))) {
                     entries.push({
                         id: `${safeRecordId(message.id) || `legacy_${index}`}_reply`,
-                        text: String(message.reply.text),
+                        text: String(message.reply.text || ''),
                         direction: 'user_to_admin',
                         sentAt: message.reply.sentAt || message.sentAt || 0,
                         sender: message.reply.senderName || profile.displayName || 'משתמש',
@@ -5103,6 +5103,11 @@
                 if (m._previousActiveElement && typeof m._previousActiveElement.focus === 'function') {
                     m._previousActiveElement.focus({ preventScroll: true });
                 }
+            }
+            if (id === 'conversationModal') {
+                window.clearConversationAttachment?.();
+                const status = document.getElementById('conversationUploadStatus');
+                if (status) status.textContent = 'תמונות וקבצים עד 25MB';
             }
             if (id === 'faceCameraModal') {
                 if (typeof window.stopFaceCamera === 'function') window.stopFaceCamera();
