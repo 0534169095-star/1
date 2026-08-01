@@ -1716,6 +1716,77 @@
         }
         .conversation-bubble p { white-space: pre-wrap; overflow-wrap: anywhere; }
         .conversation-bubble time { display: block; margin-top: 5px; font-size: 8px; opacity: .62; }
+        .conversation-receipt {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            margin-top: 6px;
+            font-size: 9px;
+            font-weight: 800;
+            opacity: .72;
+        }
+        .conversation-receipt.is-read { color: #047b8b; opacity: 1; }
+        .conversation-bubble.is-admin .conversation-receipt.is-read { color: #075985; }
+        .conversation-attachment {
+            margin-top: 8px;
+            min-width: min(260px, 68vw);
+            overflow: hidden;
+            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,.18);
+            background: rgba(3,8,13,.14);
+        }
+        .conversation-attachment-image {
+            display: block;
+            width: 100%;
+            max-height: 340px;
+            object-fit: cover;
+            background: rgba(15,23,42,.35);
+        }
+        .conversation-file-card {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 11px;
+            text-align: right;
+        }
+        .conversation-file-icon {
+            width: 38px;
+            height: 38px;
+            flex: 0 0 auto;
+            display: grid;
+            place-items: center;
+            border-radius: 12px;
+            color: #fff;
+            background: rgba(15,23,42,.72);
+        }
+        .conversation-file-card:hover { background: rgba(255,255,255,.09); }
+        .conversation-composer {
+            border-radius: 22px;
+            border: 1px solid rgba(255,255,255,.09);
+            background: rgba(2,6,12,.35);
+            box-shadow: inset 0 1px rgba(255,255,255,.04);
+        }
+        .conversation-attachment-preview {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 9px;
+            padding: 9px 11px;
+            border-radius: 15px;
+            border: 1px solid rgba(100,216,229,.22);
+            background: rgba(100,216,229,.08);
+        }
+        .conversation-attachment-preview img {
+            width: 52px;
+            height: 52px;
+            border-radius: 11px;
+            object-fit: cover;
+        }
+        html[data-theme="light"] .conversation-composer {
+            border-color: rgba(15,23,42,.12);
+            background: rgba(255,255,255,.78);
+        }
         html[data-theme="light"] .conversation-window {
             color: #172033;
             background: linear-gradient(155deg, #fff, #f6f8fc);
@@ -2661,13 +2732,23 @@
                 <div class="h-full flex items-center justify-center text-sm text-slate-500">טוען את השיחה…</div>
             </div>
             <footer class="p-3 sm:p-4 border-t border-white/10 bg-black/15">
-                <div class="flex items-end gap-2">
-                    <textarea id="conversationInput" maxlength="1500" rows="2" placeholder="כתוב הודעה…" class="flex-1 rounded-2xl p-3 text-sm resize-none" onkeydown="handleConversationKeydown(event)"></textarea>
-                    <button id="conversationSendButton" type="button" onclick="sendConversationMessage()" class="w-12 h-12 btn-primary-gold rounded-2xl flex items-center justify-center shrink-0" aria-label="שליחת ההודעה">
-                        <i data-lucide="send-horizontal" class="w-5 h-5"></i>
-                    </button>
+                <div class="conversation-composer p-2.5">
+                    <input id="conversationAttachmentInput" type="file" class="hidden" accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.json,.zip,.rar,.7z" onchange="handleConversationAttachment(this)">
+                    <div id="conversationAttachmentPreview" class="conversation-attachment-preview hidden"></div>
+                    <div class="flex items-end gap-2">
+                        <button type="button" onclick="document.getElementById('conversationAttachmentInput').click()" class="w-12 h-12 btn-secondary-dark rounded-2xl flex items-center justify-center shrink-0" aria-label="צירוף תמונה או קובץ" title="צירוף תמונה או קובץ">
+                            <i data-lucide="paperclip" class="w-5 h-5"></i>
+                        </button>
+                        <textarea id="conversationInput" maxlength="1500" rows="2" placeholder="כתוב הודעה…" class="flex-1 rounded-2xl p-3 text-sm resize-none" onkeydown="handleConversationKeydown(event)"></textarea>
+                        <button id="conversationSendButton" type="button" onclick="sendConversationMessage()" class="w-12 h-12 btn-primary-gold rounded-2xl flex items-center justify-center shrink-0" aria-label="שליחת ההודעה">
+                            <i data-lucide="send-horizontal" class="w-5 h-5"></i>
+                        </button>
+                    </div>
                 </div>
-                <p class="mt-2 text-[9px] text-slate-500">Enter לשליחה · Shift+Enter לשורה חדשה</p>
+                <div class="mt-2 px-1 flex items-center justify-between gap-3 text-[9px] text-slate-500">
+                    <span>Enter לשליחה · Shift+Enter לשורה חדשה</span>
+                    <span id="conversationUploadStatus" aria-live="polite">תמונות וקבצים עד 25MB</span>
+                </div>
             </footer>
         </div>
     </div>
@@ -4019,10 +4100,75 @@
         let activeConversationUid = '';
         let activeConversationMode = '';
         let conversationSending = false;
+        let activeConversationAttachment = null;
+        let conversationAttachmentPreviewUrl = '';
 
         function messageDirection(message) {
             return message?.direction === 'user_to_admin' ? 'user_to_admin' : 'admin_to_user';
         }
+
+        function safeAttachmentUrl(value) {
+            try {
+                const parsed = new URL(String(value || ''), window.location.href);
+                return parsed.protocol === 'https:' ? parsed.href : '';
+            } catch {
+                return '';
+            }
+        }
+
+        function normalizeConversationAttachment(value) {
+            if (!value || typeof value !== 'object') return null;
+            const url = safeAttachmentUrl(value.url);
+            if (!url) return null;
+            return {
+                url,
+                key: String(value.key || value.r2Key || '').slice(0, 500),
+                name: String(value.name || value.fileName || 'קובץ').slice(0, 180),
+                type: String(value.type || value.mimeType || 'application/octet-stream').slice(0, 120),
+                size: Math.max(0, Number(value.size) || 0),
+                kind: value.kind === 'image' || String(value.type || '').startsWith('image/') ? 'image' : 'file'
+            };
+        }
+
+        async function fetchConversationAttachment(url) {
+            const safeUrl = safeAttachmentUrl(url);
+            if (!safeUrl) throw new Error('כתובת הקובץ אינה תקינה.');
+            const headers = new Headers();
+            if (safeUrl.startsWith(`${R2_WORKER_BASE_URL}/media/`)) {
+                headers.set('Authorization', `Bearer ${await window.getFirebaseIdToken()}`);
+            }
+            const response = await fetch(safeUrl, { headers });
+            if (!response.ok) throw new Error('לא ניתן לפתוח את הקובץ.');
+            return response.blob();
+        }
+
+        window.loadConversationImage = async function(image, url) {
+            try {
+                const blob = await fetchConversationAttachment(url);
+                const objectUrl = URL.createObjectURL(blob);
+                image.onload = () => URL.revokeObjectURL(objectUrl);
+                image.src = objectUrl;
+            } catch (error) {
+                image.alt = 'התמונה אינה זמינה';
+                image.classList.add('image-fallback');
+            }
+        };
+
+        window.downloadConversationAttachment = async function(url, fileName) {
+            try {
+                const blob = await fetchConversationAttachment(url);
+                const objectUrl = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = objectUrl;
+                link.download = String(fileName || 'קובץ').replace(/[\\/:*?"<>|]+/g, '-');
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+            } catch (error) {
+                window.showNotification(error.message || 'הורדת הקובץ נכשלה.', false);
+            }
+        };
 
         function conversationEntries(profile) {
             const entries = [];
@@ -4034,7 +4180,10 @@
                     text: String(message.text),
                     direction: messageDirection(message),
                     sentAt: message.sentAt || 0,
-                    sender: message.sender || (messageDirection(message) === 'user_to_admin' ? profile.displayName : 'מנהל הגלריה')
+                    sender: message.sender || (messageDirection(message) === 'user_to_admin' ? profile.displayName : 'מנהל הגלריה'),
+                    attachment: normalizeConversationAttachment(message.attachment),
+                    read: messageDirection(message) === 'user_to_admin' ? message.readByAdmin === true : message.read === true,
+                    readAt: messageDirection(message) === 'user_to_admin' ? message.readByAdminAt : message.readAt
                 });
                 if (message.reply?.text) {
                     entries.push({
@@ -4042,7 +4191,10 @@
                         text: String(message.reply.text),
                         direction: 'user_to_admin',
                         sentAt: message.reply.sentAt || message.sentAt || 0,
-                        sender: message.reply.senderName || profile.displayName || 'משתמש'
+                        sender: message.reply.senderName || profile.displayName || 'משתמש',
+                        attachment: normalizeConversationAttachment(message.reply.attachment),
+                        read: message.reply.readByAdmin === true,
+                        readAt: message.reply.readByAdminAt
                     });
                 }
             });
@@ -4091,12 +4243,65 @@
                     sender.textContent = entry.direction === 'user_to_admin'
                         ? (profile?.displayName || entry.sender || 'משתמש')
                         : (entry.sender || 'מנהל הגלריה');
-                    const text = document.createElement('p');
-                    text.className = 'text-xs sm:text-sm leading-relaxed';
-                    text.textContent = entry.text;
+                    bubble.appendChild(sender);
+                    if (entry.text) {
+                        const text = document.createElement('p');
+                        text.className = 'text-xs sm:text-sm leading-relaxed';
+                        text.textContent = entry.text;
+                        bubble.appendChild(text);
+                    }
+                    if (entry.attachment) {
+                        const attachmentBox = document.createElement('div');
+                        attachmentBox.className = 'conversation-attachment';
+                        if (entry.attachment.kind === 'image') {
+                            const imageButton = document.createElement('button');
+                            imageButton.type = 'button';
+                            imageButton.className = 'block w-full';
+                            imageButton.title = 'הורדת התמונה';
+                            const image = document.createElement('img');
+                            image.className = 'conversation-attachment-image';
+                            image.alt = entry.attachment.name || 'תמונה מצורפת';
+                            imageButton.appendChild(image);
+                            imageButton.onclick = () => window.downloadConversationAttachment(entry.attachment.url, entry.attachment.name);
+                            attachmentBox.appendChild(imageButton);
+                            window.loadConversationImage(image, entry.attachment.url);
+                        } else {
+                            const fileButton = document.createElement('button');
+                            fileButton.type = 'button';
+                            fileButton.className = 'conversation-file-card';
+                            const icon = document.createElement('span');
+                            icon.className = 'conversation-file-icon';
+                            icon.innerHTML = '<i data-lucide="file-down" class="w-5 h-5"></i>';
+                            const details = document.createElement('span');
+                            details.className = 'min-w-0 flex-1';
+                            const name = document.createElement('strong');
+                            name.className = 'block text-[11px] truncate';
+                            name.textContent = entry.attachment.name;
+                            const size = document.createElement('small');
+                            size.className = 'block mt-0.5 text-[9px] opacity-65';
+                            size.textContent = entry.attachment.size ? formatBytes(entry.attachment.size) : 'לחץ להורדה';
+                            details.append(name, size);
+                            fileButton.append(icon, details);
+                            fileButton.onclick = () => window.downloadConversationAttachment(entry.attachment.url, entry.attachment.name);
+                            attachmentBox.appendChild(fileButton);
+                        }
+                        bubble.appendChild(attachmentBox);
+                    }
                     const time = document.createElement('time');
                     time.textContent = formatDate(entry.sentAt);
-                    bubble.append(sender, text, time);
+                    bubble.appendChild(time);
+                    const outgoingForViewer =
+                        (activeConversationMode === 'admin' && entry.direction === 'admin_to_user') ||
+                        (activeConversationMode === 'user' && entry.direction === 'user_to_admin');
+                    if (outgoingForViewer) {
+                        const receipt = document.createElement('span');
+                        receipt.className = `conversation-receipt ${entry.read ? 'is-read' : ''}`;
+                        receipt.innerHTML = entry.read
+                            ? '<i data-lucide="check-check" class="w-3.5 h-3.5"></i><span>נקראה</span>'
+                            : '<i data-lucide="check" class="w-3.5 h-3.5"></i><span>נשלחה</span>';
+                        if (entry.readAt) receipt.title = `נקראה: ${formatDate(entry.readAt)}`;
+                        bubble.appendChild(receipt);
+                    }
                     stream.appendChild(bubble);
                 });
             }
@@ -4113,15 +4318,15 @@
             const updatedMessages = messages.map(message => {
                 if (activeConversationMode === 'admin' && messageDirection(message) === 'user_to_admin' && message.readByAdmin !== true) {
                     changed = true;
-                    return { ...message, readByAdmin: true };
+                    return { ...message, readByAdmin: true, readByAdminAt: Date.now() };
                 }
                 if (activeConversationMode === 'admin' && message.reply && message.reply.readByAdmin !== true) {
                     changed = true;
-                    return { ...message, reply: { ...message.reply, readByAdmin: true } };
+                    return { ...message, reply: { ...message.reply, readByAdmin: true, readByAdminAt: Date.now() } };
                 }
                 if (activeConversationMode === 'user' && messageDirection(message) === 'admin_to_user' && message.read !== true) {
                     changed = true;
-                    return { ...message, read: true };
+                    return { ...message, read: true, readAt: Date.now() };
                 }
                 return message;
             });
@@ -4189,6 +4394,89 @@
             window.showNotification(resolved ? 'הפנייה נפתחה מחדש.' : 'הפנייה סומנה כטופלה.');
         };
 
+        function renderConversationAttachmentPreview() {
+            const preview = document.getElementById('conversationAttachmentPreview');
+            if (!preview) return;
+            if (conversationAttachmentPreviewUrl) {
+                URL.revokeObjectURL(conversationAttachmentPreviewUrl);
+                conversationAttachmentPreviewUrl = '';
+            }
+            preview.replaceChildren();
+            if (!activeConversationAttachment) {
+                preview.classList.add('hidden');
+                return;
+            }
+            const file = activeConversationAttachment;
+            preview.classList.remove('hidden');
+            if (String(file.type || '').startsWith('image/')) {
+                const image = document.createElement('img');
+                conversationAttachmentPreviewUrl = URL.createObjectURL(file);
+                image.src = conversationAttachmentPreviewUrl;
+                image.alt = 'תצוגה מקדימה';
+                preview.appendChild(image);
+            } else {
+                const icon = document.createElement('span');
+                icon.className = 'conversation-file-icon';
+                icon.innerHTML = '<i data-lucide="file" class="w-5 h-5"></i>';
+                preview.appendChild(icon);
+            }
+            const details = document.createElement('div');
+            details.className = 'min-w-0 flex-1';
+            const name = document.createElement('strong');
+            name.className = 'block text-xs text-slate-100 truncate';
+            name.textContent = file.name || 'קובץ';
+            const size = document.createElement('small');
+            size.className = 'block text-[9px] text-slate-400 mt-0.5';
+            size.textContent = formatBytes(file.size);
+            details.append(name, size);
+            const remove = document.createElement('button');
+            remove.type = 'button';
+            remove.className = 'w-8 h-8 rounded-lg btn-secondary-dark grid place-items-center';
+            remove.setAttribute('aria-label', 'הסרת הקובץ המצורף');
+            remove.innerHTML = '<i data-lucide="x" class="w-4 h-4"></i>';
+            remove.onclick = () => window.clearConversationAttachment();
+            preview.append(details, remove);
+            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+        }
+
+        window.handleConversationAttachment = function(input) {
+            const file = input?.files?.[0];
+            if (!file) return;
+            const maximumBytes = 25 * 1024 * 1024;
+            if (!Number.isFinite(file.size) || file.size <= 0 || file.size > maximumBytes) {
+                input.value = '';
+                window.showNotification('אפשר לצרף קובץ בגודל עד 25MB.', false);
+                return;
+            }
+            activeConversationAttachment = file;
+            renderConversationAttachmentPreview();
+        };
+
+        window.clearConversationAttachment = function() {
+            activeConversationAttachment = null;
+            const input = document.getElementById('conversationAttachmentInput');
+            if (input) input.value = '';
+            renderConversationAttachmentPreview();
+        };
+
+        async function uploadConversationAttachment(file, messageId) {
+            const form = new FormData();
+            form.append('file', file, file.name || 'attachment');
+            form.append('imageId', `chat_${safeRecordId(messageId)}`);
+            form.append('title', String(file.name || 'קובץ').slice(0, 120));
+            form.append('context', 'chat');
+            const result = await r2Request('/upload', { method: 'POST', body: form });
+            if (!result?.url || !result?.key) throw new Error('העלאת הקובץ לא הושלמה.');
+            return {
+                url: result.url,
+                key: result.key,
+                name: String(file.name || result.fileName || 'קובץ').slice(0, 180),
+                type: result.mimeType || file.type || 'application/octet-stream',
+                size: Number(result.size) || file.size || 0,
+                kind: result.mediaType === 'image' ? 'image' : 'file'
+            };
+        }
+
         window.handleConversationKeydown = function(event) {
             if (event.key === 'Enter' && !event.shiftKey) {
                 event.preventDefault();
@@ -4200,8 +4488,10 @@
             if (conversationSending) return;
             const input = document.getElementById('conversationInput');
             const button = document.getElementById('conversationSendButton');
+            const status = document.getElementById('conversationUploadStatus');
             const text = String(input?.value || '').trim().slice(0, 1500);
-            if (!text) return;
+            const file = activeConversationAttachment;
+            if (!text && !file) return;
             const profile = activeConversationProfile();
             const uid = activeConversationMode === 'admin' ? activeConversationUid : window.state.currentUser?.uid;
             if (!profile || !uid) return;
@@ -4215,8 +4505,11 @@
                 if (!snapshot.exists()) throw new Error('פרופיל השיחה לא נמצא');
                 const currentMessages = Array.isArray(snapshot.data().messages) ? snapshot.data().messages : [];
                 const fromAdmin = activeConversationMode === 'admin';
+                const messageId = crypto.randomUUID();
+                if (status && file) status.textContent = 'מעלה את הקובץ…';
+                const attachment = file ? await uploadConversationAttachment(file, messageId) : null;
                 const message = {
-                    id: crypto.randomUUID(),
+                    id: messageId,
                     text,
                     direction: fromAdmin ? 'admin_to_user' : 'user_to_admin',
                     sender: fromAdmin
@@ -4226,7 +4519,10 @@
                     recipientUid: fromAdmin ? uid : 'gallery-admin',
                     sentAt: Date.now(),
                     read: !fromAdmin,
-                    readByAdmin: fromAdmin
+                    readAt: fromAdmin ? null : Date.now(),
+                    readByAdmin: fromAdmin,
+                    readByAdminAt: fromAdmin ? Date.now() : null,
+                    attachment
                 };
                 const updatedMessages = [message, ...currentMessages].slice(0, 250);
                 await setDoc(profileRef, {
@@ -4236,12 +4532,15 @@
                 profile.messages = updatedMessages;
                 if (!fromAdmin) profile.supportStatus = 'open';
                 if (input) input.value = '';
+                window.clearConversationAttachment();
+                if (status) status.textContent = 'תמונות וקבצים עד 25MB';
                 window.renderActiveConversation();
                 window.renderFloatingInbox?.();
                 window.renderAdminMessageReplies?.();
             } catch (error) {
                 console.error('Conversation message failed:', error);
-                window.showNotification('שליחת ההודעה נכשלה. נסה שוב.', false);
+                if (status) status.textContent = 'ההעלאה או השליחה נכשלה';
+                window.showNotification(error.message || 'שליחת ההודעה נכשלה. נסה שוב.', false);
             } finally {
                 conversationSending = false;
                 if (button) button.disabled = false;
@@ -4730,7 +5029,7 @@
                     if (!msg.read && window.state.currentUser) {
                         try {
                             const updatedMessages = [...messages];
-                            updatedMessages[originalIndex] = { ...msg, read: true };
+                            updatedMessages[originalIndex] = { ...msg, read: true, readAt: Date.now() };
                             const { doc, setDoc } = window.firestoreModules;
                             const profileRef = doc(window.db, 'artifacts', window.appId, 'public', 'data', 'userProfiles', window.state.currentUser.uid);
                             await setDoc(profileRef, { messages: updatedMessages }, { merge: true });
