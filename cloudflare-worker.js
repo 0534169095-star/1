@@ -649,6 +649,8 @@ export default {
         return json(request, {
           success: true,
           service: "simchas-gallery-api",
+          version: "2026-08-02-chat-v1",
+          features: ["chat-attachments"],
           bucketConnected: true,
           objectsFound: result.objects.length
         });
