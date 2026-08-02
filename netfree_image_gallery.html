@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>תיקיות - Netfree Gallery</title>
+    <style>
+        :root {
+            --bg-dark: #12141d;
+            --bg-card: #1c1e29;
+            --bg-card-hover: #262938;
+            --text-primary: #ffffff;
+            --text-secondary: #8c93a8;
+            --accent-yellow: #ffb822;
+            --border-radius: 12px;
+            --transition-speed: 0.2s;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            padding: 24px;
+            min-height: 100vh;
+        }
+
+        /* Header Styles */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 16px;
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .header-title svg {
+            width: 24px;
+            height: 24px;
+            fill: var(--accent-yellow);
+        }
+
+        .header-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Main Navigation/Action Buttons */
+        .main-actions {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .action-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-speed);
+            border: none;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background-color: var(--accent-yellow);
+            color: #000;
+        }
+        
+        .btn-primary:hover {
+            background-color: #e5a61f;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background-color: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--bg-card-hover);
+            transform: translateY(-2px);
+        }
+
+        .badge {
+            background: rgba(0,0,0,0.2);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+
+        .btn-primary .badge {
+            background: rgba(0,0,0,0.3);
+        }
+
+        /* Grid Layout for Folders */
+        /* תיקון: הגדרת מינימום רוחב רחב יותר לכרטיסייה (250px) כדי למנוע חיתוך טקסט */
+        .collections-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 16px;
+            margin-bottom: 80px; /* Space for the toast notification */
+        }
+
+        /* Folder Card Styles */
+        .folder-card {
+            background-color: var(--bg-card);
+            border-radius: var(--border-radius);
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: background-color var(--transition-speed);
+            border: 1px solid transparent;
+        }
+
+        .folder-card:hover {
+            background-color: var(--bg-card-hover);
+            border-color: rgba(255,255,255,0.1);
+        }
+
+        .folder-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            /* הבטחה שהאלמנט לא יחרוג מהגבולות */
+            min-width: 0; 
+            flex-grow: 1;
+        }
+
+        .folder-icon {
+            width: 20px;
+            height: 20px;
+            fill: var(--text-secondary);
+            flex-shrink: 0;
+        }
+
+        .folder-name {
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            /* תיקון: קיטוע טקסט תקין לעברית */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            direction: rtl;
+        }
+
+        .folder-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .item-count {
+            background-color: rgba(255,255,255,0.05);
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            padding: 2px 8px;
+            border-radius: 12px;
+        }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color var(--transition-speed), background-color var(--transition-speed);
+        }
+
+        .icon-btn:hover {
+            color: var(--text-primary);
+            background-color: rgba(255,255,255,0.1);
+        }
+        
+        .icon-btn svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+
+        /* Toast Notification */
+        /* תיקון: מיקום מדויק שלא יסתיר פריטים משמעותיים, עם Z-index גבוה */
+        .toast-notification {
+            position: fixed;
+            bottom: 24px;
+            left: 24px;
+            background-color: #1a2221;
+            border: 1px solid #233530;
+            border-radius: 8px;
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            z-index: 1000;
+            transform: translateY(0);
+            opacity: 1;
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        .toast-notification.hidden {
+            transform: translateY(150%);
+            opacity: 0;
+        }
+
+        .toast-icon {
+            background-color: #0b2e23;
+            color: #27c186;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .toast-icon svg {
+             width: 18px;
+             height: 18px;
+             fill: currentColor;
+        }
+
+        .toast-content h4 {
+            color: var(--text-primary);
+            margin-bottom: 4px;
+            font-size: 0.95rem;
+        }
+
+        .toast-content p {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .collections-grid {
+                grid-template-columns: repeat(auto-fill, minmax(100%, 1fr));
+            }
+            
+            .main-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <div class="header-subtitle">COLLECTIONS</div>
+        <div class="header-title">
+            תיקיות
+            <svg viewBox="0 0 24 24">
+                <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>
+            </svg>
+        </div>
+    </header>
+
+    <!-- הופרד מהגריד של התיקיות למניעת בלבול היררכי -->
+    <div class="main-actions">
+        <button class="action-btn btn-primary" onclick="alert('כל התמונות נבחרו (פעולת דמו)')">
+            <svg style="width:20px;height:20px;fill:currentColor" viewBox="0 0 24 24"><path d="M4 4h4v4H4V4zm6 0h4v4h-4V4zm6 0h4v4h-4V4zM4 10h4v4H4v-4zm6 0h4v4h-4v-4zm6 0h4v4h-4v-4zM4 16h4v4H4v-4zm6 0h4v4h-4v-4zm6 0h4v4h-4v-4z"/></svg>
+            כל התמונות
+            <span class="badge">122</span>
+        </button>
+        
+        <button class="action-btn btn-secondary">
+            <svg style="width:20px;height:20px;fill:currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            המועדפים שלי
+            <span class="badge">0</span>
+        </button>
+    </div>
+
+    <div class="collections-grid" id="foldersContainer">
+        <!-- Folders will be injected here by JavaScript -->
+    </div>
+
+    <div class="toast-notification" id="loginToast">
+        <div class="toast-content" style="text-align: right;">
+            <h4>התחברת בהצלחה באמצעות Google!</h4>
+            <p>חיבור בטוח ואוטומטי המאפשר צפייה ושמירה על פרטיות. נוכחות התיבת.</p>
+        </div>
+        <div class="toast-icon">
+            <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+        </div>
+    </div>
+
+    <script>
+        // נתוני דמו לתיקיות עם שמות ארוכים כדי לבחון את חיתוך הטקסט
+        const folderData = [
+            { name: "כללי", count: 0, icon: "home" },
+            { name: "אירועים מיוחדים 2023", count: 0, icon: "folder" },
+            { name: "טיול לצפון באביב", count: 0, icon: "folder" },
+            { name: "שמחה משפחתית (בר מצווה)", count: 0, icon: "folder" },
+            { name: "שמחת תורה הקפות שניות", count: 3, icon: "folder" },
+            { name: "שמחות ואירועים שונים במרכז", count: 5, icon: "folder" },
+            { name: "שמחות - חלק א", count: 6, icon: "folder" },
+            { name: "שמחות - חלק ב", count: 5, icon: "folder" },
+            { name: "שמחות כללי", count: 4, icon: "folder" },
+            { name: "שמחות וידאו", count: 4, icon: "folder" },
+            { name: "שמחות מצלמה 2", count: 3, icon: "folder" },
+            { name: "שמחות מצלמה 3", count: 4, icon: "folder" },
+            { name: "שמחות ערוכים", count: 4, icon: "folder" },
+            { name: "שמחות חורף", count: 4, icon: "folder" },
+            { name: "שמחות קיץ", count: 3, icon: "folder" },
+            { name: "שמחות ארכיון 1", count: 3, icon: "folder" },
+            { name: "שמחות ארכיון 2", count: 4, icon: "folder" },
+            { name: "שמחות ישנים", count: 4, icon: "folder" },
+            { name: "שמחות למיון", count: 3, icon: "folder" },
+            { name: "שמחות מגובים", count: 2, icon: "folder" },
+            { name: "שמחות למחיקה", count: 3, icon: "folder" },
+            { name: "שמחות לשתף", count: 3, icon: "folder" },
+            { name: "שמחות מועדפים", count: 3, icon: "folder" },
+            { name: "שמחות דפוס", count: 3, icon: "folder" },
+            { name: "שמחות אלבומים", count: 3, icon: "folder" },
+            { name: "שמחות אורחים", count: 4, icon: "folder" },
+            { name: "שמחות משפחה", count: 3, icon: "folder" }
+        ];
+
+        // SVGs for icons
+        const icons = {
+            folder: '<path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>',
+            home: '<path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>',
+            trash: '<path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>',
+            edit: '<path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>'
+        };
+
+        // Render folders
+        const container = document.getElementById('foldersContainer');
+        
+        folderData.forEach(folder => {
+            const card = document.createElement('div');
+            card.className = 'folder-card';
+            
+            card.innerHTML = `
+                <div class="folder-info">
+                    <svg class="folder-icon" viewBox="0 0 24 24">
+                        ${icons[folder.icon] || icons.folder}
+                    </svg>
+                    <!-- כאן בא לידי ביטוי ה-RTL והחיתוך הנכון -->
+                    <span class="folder-name" title="${folder.name}">${folder.name}</span>
+                </div>
+                
+                <div class="folder-actions">
+                    <span class="item-count">${folder.count}</span>
+                    <button class="icon-btn" title="ערוך">
+                        <svg viewBox="0 0 24 24">${icons.edit}</svg>
+                    </button>
+                    <button class="icon-btn" title="מחק">
+                        <svg viewBox="0 0 24 24">${icons.trash}</svg>
+                    </button>
+                </div>
+            `;
+            
+            container.appendChild(card);
+        });
+
+        // Toast Notification Logic
+        // הסתרת ההודעה אחרי 5 שניות
+        setTimeout(() => {
+            const toast = document.getElementById('loginToast');
+            if(toast) {
+                toast.classList.add('hidden');
+            }
+        }, 5000);
+    </script>
+</body>
+</html>
