@@ -3060,6 +3060,7 @@
                     driveAccessToken = payload.accessToken;
                     driveAccessTokenExpiresAt = Number(payload.expiresAt) || (Date.now() + 50 * 60 * 1000);
                     setDriveConnectionUI(payload.email || user.email || '');
+                    loadDriveFolders(); // ← טוען תיקיות שמורות
                     if (showSuccessNotice) window.showNotification('Google Drive מחובר קבוע ושוחזר אוטומטית.', true);
                     return true;
                 } catch (error) {
@@ -3587,7 +3588,128 @@
                 window.showNotification(error.message || 'סנכרון התיקייה נכשל.', false);
             }
         };
+        // ──────── ניהול תיקיות סנכרון Worker ────────
 
+function escapeHtml(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+async function loadDriveFolders() {
+  try {
+    const res = await driveWorkerRequest('/drive/folders', { method: 'GET' });
+    if (!res.success) return;
+
+    const folders = res.folders || [];
+    const noMsg = document.getElementById('noFoldersMsg');
+
+    if (res.lastSync) {
+      const d = new Date(res.lastSync);
+      const el = document.getElementById('workerLastSync');
+      if (el) el.textContent = `סנכרון אחרון: ${d.toLocaleString('he-IL')}`;
+    }
+
+    if (folders.length === 0) {
+      if (noMsg) noMsg.style.display = 'block';
+      return;
+    }
+    if (noMsg) noMsg.style.display = 'none';
+    folders.forEach(f => addDriveFolderRow(f.url, f.label, f.autoSync));
+  } catch (err) {
+    console.warn('loadDriveFolders:', err.message);
+  }
+}
+
+function addDriveFolderRow(url = '', label = '', autoSync = true) {
+  const list = document.getElementById('driveFoldersList');
+  const noMsg = document.getElementById('noFoldersMsg');
+  if (!list) return;
+  if (noMsg) noMsg.style.display = 'none';
+
+  const row = document.createElement('div');
+  row.className = 'flex gap-1.5 items-center bg-white/5 rounded-xl px-2 py-1.5 border border-white/10';
+  row.innerHTML = `
+    <input type="text" value="${escapeHtml(url)}"
+      placeholder="https://drive.google.com/drive/folders/..."
+      dir="ltr"
+      class="flex-[3] rounded-lg px-2 py-1 text-[9px] bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-1 focus:ring-amber-500/40 min-w-0">
+    <input type="text" value="${escapeHtml(label)}"
+      placeholder="שם (אופציונלי)"
+      class="flex-[2] rounded-lg px-2 py-1 text-[9px] bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-1 focus:ring-amber-500/40 min-w-0">
+    <label class="flex items-center gap-1 text-[9px] text-slate-400 whitespace-nowrap cursor-pointer">
+      <input type="checkbox" ${autoSync !== false ? 'checked' : ''}
+        class="rounded border-white/20 text-amber-500 focus:ring-amber-500">
+      אוטו
+    </label>
+    <button type="button" onclick="removeDriveFolderRow(this)"
+      class="text-red-400 hover:bg-red-500/20 rounded px-1.5 py-0.5 text-xs transition-all flex-shrink-0">✕</button>
+  `;
+  list.appendChild(row);
+}
+
+function removeDriveFolderRow(btn) {
+  btn.closest('div.flex')?.remove();
+  const list = document.getElementById('driveFoldersList');
+  const noMsg = document.getElementById('noFoldersMsg');
+  if (noMsg && list && list.querySelectorAll('div.flex').length === 0) {
+    noMsg.style.display = 'block';
+  }
+}
+
+async function saveDriveFoldersToWorker() {
+  const rows = document.querySelectorAll('#driveFoldersList > div');
+  const folders = [];
+  rows.forEach(row => {
+    const inputs = row.querySelectorAll('input[type="text"]');
+    const checkbox = row.querySelector('input[type="checkbox"]');
+    const url = inputs[0]?.value.trim();
+    const label = inputs[1]?.value.trim();
+    const autoSync = checkbox?.checked !== false;
+    if (url) folders.push({ url, label, autoSync });
+  });
+
+  const resultEl = document.getElementById('workerSyncResult');
+  try {
+    const res = await driveWorkerRequest('/drive/folders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folders })
+    });
+    if (res.success) {
+      if (resultEl) { resultEl.style.color = '#22c55e'; resultEl.textContent = `✅ ${folders.length} תיקיות נשמרו!`; }
+    } else {
+      if (resultEl) { resultEl.style.color = '#ef4444'; resultEl.textContent = `❌ ${res.message || 'שגיאה'}`; }
+    }
+  } catch (err) {
+    if (resultEl) { resultEl.style.color = '#ef4444'; resultEl.textContent = `❌ ${err.message}`; }
+  }
+  setTimeout(() => { if (resultEl) resultEl.textContent = ''; }, 4000);
+}
+
+async function syncNowFromWorker() {
+  const resultEl = document.getElementById('workerSyncResult');
+  const btn = document.getElementById('workerSyncBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ מסנכרן...'; }
+
+  try {
+    const res = await driveWorkerRequest('/drive/sync', { method: 'POST' });
+    if (res.success) {
+      if (resultEl) { resultEl.style.color = '#22c55e'; resultEl.textContent = `✅ ${res.totalSynced} קבצים חדשים סונכרנו!`; }
+      const lastEl = document.getElementById('workerLastSync');
+      if (lastEl) lastEl.textContent = `סנכרון אחרון: ${new Date().toLocaleString('he-IL')}`;
+    } else {
+      if (resultEl) { resultEl.style.color = '#ef4444'; resultEl.textContent = `❌ ${res.message || 'סנכרון נכשל'}`; }
+    }
+  } catch (err) {
+    if (resultEl) { resultEl.style.color = '#ef4444'; resultEl.textContent = `❌ ${err.message}`; }
+  }
+
+  if (btn) { btn.disabled = false; btn.textContent = '🔄 סנכרן עכשיו'; }
+  setTimeout(() => { if (resultEl) resultEl.textContent = ''; }, 6000);
+}
         window.startGoogleDriveSync = async function(confirmed = false) {
             if (!window.checkAdminPermission?.()) return;
             if (!driveAccessToken || driveAccessTokenExpiresAt <= Date.now() + 60000) {
