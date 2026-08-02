@@ -2879,7 +2879,10 @@
         const driveReturnStatus = new URLSearchParams(window.location.search).get('drive');
         // נשמרות רק טביעות SHA-256 של חשבון מנהל-העל, לא הכתובת או המזהה עצמם.
         const INITIAL_ADMIN_UID_SHA256 = 'b38e92d2900b2c32ddfe921142715cc2becbe7b77d9e911196d7a561574d8b39';
-        const INITIAL_SUPER_ADMIN_EMAIL_SHA256 = '0c70c93b21ed7d7ac11f8a0e41cf0811b221f8e16524ed71d8b1822661edc137';
+        const INITIAL_SUPER_ADMIN_EMAIL_SHA256S = new Set([
+            '0c70c93b21ed7d7ac11f8a0e41cf0811b221f8e16524ed71d8b1822661edc137',
+            'd2632af59d29239eef52f10e1cfbf38e27c65c55470b355134b1cd1fb4f809d6'
+        ]);
         const googleProvider = new GoogleAuthProvider();
         googleProvider.setCustomParameters({ prompt: 'select_account' });
 
@@ -2905,7 +2908,7 @@
                 secureHash(user.uid),
                 secureHash(user.email)
             ]);
-            return uidHash === INITIAL_ADMIN_UID_SHA256 || emailHash === INITIAL_SUPER_ADMIN_EMAIL_SHA256;
+            return uidHash === INITIAL_ADMIN_UID_SHA256 || INITIAL_SUPER_ADMIN_EMAIL_SHA256S.has(emailHash);
         }
 
         async function handleGoogleOneTapCredential(response) {
