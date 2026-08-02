@@ -2273,7 +2273,7 @@
                         <i data-lucide="arrow-left" class="w-4 h-4 text-emerald-300/70"></i>
                     </button>
                     <div id="accSystemHealth" class="accordion-content px-4 space-y-3">
-                        <p class="text-[10px] text-slate-400">בדיקה מהירה של Firebase, האחסון, זיהוי הפנים וחיבור Drive.</p>
+                        <p class="text-[10px] text-slate-400">בדיקה מהירה של Cloudflare, האחסון, זיהוי הפנים וחיבור Drive.</p>
                         <button type="button" onclick="runSystemHealthCheck()" class="w-full py-2.5 btn-primary-gold rounded-xl text-xs font-bold">הרץ בדיקה</button>
                         <div id="systemHealthResults" class="space-y-2"></div>
                     </div>
@@ -2780,19 +2780,17 @@
     </div>
 
     <!-- ==========================================
-         FIREBASE CLOUD DATABASE & AUTH LOGIC
+         CLOUDFLARE D1 DATABASE & GOOGLE AUTH LOGIC
          ========================================== -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithCredential, signInWithPopup, signInWithRedirect, getRedirectResult, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, getDoc, getDocs, setDoc, deleteDoc, updateDoc, increment, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-lite.js";
+        import { initializeApp, getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithCredential, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, getFirestore, collection, doc, getDoc, getDocs, setDoc, deleteDoc, updateDoc, increment, query, orderBy, limit } from "./cloudflare-client.js";
 
-        // גישה גלובלית לפונקציות פיירבייס מכל מקום בקוד
+        // שכבת תאימות: הממשק הקיים נשאר זהה, והנתונים נשמרים ב־Cloudflare D1.
         window.db = null;
         window.appId = typeof __app_id !== 'undefined' ? __app_id : 'org-gallery';
         window.firestoreModules = { collection, doc, getDoc, getDocs, setDoc, deleteDoc, updateDoc, increment, query, orderBy, limit };
 
-        // Firestore Lite משתמש בבקשות HTTPS רגילות. במקום לסרוק את כל מסד הנתונים
+        // D1 משתמש בבקשות HTTPS רגילות. במקום לסרוק את כל מסד הנתונים
         // כל חמש שניות, כל מקור נטען פעם אחת ומתרענן במרווח חסכוני ורק כשהעמוד פעיל.
         // בשגיאת מכסה מופעלת השהיה ארוכה כדי לא להחריף את התקלה.
         function onSnapshot(reference, onNext, onError) {
@@ -2839,9 +2837,7 @@
                     }
                 } catch (error) {
                     consecutiveErrors += 1;
-                    const retryDelay = error?.code === 'resource-exhausted'
-                        ? 30 * 60 * 1000
-                        : Math.min(normalDelay, 30 * 1000 * (2 ** Math.min(consecutiveErrors - 1, 5)));
+                    const retryDelay = Math.min(normalDelay, 30 * 1000 * (2 ** Math.min(consecutiveErrors - 1, 5)));
                     retryNotBefore = Date.now() + retryDelay;
                     if (active && typeof onError === 'function') onError(error);
                 } finally {
@@ -2913,7 +2909,7 @@
         }
 
         async function handleGoogleOneTapCredential(response) {
-            if (!auth || !response?.credential) return;
+            if (!response?.credential) return;
             try {
                 const credential = GoogleAuthProvider.credential(response.credential);
                 await signInWithCredential(auth, credential);
@@ -2925,10 +2921,11 @@
             }
         }
 
-        function showGoogleOneTapWhenReady() {
+        function showGoogleOneTapWhenReady(force = false) {
             // מבקשים מ-Google להציג את בוחר החשבון בכל ביקור בדף, גם אם
-            // Firebase זוכר התחברות קודמת. Google עצמה עשויה להסתיר את
+            // הדפדפן עשוי לזכור התחברות קודמת. Google עצמה עשויה להסתיר את
             // החלון בזמן השהיה לאחר שהמשתמש סגר אותו.
+            if (force) oneTapPromptRequested = false;
             if (oneTapPromptRequested) return;
             let attempts = 0;
             const tryShow = () => {
@@ -3635,20 +3632,10 @@
             try {
                 dismissGoogleOneTap();
                 window.showNotification("פותח התחברות באמצעות Google...", true);
-                const useRedirect = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-                if (useRedirect) {
-                    await signInWithRedirect(auth, googleProvider);
-                } else {
-                    await signInWithPopup(auth, googleProvider);
-                    window.showNotification("התחברת בהצלחה באמצעות Google!", true);
-                }
+                showGoogleOneTapWhenReady(true);
             } catch (e) {
                 console.error("Google sign-in error", e);
-                let msg = "ההתחברות באמצעות Google נכשלה.";
-                if (e.code === 'auth/popup-closed-by-user') msg = "חלון ההתחברות נסגר לפני השלמת התהליך.";
-                else if (e.code === 'auth/popup-blocked') msg = "הדפדפן חסם את חלון ההתחברות. נסה שוב ואשר חלונות קופצים.";
-                else if (e.code === 'auth/unauthorized-domain') msg = "הדומיין של האתר אינו מורשה ב-Firebase Authentication.";
-                window.showNotification(msg, false);
+                window.showNotification("ההתחברות באמצעות Google נכשלה.", false);
             }
         };
 
@@ -3697,14 +3684,14 @@
         function reportFirestoreError(err) {
             if (err.code === 'unavailable') {
                 console.warn("חיבור הרשת חלש או חסום (Offline). מנסה להתחבר מחדש ברקע...");
-            } else if (err.code === 'resource-exhausted') {
-                console.error("Firestore quota exhausted. Automatic reads paused to protect the quota.", err);
-                window.showNotification("מכסת Firebase נוצלה. עצרנו רענונים אוטומטיים; השירות יתחדש לאחר איפוס המכסה.", false);
+            } else if (err.code === 'database_binding_missing') {
+                console.error("Cloudflare D1 binding is missing.", err);
+                window.showNotification("מסד הנתונים של Cloudflare עדיין לא חובר ל־Worker.", false);
             } else if (err.code === 'permission-denied') {
-                console.error("Firestore Error: פנייה למסד הנתונים נחסמה עקב הרשאות (Rules).", err);
+                console.error("Cloudflare D1 request denied.", err);
                 window.showNotification("שגיאת אבטחה: אין הרשאת גישה לנתונים.", false);
             } else {
-                console.error("Firestore Error:", err);
+                console.error("Cloudflare data error:", err);
             }
         }
 
@@ -3865,7 +3852,7 @@
                     if (!canRetry) throw error;
 
                     if (isAuthError) {
-                        // לאחר One Tap ייתכן שה-Auth התעדכן רגע לפני Firestore.
+                        // לאחר One Tap ייתכן שאסימון Google התעדכן רגע לפני מסד הנתונים.
                         await user.getIdToken(true);
                     }
 
@@ -3880,18 +3867,11 @@
                 const counter = document.getElementById('imageCounter');
                 if(counter) counter.innerText = "מתחבר לענן...";
 
-                const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-                    apiKey: "AIzaSyCELVhy_L5dkGAVsY5in57Yv6-wdM3wHY4",
-                    authDomain: "simchas-bb35c.firebaseapp.com",
-                    projectId: "simchas-bb35c",
-                    storageBucket: "simchas-bb35c.firebasestorage.app",
-                    messagingSenderId: "601586229891",
-                    appId: "1:601586229891:web:c2a599a58e876496fc31b6"
-                };
+                const firebaseConfig = { provider: 'cloudflare-d1', appId: 'org-gallery' };
 
                 const app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
-                // מאפשר לסקריפט הרגיל לקבל טוקן Firebase עבור קריאות ל-Worker של R2
+                // שם תאימות לקוד הקיים; בפועל מוחזר אסימון Google ישיר.
                 window.getFirebaseIdToken = async function(forceRefresh = false) {
                     const user = auth?.currentUser;
                     if (!user) throw new Error('יש להתחבר עם חשבון Google לפני העלאת תמונות.');
@@ -3902,8 +3882,7 @@
                     const redirectResult = await getRedirectResult(auth);
                     if (redirectResult?.user) window.showNotification("התחברת בהצלחה באמצעות Google!", true);
                 } catch (e) {
-                    console.error("Google redirect result error", e);
-                    if (e.code === 'auth/unauthorized-domain') window.showNotification("הדומיין של האתר אינו מורשה ב-Firebase Authentication.", false);
+                    console.error("Google authentication restore error", e);
                 }
 
                 if (driveReturnStatus) {
@@ -3922,7 +3901,7 @@
 
                 window.db = getFirestore(app);
 
-                // ניהול הזדהות מאובטח ומובנה - במידת הצורך הזדהות אנונימית מהירה לקריאה
+                // ניהול הזדהות ישיר מול Google, ללא Firebase Authentication.
                 onAuthStateChanged(auth, async (user) => {
                     stopAdminListeners();
                     if (user) {
@@ -3946,12 +3925,7 @@
                             } catch (error) {
                                 console.error('Creating Google user profile failed:', error);
                                 const errorCode = error?.code || 'unknown';
-                                window.showNotification(
-                                    errorCode === 'resource-exhausted'
-                                        ? 'מכסת Firebase נוצלה כרגע. האתר הפסיק רענונים מיותרים; נסה שוב לאחר איפוס המכסה.'
-                                        : `לא ניתן היה לשלוח את בקשת ההצטרפות (${errorCode}).`,
-                                    false
-                                );
+                                window.showNotification(`לא ניתן היה לשלוח את בקשת ההצטרפות (${errorCode}).`, false);
                             }
                         }
                         setupFirestoreListeners(user);
@@ -4007,7 +3981,7 @@
                     }
                 });
             } catch (e) {
-                console.error("Firebase Init Error:", e);
+                console.error("Cloudflare Init Error:", e);
                 window.showNotification("שגיאה בחיבור לענן. הנתונים לא יסונכרנו.", false);
             }
         }
@@ -5132,7 +5106,7 @@
                 };
                 card.appendChild(openChatButton);
                 
-                // Clicking message marks as read in Firestore
+                // לחיצה על הודעה מסמנת אותה כנקראה במסד הנתונים.
                 card.onclick = async () => {
                     if (!msg.read && window.state.currentUser) {
                         try {
@@ -5313,7 +5287,7 @@
                     { label: 'מרכז פעילות', description: 'יומן הפעולות האחרונות ותמונת מצב ניהולית', icon: 'chart-no-axes-combined', type: 'task', target: 'accActivityCenter', superAdminOnly: true },
                     { label: 'ניתוח נתונים מתקדם', description: 'צפיות, נפח אחסון, סוגי מדיה והפריטים המובילים', icon: 'chart-column-big', type: 'analytics', superAdminOnly: true },
                     { label: 'גיבוי ושחזור', description: 'ייצוא נתוני הגלריה לקובץ ושחזור מגיבוי', icon: 'database-backup', type: 'modal', target: 'backupRestoreModal', superAdminOnly: true },
-                    { label: 'בדיקת תקינות המערכת', description: 'בדיקת Firebase, האחסון, זיהוי פנים ו־Drive', icon: 'shield-check', type: 'task', target: 'accSystemHealth' }
+                    { label: 'בדיקת תקינות המערכת', description: 'בדיקת Cloudflare, האחסון, זיהוי פנים ו־Drive', icon: 'shield-check', type: 'task', target: 'accSystemHealth' }
                 ]
             }
         };
@@ -5712,7 +5686,7 @@
 
             const checks = [
                 {
-                    label: 'Firebase והתחברות',
+                    label: 'Cloudflare D1 והתחברות',
                     run: async () => {
                         if (!window.db) throw new Error('מסד הנתונים עדיין לא מחובר');
                         if (!window.state.currentUser) throw new Error('אין משתמש מחובר');
@@ -5720,7 +5694,7 @@
                     }
                 },
                 {
-                    label: 'כללי Firestore החדשים',
+                    label: 'הרשאות מסד הנתונים',
                     run: async () => {
                         if (!window.state.isSuperAdmin) return 'בדיקה מלאה זמינה למנהל־על';
                         const { collection, getDocs } = window.firestoreModules;
@@ -5733,8 +5707,8 @@
                     run: async () => {
                         const response = await fetch(`${R2_WORKER_BASE_URL}/health`);
                         const payload = await response.json().catch(() => ({}));
-                        if (!response.ok || payload.bucketConnected !== true) throw new Error(payload.message || 'האחסון אינו זמין');
-                        return 'האחסון מחובר';
+                        if (!response.ok || payload.bucketConnected !== true || payload.databaseConnected !== true) throw new Error(payload.message || 'האחסון אינו זמין');
+                        return 'R2 ו־D1 מחוברים';
                     }
                 },
                 {
@@ -6712,7 +6686,7 @@
                 else window.state.favorites.delete(id);
                 window.renderFolders();
                 window.renderImages();
-                window.showNotification('שמירת המועדף נכשלה. בדוק את כללי Firebase.', false);
+                window.showNotification('שמירת המועדף נכשלה. בדוק את חיבור Cloudflare.', false);
             }
         };
 
@@ -7981,7 +7955,7 @@
                 window.showNotification(`${profile.displayName || 'המשתמש'} אושר בתור ${roleLabels[role]}.`);
             } catch (error) {
                 console.error('Approving user failed:', error);
-                window.showNotification('אישור המשתמש נכשל. בדוק את הרשאות Firebase.', false);
+                window.showNotification('אישור המשתמש נכשל. בדוק את הרשאות Cloudflare.', false);
             }
         };
 

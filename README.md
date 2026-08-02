@@ -1,100 +1,49 @@
 # גלריית שמחת התורה
 
-אתר גלריה פרטי המבוסס על GitHub Pages, Firebase ו־Cloudflare Workers/R2.
+אתר גלריה פרטי המבוסס על GitHub Pages ו־Cloudflare בלבד. Firebase אינו נדרש להפעלת האתר.
 
 ## רכיבי המערכת
 
-- `index.html` — ממשק הגלריה, ניהול משתמשים, העלאת תמונות וסרטונים וחיפוש תמונות.
-- `admin-messages.html` — הפניה מקישורים ישנים אל מרכז ההודעות שבתוך האתר.
-- `manifest.webmanifest` ו־`sw.js` — התקנה כאפליקציה ומטמון בסיסי לשיפור זמינות.
-- `cloudflare-worker.js` — אימות משתמשים, אחסון R2, חיפוש AI ומטמון נכסי זיהוי פנים.
-- `firestore.rules` — הרשאות מסד הנתונים.
-- `storage.rules` — הרשאות Firebase Storage.
+- `index.html` — ממשק הגלריה, המשתמשים והניהול.
+- `cloudflare-client.js` — התחברות Google ישירה ושכבת הנתונים של D1.
+- `cloudflare-worker.js` — API מאובטח, אימות Google, D1, R2, Drive, דוא״ל וחיפוש AI.
+- `cloudflare-d1-schema.sql` — מבנה מסד הנתונים.
+- `sw.js` ו־`manifest.webmanifest` — התקנה כאפליקציה ומטמון בסיסי.
 
-## פריסת האתר
+## חיבור Cloudflare D1
 
-האתר מתפרסם אוטומטית מ־GitHub Pages לאחר עדכון ענף `main`.
+1. ב־Cloudflare פתח **Storage & databases → D1 SQL database** וצור מסד בשם `simchas-gallery-db`.
+2. פתח את המסד, עבור ל־**Console**, הדבק את תוכן `cloudflare-d1-schema.sql` והפעל אותו.
+3. פתח את ה־Worker הקיים `simchas-gallery-api`.
+4. תחת **Settings → Bindings** הוסף **D1 database binding** בשם המדויק `GALLERY_DB` ובחר את המסד שיצרת.
+5. החלף את קוד ה־Worker בתוכן `cloudflare-worker.js` ופרוס.
 
-## פריסת Cloudflare Worker
+יש להשאיר את חיבור R2 הקיים בשם `GALLERY_BUCKET`.
 
-1. פתח את ה־Worker בשם `simchas-gallery-api`.
-2. בחר **עריכת קוד** והחלף את `worker.js` בתוכן של `cloudflare-worker.js`.
-3. לחץ **פרוס**.
-4. תחת **הגדרות > משתנים וסודות** הגדר:
+## משתנים וסודות ב־Worker
 
 | שם | סוג | שימוש |
 |---|---|---|
+| `GOOGLE_CLIENT_ID` | Text | מזהה לקוח Google; אם חסר, קיימת ברירת המחדל של האתר |
 | `OPENAI_API_KEY` | Secret | חיפוש תמונות לפי תיאור |
-| `FIREBASE_PROJECT_ID` | Text | מזהה פרויקט Firebase |
-| `FIREBASE_APP_ID` | Text | מזהה האפליקציה, ברירת מחדל `org-gallery` |
-| `FIREBASE_API_KEY` | Text | מפתח התצורה הציבורי של Firebase |
-| `RESEND_API_KEY` | Secret | שליחת דוא״ל אמיתי מתוך ניהול המשתמשים |
-| `EMAIL_FROM` | Text | שולח מאומת, למשל `גלריית שמחת התורה <gallery@example.com>` |
-| `GOOGLE_DRIVE_CLIENT_ID` | Secret | Client ID של OAuth עבור חיבור Drive קבוע |
-| `GOOGLE_DRIVE_CLIENT_SECRET` | Secret | Client secret של אותו OAuth client |
-| `GOOGLE_DRIVE_REDIRECT_URI` | Text (אופציונלי) | ברירת המחדל: `https://simchas-gallery-api.0534169095.workers.dev/drive/oauth/callback` |
-| `GOOGLE_DRIVE_SITE_URL` | Text (אופציונלי) | ברירת המחדל: `https://shmuel-lamed.github.io/1/` |
+| `RESEND_API_KEY` | Secret | שליחת דוא״ל מתוך הניהול |
+| `EMAIL_FROM` | Text | כתובת שולח מאומתת |
+| `GOOGLE_DRIVE_CLIENT_ID` | Text | חיבור Google Drive קבוע |
+| `GOOGLE_DRIVE_CLIENT_SECRET` | Secret | סוד OAuth של Google Drive |
+| `GOOGLE_DRIVE_REDIRECT_URI` | Text | כתובת החזרה של ה־Worker |
+| `DRIVE_SITE_URL` | Text | כתובת אתר הגלריה |
 
-יש לחבר לדלי R2 משתנה Binding בשם `GALLERY_BUCKET`.
+המשתנים הישנים `FIREBASE_API_KEY`, `FIREBASE_PROJECT_ID` ו־`FIREBASE_APP_ID` אינם בשימוש וניתן למחוק אותם רק לאחר שהמעבר נבדק.
 
-ב־Google Cloud, תחת OAuth Client, יש להוסיף ל־**Authorized redirect URIs** את:
+## פריסה
 
-`https://simchas-gallery-api.0534169095.workers.dev/drive/oauth/callback`
+האתר מתפרסם אוטומטית מ־GitHub Pages לאחר עדכון ענף `main`. את ה־Worker יש לפרוס בנפרד מתוך Cloudflare.
 
-לאחר חיבור חד־פעמי, ה־refresh token נשמר באזור פרטי ב־R2 ומחודש דרך ה־Worker. הוא אינו נשמר באתר או ב־GitHub.
+לפני מעבר סופי מומלץ להוריד גיבוי JSON מממשק הניהול הישן, ולאחר חיבור D1 לשחזר אותו דרך מסך הגיבוי באתר. קובצי המדיה עצמם נשארים ב־R2.
 
-האחסון מקבל תמונות JPG/PNG/WEBP/GIF עד 10MB וסרטוני MP4/WebM עד 100MB.
+## אבטחה והרשאות
 
-## נכסי זיהוי פנים
-
-הדפדפן טוען את `face-api.js` ואת שלושת המודלים דרך הנתיב
-`/face-assets/` של ה־Worker. בהפעלה הראשונה ה־Worker מוריד רק את
-הקבצים המורשים מגרסה קבועה של החבילה ושומר אותם במטמון R2. לאחר מכן
-הדפדפן אינו תלוי בגישה ישירה ל־CDN.
-
-## פריסת כללי Firebase
-
-ב־Firebase Console:
-
-1. פתח **Firestore > Rules**.
-2. החלף את התוכן בקובץ `firestore.rules`.
-3. לחץ **Publish**.
-4. פתח **Storage > Rules**, החלף בתוכן `storage.rules` ולחץ **Publish**.
-
-אפשר גם לפרוס דרך Firebase CLI:
-
-```bash
-firebase deploy --only firestore:rules,storage
-```
-
-## דומיינים מורשים
-
-תחת **Firebase Authentication > Settings > Authorized domains** יש לוודא שקיימים:
-
-- `0534169095-star.github.io`
-- הדומיין המותאם אישית הפעיל
-
-## אבטחה
-
-- אין לשמור את `OPENAI_API_KEY` בקוד או ב־GitHub.
-- מפתח Firebase של אפליקציית Web הוא מזהה תצורה ציבורי; ההגנה בפועל מתבצעת באמצעות Authentication וכללי Firebase.
-- שינוי הרשאות מנהל־על חייב להתבצע יחד ב־Client, ב־Worker ובכללי Firebase.
-- רק מנהל־על רשאי לשנות דרגות, לחסום משתמשים או למחוק אותם.
-
-## יכולות ניהול
-
-- סל מחזור לתמונות, תיקיות, משתמשים ותמונות ממתינות.
-- שחזור פריטים או מחיקה סופית באישור נוסף.
-- יומן פעילות למעקב אחר העלאות, אישורים, הרשאות, סנכרון ומחיקות.
-- תור העלאה שמציג מצב נפרד לכל קובץ ומאפשר להמשיך גם אם קובץ יחיד נכשל.
-- השהיית תור העלאה וניסיון חוזר בקבצים שנכשלו.
-- תמיכה בסרטוני MP4/WebM עם תמונה מקדימה, משך סרטון ושמירת נקודת הצפייה.
-- בחירה מרובה, העברה בין תיקיות, הורדה ומחיקה מרוכזת.
-- זיהוי קבצים כפולים עם אפשרות לדלג או להעלות בכל זאת.
-- עמוד אירוע לכל תיקייה, מועדפים אישיים ומעקב אחר תיקיות לקבלת עדכונים.
-- גיבוי ושחזור נתוני הגלריה וניתוח נתונים מתקדם.
-- מחיקת תיקיות מובנות בידי מנהל־על, כולל שחזור התיקייה וכל תכולתה מסל המחזור.
-- שליחת דוא״ל אמיתי דרך Resend מה־Worker, ללא חשיפת המפתח הסודי באתר.
-- פניות משתמשים שאפשר לסמן כטופלו ולפתוח מחדש.
-
-`admin-messages.html` הוא כעת קישור תאימות בלבד ומפנה למרכז ההודעות שבתוך האתר.
+- Google ID Token נבדק בשרת וגם מול מזהה הלקוח הנכון.
+- משתמש חדש נוצר תמיד בדרגת `viewer` ובמצב `pending`; הוא אינו יכול לאשר את עצמו.
+- מנהל־על בלבד יכול לשנות דרגות, לחסום משתמשים ולנהל את סל המחזור.
+- סודות נשמרים רק במשתני Cloudflare ואינם נכנסים ל־GitHub.

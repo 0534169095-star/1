@@ -1,6 +1,4 @@
-const DEFAULT_FIREBASE_API_KEY = "AIzaSyCELVhy_L5dkGAVsY5in57Yv6-wdM3wHY4";
-const DEFAULT_FIREBASE_PROJECT_ID = "simchas-bb35c";
-const DEFAULT_FIREBASE_APP_ID = "org-gallery";
+const DEFAULT_GOOGLE_CLIENT_ID = "601586229891-giorl13mdpu7kfbeb6h2aj6qjpkphmmo.apps.googleusercontent.com";
 const INITIAL_SUPER_ADMIN_EMAIL_SHA256 = "d2632af59d29239eef52f10e1cfbf38e27c65c55470b355134b1cd1fb4f809d6";
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
@@ -82,7 +80,7 @@ function corsHeaders(request) {
     ...(origin && ALLOWED_ORIGINS.has(origin)
       ? { "Access-Control-Allow-Origin": origin }
       : {}),
-    "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Authorization, Content-Type",
     "Access-Control-Max-Age": "86400",
     "Vary": "Origin"
@@ -108,14 +106,6 @@ function apiError(message, status = 400, code = "request_failed") {
   return error;
 }
 
-function firebaseConfig(env) {
-  return {
-    apiKey: String(env.FIREBASE_API_KEY || DEFAULT_FIREBASE_API_KEY).trim(),
-    projectId: String(env.FIREBASE_PROJECT_ID || DEFAULT_FIREBASE_PROJECT_ID).trim(),
-    appId: String(env.FIREBASE_APP_ID || DEFAULT_FIREBASE_APP_ID).trim()
-  };
-}
-
 function getBearerToken(request) {
   const header = request.headers.get("Authorization") || "";
   const match = header.match(/^Bearer\s+(.+)$/i);
@@ -131,71 +121,89 @@ async function sha256(value) {
     .join("");
 }
 
-async function verifyFirebaseAccount(idToken, env) {
-  const { apiKey } = firebaseConfig(env);
-  const response = await fetch(
-    `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${encodeURIComponent(apiKey)}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ idToken })
-    }
-  );
+async function verifyGoogleAccount(idToken, env) {
+  const response = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`);
 
   if (!response.ok) {
     throw apiError("תוקף ההתחברות הסתיים. התחבר מחדש ונסה שוב.", 401, "invalid_token");
   }
 
   const payload = await response.json();
-  const account = payload.users?.[0];
-  if (!account?.localId || account.disabled) {
+  const expectedAudience = String(env.GOOGLE_CLIENT_ID || DEFAULT_GOOGLE_CLIENT_ID).trim();
+  if (!payload?.sub || payload.aud !== expectedAudience) {
     throw apiError("החשבון אינו זמין.", 403, "account_unavailable");
   }
-  if (!account.email || account.emailVerified !== true) {
+  if (!payload.email || ![true, "true"].includes(payload.email_verified)) {
     throw apiError("נדרש חשבון Google בעל כתובת דוא״ל מאומתת.", 403, "email_not_verified");
   }
-  return account;
-}
-
-function firestoreString(fields, name) {
-  return fields?.[name]?.stringValue || "";
-}
-
-async function readUserProfile(uid, idToken, env) {
-  const { projectId, appId } = firebaseConfig(env);
-  const path = [
-    "artifacts",
-    appId,
-    "public",
-    "data",
-    "userProfiles",
-    uid
-  ].map(encodeURIComponent).join("/");
-  const response = await fetch(
-    `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/databases/(default)/documents/${path}`,
-    { headers: { "Authorization": `Bearer ${idToken}` } }
-  );
-
-  if (response.status === 404) {
-    throw apiError("פרופיל המשתמש עדיין לא נוצר. רענן את האתר ונסה שוב.", 403, "profile_missing");
-  }
-  if (!response.ok) {
-    throw apiError("לא ניתן לבדוק את הרשאות המשתמש.", 403, "profile_unavailable");
-  }
-  const document = await response.json();
   return {
-    status: firestoreString(document.fields, "status"),
-    role: firestoreString(document.fields, "role")
+    localId: String(payload.sub),
+    email: String(payload.email),
+    emailVerified: true,
+    displayName: String(payload.name || "משתמש Google"),
+    photoUrl: String(payload.picture || "")
   };
+}
+
+function parseDocumentData(row) {
+  try {
+    return JSON.parse(row?.data_json || "{}");
+  } catch {
+    return {};
+  }
+}
+
+async function readUserProfile(uid, env, verifiedEmail = "") {
+  if (!env.GALLERY_DB) throw apiError("החיבור למסד D1 אינו מוגדר.", 500, "database_binding_missing");
+  let row = await env.GALLERY_DB.prepare(
+    "SELECT document_id, data_json, created_at FROM gallery_documents WHERE collection_name = ? AND document_id = ?"
+  ).bind("userProfiles", uid).first();
+
+  // בגיבוי הישן מזהה המשתמש הגיע מ־Firebase. בעת הכניסה הראשונה ל־D1
+  // מחברים אוטומטית את הפרופיל הישן למזהה Google החדש לפי אימייל מאומת.
+  if (!row && verifiedEmail) {
+    const legacyRow = await env.GALLERY_DB.prepare(
+      `SELECT document_id, data_json, created_at FROM gallery_documents
+       WHERE collection_name = 'userProfiles'
+         AND lower(json_extract(data_json, '$.email')) = lower(?)
+       LIMIT 1`
+    ).bind(verifiedEmail).first();
+    if (legacyRow) {
+      const migratedData = {
+        ...parseDocumentData(legacyRow),
+        uid,
+        email: verifiedEmail,
+        migratedToGoogleAt: Date.now()
+      };
+      const now = Date.now();
+      await env.GALLERY_DB.prepare(
+        `INSERT INTO gallery_documents (collection_name, document_id, data_json, owner_uid, created_at, updated_at)
+         VALUES ('userProfiles', ?, ?, ?, ?, ?)
+         ON CONFLICT(collection_name, document_id) DO UPDATE SET
+           data_json = excluded.data_json, owner_uid = excluded.owner_uid, updated_at = excluded.updated_at`
+      ).bind(uid, JSON.stringify(migratedData), uid, legacyRow.created_at || now, now).run();
+      if (legacyRow.document_id !== uid) {
+        await env.GALLERY_DB.prepare(
+          "DELETE FROM gallery_documents WHERE collection_name = 'userProfiles' AND document_id = ?"
+        ).bind(legacyRow.document_id).run();
+      }
+      row = { document_id: uid, data_json: JSON.stringify(migratedData), created_at: legacyRow.created_at };
+    }
+  }
+  return row ? parseDocumentData(row) : null;
 }
 
 async function requireUser(request, env, allowedRoles = null) {
   const idToken = getBearerToken(request);
-  const account = await verifyFirebaseAccount(idToken, env);
+  const account = await verifyGoogleAccount(idToken, env);
   const isInitialSuperAdmin = await sha256(account.email) === INITIAL_SUPER_ADMIN_EMAIL_SHA256;
   const profile = isInitialSuperAdmin
     ? { status: "approved", role: "super_admin" }
-    : await readUserProfile(account.localId, idToken, env);
+    : await readUserProfile(account.localId, env, account.email);
+
+  if (!profile) {
+    throw apiError("פרופיל המשתמש עדיין לא נוצר. רענן את האתר ונסה שוב.", 403, "profile_missing");
+  }
 
   if (profile.status === "blocked") {
     throw apiError("החשבון חסום ואינו מורשה לבצע פעולות.", 403, "account_blocked");
@@ -211,8 +219,166 @@ async function requireUser(request, env, allowedRoles = null) {
     uid: account.localId,
     email: account.email,
     role: profile.role,
-    idToken
+    idToken,
+    account
   };
+}
+
+function safeDataPart(value, label) {
+  const part = String(value || "").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 120);
+  if (!part) throw apiError(`${label} אינו תקין.`, 400, "invalid_data_path");
+  return part;
+}
+
+const DATA_COLLECTIONS = new Set([
+  "folders", "images", "pendingImages", "userProfiles", "deletionRequests",
+  "trashItems", "activityLogs", "systemMeta", "userFavorites",
+  "userPreferences", "mediaStats"
+]);
+
+async function dataActor(request, env) {
+  const idToken = getBearerToken(request);
+  const account = await verifyGoogleAccount(idToken, env);
+  const initialAdmin = await sha256(account.email) === INITIAL_SUPER_ADMIN_EMAIL_SHA256;
+  const profile = initialAdmin
+    ? { status: "approved", role: "super_admin" }
+    : await readUserProfile(account.localId, env, account.email);
+  if (profile?.status === "blocked") throw apiError("החשבון חסום.", 403, "account_blocked");
+  return {
+    uid: account.localId,
+    email: account.email,
+    account,
+    status: profile?.status || "pending",
+    role: initialAdmin ? "super_admin" : (profile?.role || "viewer"),
+    initialAdmin
+  };
+}
+
+function assertDataPermission(actor, collectionName, method, documentId = "") {
+  const approved = actor.status === "approved" || actor.initialAdmin;
+  const admin = approved && ["admin", "super_admin"].includes(actor.role);
+  const superAdmin = approved && actor.role === "super_admin";
+  const ownDocument = documentId === actor.uid;
+
+  if (collectionName === "userProfiles") {
+    if ((method === "GET" || method === "PUT") && ownDocument) return;
+    if (superAdmin) return;
+  } else if (["userFavorites", "userPreferences"].includes(collectionName)) {
+    if (approved && ownDocument) return;
+  } else if (["folders", "images"].includes(collectionName)) {
+    if (method === "GET" && approved) return;
+    if (method === "PUT" && collectionName === "images" && approved && actor.role === "uploader") return;
+    if (["PUT", "DELETE"].includes(method) && admin) return;
+  } else if (collectionName === "pendingImages") {
+    if (admin) return;
+    if (method === "PUT" && approved) return;
+  } else if (collectionName === "mediaStats") {
+    if (approved && ["GET", "PUT"].includes(method)) return;
+    if (superAdmin && method === "DELETE") return;
+  } else if (collectionName === "activityLogs") {
+    if (method === "PUT" && approved) return;
+    if (method === "GET" && superAdmin) return;
+  } else if (collectionName === "deletionRequests") {
+    if (method === "PUT" && admin) return;
+    if (["GET", "DELETE"].includes(method) && superAdmin) return;
+  } else if (collectionName === "systemMeta") {
+    if (method === "GET" && approved) return;
+    if (["PUT", "DELETE"].includes(method) && admin) return;
+  } else if (collectionName === "trashItems") {
+    if (superAdmin) return;
+  }
+  throw apiError("אין הרשאה לפעולה זו.", 403, "permission_denied");
+}
+
+function resolveDataOperations(value, previousValue) {
+  if (value && typeof value === "object" && value.__cloudflareOperation === "increment") {
+    return (Number(previousValue) || 0) + (Number(value.amount) || 0);
+  }
+  if (Array.isArray(value)) return value.map((item, index) => resolveDataOperations(item, previousValue?.[index]));
+  if (value && typeof value === "object") {
+    const result = {};
+    for (const [key, item] of Object.entries(value)) {
+      result[key] = resolveDataOperations(item, previousValue?.[key]);
+    }
+    return result;
+  }
+  return value;
+}
+
+async function handleDataRequest(request, env, url) {
+  if (!env.GALLERY_DB) throw apiError("החיבור למסד D1 אינו מוגדר.", 500, "database_binding_missing");
+  const parts = url.pathname.slice("/data/".length).split("/").filter(Boolean).map(decodeURIComponent);
+  const collectionName = safeDataPart(parts[0], "שם האוסף");
+  if (!DATA_COLLECTIONS.has(collectionName)) throw apiError("האוסף המבוקש אינו קיים.", 404, "collection_not_found");
+  const documentId = parts[1] ? safeDataPart(parts[1], "מזהה המסמך") : "";
+  const actor = await dataActor(request, env);
+  assertDataPermission(actor, collectionName, request.method, documentId);
+
+  if (request.method === "GET" && documentId) {
+    const row = await env.GALLERY_DB.prepare(
+      "SELECT data_json FROM gallery_documents WHERE collection_name = ? AND document_id = ?"
+    ).bind(collectionName, documentId).first();
+    if (!row) throw apiError("המסמך לא נמצא.", 404, "not_found");
+    return json(request, { success: true, id: documentId, data: parseDocumentData(row) });
+  }
+
+  if (request.method === "GET") {
+    const rowLimit = Math.max(1, Math.min(1000, Number(url.searchParams.get("limit")) || 500));
+    const result = await env.GALLERY_DB.prepare(
+      "SELECT document_id, data_json FROM gallery_documents WHERE collection_name = ? LIMIT 1000"
+    ).bind(collectionName).all();
+    let documents = (result.results || []).map(row => ({ id: row.document_id, data: parseDocumentData(row) }));
+    const orderField = safeDataPart(url.searchParams.get("orderBy") || "updatedAt", "שדה המיון");
+    const direction = url.searchParams.get("direction") === "asc" ? 1 : -1;
+    documents.sort((a, b) => direction * ((Number(a.data?.[orderField]) || 0) - (Number(b.data?.[orderField]) || 0)));
+    documents = documents.slice(0, rowLimit);
+    return json(request, { success: true, documents });
+  }
+
+  if (request.method === "PUT" && documentId) {
+    const payload = await request.json().catch(() => ({}));
+    if (!payload.data || typeof payload.data !== "object" || Array.isArray(payload.data)) {
+      throw apiError("מבנה המסמך אינו תקין.", 400, "invalid_document");
+    }
+    const existingRow = await env.GALLERY_DB.prepare(
+      "SELECT data_json, created_at FROM gallery_documents WHERE collection_name = ? AND document_id = ?"
+    ).bind(collectionName, documentId).first();
+    const existing = parseDocumentData(existingRow);
+    let nextData = resolveDataOperations(payload.data, existing);
+    if (payload.merge === true) nextData = { ...existing, ...nextData };
+
+    if (collectionName === "userProfiles" && documentId === actor.uid && !actor.initialAdmin && actor.role !== "super_admin") {
+      nextData = {
+        ...nextData,
+        uid: actor.uid,
+        email: actor.email,
+        status: existingRow ? (existing.status || "pending") : "pending",
+        role: existingRow ? (existing.role || "viewer") : "viewer"
+      };
+    }
+    if (collectionName === "userProfiles" && actor.initialAdmin && documentId === actor.uid) {
+      nextData = { ...nextData, uid: actor.uid, email: actor.email, status: "approved", role: "super_admin" };
+    }
+
+    const now = Date.now();
+    const ownerUid = String(nextData.uid || nextData.uploadedBy || nextData.requestedBy || nextData.actorUid || actor.uid).slice(0, 120);
+    await env.GALLERY_DB.prepare(
+      `INSERT INTO gallery_documents (collection_name, document_id, data_json, owner_uid, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?)
+       ON CONFLICT(collection_name, document_id) DO UPDATE SET
+         data_json = excluded.data_json, owner_uid = excluded.owner_uid, updated_at = excluded.updated_at`
+    ).bind(collectionName, documentId, JSON.stringify(nextData), ownerUid, existingRow?.created_at || now, now).run();
+    return json(request, { success: true, id: documentId, data: nextData });
+  }
+
+  if (request.method === "DELETE" && documentId) {
+    await env.GALLERY_DB.prepare(
+      "DELETE FROM gallery_documents WHERE collection_name = ? AND document_id = ?"
+    ).bind(collectionName, documentId).run();
+    return json(request, { success: true, id: documentId });
+  }
+
+  throw apiError("הפעולה אינה נתמכת.", 405, "method_not_allowed");
 }
 
 function safeImageId(value) {
@@ -874,16 +1040,22 @@ export default {
       }
 
       const url = new URL(request.url);
+      if (url.pathname.startsWith("/data/")) {
+        return await handleDataRequest(request, env, url);
+      }
       if (request.method === "GET" && url.pathname === "/drive/oauth/callback") {
         return await finishDriveOAuth(request, env, url);
       }
       if (request.method === "GET" && (url.pathname === "/" || url.pathname === "/health")) {
         const result = await env.GALLERY_BUCKET.list({ limit: 1 });
+        if (!env.GALLERY_DB) throw apiError("החיבור למסד D1 אינו מוגדר.", 500, "database_binding_missing");
+        await env.GALLERY_DB.prepare("SELECT 1 AS connected").first();
         return json(request, {
           success: true,
           service: "simchas-gallery-api",
-          version: "2026-08-02-drive-oauth-v1",
-          features: ["chat-attachments", "persistent-drive-oauth"],
+          version: "2026-08-02-cloudflare-d1-v1",
+          features: ["cloudflare-d1", "google-auth", "r2-media", "chat-attachments", "persistent-drive-oauth"],
+          databaseConnected: true,
           bucketConnected: true,
           objectsFound: result.objects.length
         });
