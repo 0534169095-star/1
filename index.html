@@ -2319,6 +2319,35 @@
                             פתח תיקיות לסנכרון
                         </button>
                         <p class="pb-1 text-[9px] text-slate-400 leading-relaxed">הסנכרון מוסיף ומעדכן בלבד. הוא לא מוחק מהגלריה קבצים שהוסרו מ־Drive. סרטוני MP4 ו־WebM מוגבלים ל־100MB.</p>
+                        <!-- ──────── סנכרון אוטומטי Worker ──────── -->
+<div class="border-t border-white/10 pt-3 mt-1  space-y-2">
+  <div class="flex items-center justify-between">
+    <span class="text-[9px] font-bold text-amber-400 uppercase tracking-wide">📂 סנכרון אוטומטי (Worker)</span>
+    <button type="button" onclick="addDriveFolderRow()"
+      class="text-[9px] text-amber-400 hover:underline font-bold">+ הוסף תיקייה</button>
+  </div>
+
+  <div id="driveFoldersList" class="space-y-2"></div>
+
+  <p id="noFoldersMsg"
+    class="text-[9px] text-slate-500 text-center py-1">
+    לא הוגדרו תיקיות לסנכרון אוטומטי
+  </p>
+
+  <div class="flex gap-2">
+    <button type="button" onclick="saveDriveFoldersToWorker()"
+      class="flex-1 py-2 rounded-xl text-[10px] font-bold bg-blue-600 hover:bg-blue-700 text-white transition-all">
+      💾 שמור תיקיות
+    </button>
+    <button type="button" id="workerSyncBtn" onclick="syncNowFromWorker()"
+      class="flex-1 py-2 rounded-xl text-[10px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-all">
+      🔄 סנכרן עכשיו
+    </button>
+  </div>
+
+  <p id="workerLastSync" class="text-[9px] text-slate-500 text-center"></p>
+  <p id="workerSyncResult" class="text-[10px] font-semibold text-center min-h-4"></p>
+</div>
                     </div>
                 </div>
 
