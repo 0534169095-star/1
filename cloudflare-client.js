@@ -1,5 +1,6 @@
 const API_BASE_URL = "https://simchas-gallery-api.0534169095.workers.dev";
 const TOKEN_STORAGE_KEY = "simchas_gallery_google_id_token";
+const GOOGLE_WEB_CLIENT_ID = "601586229891-giorl13mdpu7kfbeb6h2aj6qjpkphmmo.apps.googleusercontent.com";
 
 const authState = {
   currentUser: null,
@@ -237,4 +238,136 @@ export async function deleteDoc(reference) {
   return apiRequest(`/data/${encodeURIComponent(collectionName(reference))}/${encodeURIComponent(documentId(reference))}`, {
     method: "DELETE"
   });
+}
+
+// Render the official Google Identity Services button instead of relying on One Tap.
+let googleButtonLibraryPromise = null;
+let googleButtonObserver = null;
+
+function waitForGoogleIdentityLibrary() {
+  if (window.google?.accounts?.id) return Promise.resolve(window.google.accounts.id);
+  if (googleButtonLibraryPromise) return googleButtonLibraryPromise;
+
+  googleButtonLibraryPromise = new Promise((resolve, reject) => {
+    let attempts = 0;
+    const check = () => {
+      const googleIdentity = window.google?.accounts?.id;
+      if (googleIdentity) {
+        resolve(googleIdentity);
+        return;
+      }
+      attempts += 1;
+      if (attempts >= 80) {
+        reject(new Error("ספריית ההתחברות של Google לא נטענה."));
+        return;
+      }
+      setTimeout(check, 250);
+    };
+    check();
+  });
+
+  return googleButtonLibraryPromise;
+}
+
+async function handleOfficialGoogleCredential(response) {
+  if (!response?.credential) {
+    window.showNotification?.("Google לא החזירה פרטי התחברות.", false);
+    return;
+  }
+
+  try {
+    const user = await setGoogleIdToken(response.credential);
+    if (!user) throw new Error("אסימון Google אינו תקין.");
+    window.showNotification?.("התחברת בהצלחה באמצעות Google!", true);
+  } catch (error) {
+    console.error("Official Google button sign-in failed:", error);
+    window.showNotification?.(error?.message || "ההתחברות באמצעות Google נכשלה.", false);
+  }
+}
+
+function findLegacyGoogleButtons(root = document) {
+  if (!root?.querySelectorAll) return [];
+  return [...root.querySelectorAll('button[onclick*="signInWithGoogleAccount"], a[onclick*="signInWithGoogleAccount"]')];
+}
+
+async function replaceLegacyGoogleButton(button) {
+  if (!button || button.dataset.googleButtonReplacementStarted === "true") return;
+  button.dataset.googleButtonReplacementStarted = "true";
+
+  const host = document.createElement("div");
+  host.dataset.officialGoogleButtonHost = "true";
+  host.setAttribute("role", "group");
+  host.setAttribute("aria-label", "התחברות באמצעות Google");
+  host.style.display = "flex";
+  host.style.justifyContent = "center";
+  host.style.alignItems = "center";
+  host.style.width = "100%";
+  host.style.minHeight = "44px";
+  host.style.direction = "ltr";
+
+  if (button.id) host.id = button.id;
+  button.replaceWith(host);
+
+  try {
+    const googleIdentity = await waitForGoogleIdentityLibrary();
+    googleIdentity.initialize({
+      client_id: GOOGLE_WEB_CLIENT_ID,
+      callback: handleOfficialGoogleCredential,
+      context: "signin",
+      ux_mode: "popup",
+      auto_select: false,
+      cancel_on_tap_outside: false
+    });
+
+    const availableWidth = Math.round(host.getBoundingClientRect().width || 320);
+    googleIdentity.renderButton(host, {
+      type: "standard",
+      theme: "outline",
+      size: "large",
+      text: "signin_with",
+      shape: "pill",
+      logo_alignment: "left",
+      locale: "he",
+      width: Math.max(240, Math.min(400, availableWidth))
+    });
+  } catch (error) {
+    console.error("Rendering the official Google button failed:", error);
+    const fallback = document.createElement("button");
+    fallback.type = "button";
+    fallback.textContent = "התחברות באמצעות Google";
+    fallback.style.width = "100%";
+    fallback.style.minHeight = "44px";
+    fallback.onclick = () => window.showNotification?.(error?.message || "לא ניתן לטעון את Google.", false);
+    host.replaceChildren(fallback);
+  }
+}
+
+function installOfficialGoogleButtons(root = document) {
+  for (const button of findLegacyGoogleButtons(root)) {
+    replaceLegacyGoogleButton(button);
+  }
+}
+
+function startOfficialGoogleButtonUpgrade() {
+  installOfficialGoogleButtons();
+
+  if (googleButtonObserver) return;
+  googleButtonObserver = new MutationObserver(mutations => {
+    for (const mutation of mutations) {
+      for (const node of mutation.addedNodes) {
+        if (!(node instanceof Element)) continue;
+        if (node.matches?.('button[onclick*="signInWithGoogleAccount"], a[onclick*="signInWithGoogleAccount"]')) {
+          replaceLegacyGoogleButton(node);
+        }
+        installOfficialGoogleButtons(node);
+      }
+    }
+  });
+  googleButtonObserver.observe(document.documentElement, { childList: true, subtree: true });
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", startOfficialGoogleButtonUpgrade, { once: true });
+} else {
+  startOfficialGoogleButtonUpgrade();
 }
