@@ -143,7 +143,7 @@ export function orderBy(field, direction = "asc") {
 }
 
 export function limit(value) {
-  return { kind: "limit", value: Math.max(1, Math.min(500, Number(value) || 100)) };
+  return { kind: "limit", value: Math.max(1, Math.min(500, Number(value) || 100) };
 }
 
 export function query(reference, ...constraints) {
@@ -371,3 +371,7 @@ if (document.readyState === "loading") {
 } else {
   startOfficialGoogleButtonUpgrade();
 }
+
+import('./safe-drive-reset.js').catch(error => {
+  console.error('Loading safe Drive cleanup failed:', error);
+});
