@@ -1,5 +1,5 @@
 const DEFAULT_GOOGLE_CLIENT_ID = "601586229891-giorl13mdpu7kfbeb6h2aj6qjpkphmmo.apps.googleusercontent.com";
-const INITIAL_SUPER_ADMIN_EMAIL_SHA256 = "d2632af59d29239eef52f10e1cfbf38e27c65c55470b355134b1cd1fb4f809d6";
+const INITIAL_SUPER_ADMIN_EMAIL_SHA256 = "0c70c93b21ed7d7ac11f8a0e41cf0811b221f8e16524ed71d8b1822661edc137";
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
 const MAX_CHAT_FILE_BYTES = 25 * 1024 * 1024;
@@ -153,8 +153,41 @@ function parseDocumentData(row) {
   }
 }
 
-async function readUserProfile(uid, env, verifiedEmail = "") {
+let databaseSchemaReady = false;
+
+async function ensureDatabaseSchema(env) {
   if (!env.GALLERY_DB) throw apiError("החיבור למסד D1 אינו מוגדר.", 500, "database_binding_missing");
+  if (databaseSchemaReady) return;
+  try {
+    const schema = await env.GALLERY_DB.prepare("PRAGMA table_info(gallery_documents)").all();
+    const existingColumns = new Set((schema.results || []).map(column => String(column.name)));
+    const requiredColumns = ["collection_name", "document_id", "data_json", "owner_uid", "created_at", "updated_at"];
+    if (existingColumns.size > 0 && !requiredColumns.every(column => existingColumns.has(column))) {
+      await env.GALLERY_DB.prepare(
+        "CREATE TABLE IF NOT EXISTS gallery_documents_legacy AS SELECT * FROM gallery_documents"
+      ).run();
+      await env.GALLERY_DB.prepare("DROP TABLE gallery_documents").run();
+    }
+    await env.GALLERY_DB.prepare(
+      `CREATE TABLE IF NOT EXISTS gallery_documents (
+        collection_name TEXT NOT NULL,
+        document_id TEXT NOT NULL,
+        data_json TEXT NOT NULL DEFAULT '{}',
+        owner_uid TEXT,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        PRIMARY KEY (collection_name, document_id)
+      )`
+    ).run();
+    databaseSchemaReady = true;
+  } catch (error) {
+    console.error("D1 schema initialization failed", error);
+    throw apiError("מסד הנתונים מחובר, אך טבלת הנתונים אינה זמינה.", 500, "database_schema_unavailable");
+  }
+}
+
+async function readUserProfile(uid, env, verifiedEmail = "") {
+  await ensureDatabaseSchema(env);
   let row = await env.GALLERY_DB.prepare(
     "SELECT document_id, data_json, created_at FROM gallery_documents WHERE collection_name = ? AND document_id = ?"
   ).bind("userProfiles", uid).first();
@@ -162,12 +195,14 @@ async function readUserProfile(uid, env, verifiedEmail = "") {
   // בגיבוי הישן מזהה המשתמש הגיע מ־Firebase. בעת הכניסה הראשונה ל־D1
   // מחברים אוטומטית את הפרופיל הישן למזהה Google החדש לפי אימייל מאומת.
   if (!row && verifiedEmail) {
-    const legacyRow = await env.GALLERY_DB.prepare(
+    const legacyRows = await env.GALLERY_DB.prepare(
       `SELECT document_id, data_json, created_at FROM gallery_documents
-       WHERE collection_name = 'userProfiles'
-         AND lower(json_extract(data_json, '$.email')) = lower(?)
-       LIMIT 1`
-    ).bind(verifiedEmail).first();
+       WHERE collection_name = 'userProfiles' LIMIT 1000`
+    ).all();
+    const normalizedEmail = String(verifiedEmail).trim().toLowerCase();
+    const legacyRow = (legacyRows.results || []).find(candidate =>
+      String(parseDocumentData(candidate).email || "").trim().toLowerCase() === normalizedEmail
+    );
     if (legacyRow) {
       const migratedData = {
         ...parseDocumentData(legacyRow),
@@ -198,7 +233,7 @@ async function requireUser(request, env, allowedRoles = null) {
   const account = await verifyGoogleAccount(idToken, env);
   const isInitialSuperAdmin = await sha256(account.email) === INITIAL_SUPER_ADMIN_EMAIL_SHA256;
   const profile = isInitialSuperAdmin
-    ? { status: "approved", role: "super_admin" }
+    ? await ensureInitialSuperAdminProfile(account, env)
     : await readUserProfile(account.localId, env, account.email);
 
   if (!profile) {
@@ -243,6 +278,9 @@ async function dataActor(request, env) {
   const profile = initialAdmin
     ? { status: "approved", role: "super_admin" }
     : await readUserProfile(account.localId, env, account.email);
+  if (initialAdmin) {
+    await ensureInitialSuperAdminProfile(account, env);
+  }
   if (profile?.status === "blocked") throw apiError("החשבון חסום.", 403, "account_blocked");
   return {
     uid: account.localId,
@@ -252,6 +290,31 @@ async function dataActor(request, env) {
     role: initialAdmin ? "super_admin" : (profile?.role || "viewer"),
     initialAdmin
   };
+}
+
+async function ensureInitialSuperAdminProfile(account, env) {
+  await ensureDatabaseSchema(env);
+  const now = Date.now();
+  const existing = await readUserProfile(account.localId, env, account.email);
+  const profile = {
+    ...(existing || {}),
+    uid: account.localId,
+    displayName: account.displayName || existing?.displayName || "מנהל המערכת",
+    email: account.email,
+    photoURL: account.photoUrl || existing?.photoURL || "",
+    status: "approved",
+    role: "super_admin",
+    approvedAt: existing?.approvedAt || now,
+    approvedBy: existing?.approvedBy || "initial-admin-bootstrap",
+    lastLoginAt: now
+  };
+  await env.GALLERY_DB.prepare(
+    `INSERT INTO gallery_documents (collection_name, document_id, data_json, owner_uid, created_at, updated_at)
+     VALUES ('userProfiles', ?, ?, ?, ?, ?)
+     ON CONFLICT(collection_name, document_id) DO UPDATE SET
+       data_json = excluded.data_json, owner_uid = excluded.owner_uid, updated_at = excluded.updated_at`
+  ).bind(account.localId, JSON.stringify(profile), account.localId, existing?.requestedAt || now, now).run();
+  return profile;
 }
 
 function assertDataPermission(actor, collectionName, method, documentId = "") {
@@ -306,7 +369,7 @@ function resolveDataOperations(value, previousValue) {
 }
 
 async function handleDataRequest(request, env, url) {
-  if (!env.GALLERY_DB) throw apiError("החיבור למסד D1 אינו מוגדר.", 500, "database_binding_missing");
+  await ensureDatabaseSchema(env);
   const parts = url.pathname.slice("/data/".length).split("/").filter(Boolean).map(decodeURIComponent);
   const collectionName = safeDataPart(parts[0], "שם האוסף");
   if (!DATA_COLLECTIONS.has(collectionName)) throw apiError("האוסף המבוקש אינו קיים.", 404, "collection_not_found");
@@ -1048,7 +1111,7 @@ export default {
       }
       if (request.method === "GET" && (url.pathname === "/" || url.pathname === "/health")) {
         const result = await env.GALLERY_BUCKET.list({ limit: 1 });
-        if (!env.GALLERY_DB) throw apiError("החיבור למסד D1 אינו מוגדר.", 500, "database_binding_missing");
+        await ensureDatabaseSchema(env);
         await env.GALLERY_DB.prepare("SELECT 1 AS connected").first();
         return json(request, {
           success: true,
