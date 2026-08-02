@@ -2785,39 +2785,86 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithCredential, signInWithPopup, signInWithRedirect, getRedirectResult, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, getDoc, getDocs, setDoc, deleteDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-lite.js";
+        import { getFirestore, collection, doc, getDoc, getDocs, setDoc, deleteDoc, updateDoc, increment, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-lite.js";
 
         // גישה גלובלית לפונקציות פיירבייס מכל מקום בקוד
         window.db = null;
         window.appId = typeof __app_id !== 'undefined' ? __app_id : 'org-gallery';
-        window.firestoreModules = { collection, doc, getDoc, getDocs, setDoc, deleteDoc, updateDoc, increment };
+        window.firestoreModules = { collection, doc, getDoc, getDocs, setDoc, deleteDoc, updateDoc, increment, query, orderBy, limit };
 
-        // Firestore Lite משתמש בבקשות HTTPS רגילות. הרענון המחזורי מחליף את החיבור
-        // המתמשך של onSnapshot, שעלול להיחסם ברשתות מסוימות.
+        // Firestore Lite משתמש בבקשות HTTPS רגילות. במקום לסרוק את כל מסד הנתונים
+        // כל חמש שניות, כל מקור נטען פעם אחת ומתרענן במרווח חסכוני ורק כשהעמוד פעיל.
+        // בשגיאת מכסה מופעלת השהיה ארוכה כדי לא להחריף את התקלה.
         function onSnapshot(reference, onNext, onError) {
             let active = true;
             let requestRunning = false;
+            let timer = null;
+            let lastRefreshAt = 0;
+            let consecutiveErrors = 0;
+            let retryNotBefore = 0;
+            const isDocument = reference.type === 'document';
+            const normalDelay = isDocument ? 2 * 60 * 1000 : 15 * 60 * 1000;
+            const minimumEventDelay = isDocument ? 30 * 1000 : 2 * 60 * 1000;
 
-            const refresh = async () => {
+            const schedule = (delay = normalDelay) => {
+                if (!active) return;
+                window.clearTimeout(timer);
+                timer = window.setTimeout(() => refresh(), delay);
+            };
+
+            const refresh = async (force = false) => {
                 if (!active || requestRunning) return;
+                if (retryNotBefore > Date.now()) {
+                    schedule(retryNotBefore - Date.now());
+                    return;
+                }
+                if (document.hidden) {
+                    schedule(normalDelay);
+                    return;
+                }
+                if (!force && lastRefreshAt && Date.now() - lastRefreshAt < minimumEventDelay) {
+                    schedule(minimumEventDelay - (Date.now() - lastRefreshAt));
+                    return;
+                }
                 requestRunning = true;
                 try {
-                    const snapshot = reference.type === 'document'
+                    const snapshot = isDocument
                         ? await getDoc(reference)
                         : await getDocs(reference);
-                    if (active) onNext(snapshot);
+                    if (active) {
+                        lastRefreshAt = Date.now();
+                        consecutiveErrors = 0;
+                        retryNotBefore = 0;
+                        onNext(snapshot);
+                    }
                 } catch (error) {
+                    consecutiveErrors += 1;
+                    const retryDelay = error?.code === 'resource-exhausted'
+                        ? 30 * 60 * 1000
+                        : Math.min(normalDelay, 30 * 1000 * (2 ** Math.min(consecutiveErrors - 1, 5)));
+                    retryNotBefore = Date.now() + retryDelay;
                     if (active && typeof onError === 'function') onError(error);
                 } finally {
                     requestRunning = false;
+                    if (active) {
+                        schedule(consecutiveErrors ? Math.max(1000, retryNotBefore - Date.now()) : normalDelay);
+                    }
                 }
             };
 
-            refresh();
-            const timer = window.setInterval(refresh, 5000);
+            const refreshWhenActive = () => {
+                if (!document.hidden) refresh();
+            };
+            document.addEventListener('visibilitychange', refreshWhenActive);
+            window.addEventListener('online', refreshWhenActive);
+            window.addEventListener('focus', refreshWhenActive);
+            refresh(true);
             return () => {
                 active = false;
-                window.clearInterval(timer);
+                window.clearTimeout(timer);
+                document.removeEventListener('visibilitychange', refreshWhenActive);
+                window.removeEventListener('online', refreshWhenActive);
+                window.removeEventListener('focus', refreshWhenActive);
             };
         }
         window.firestoreUnsubscribers = [];
@@ -3650,6 +3697,9 @@
         function reportFirestoreError(err) {
             if (err.code === 'unavailable') {
                 console.warn("חיבור הרשת חלש או חסום (Offline). מנסה להתחבר מחדש ברקע...");
+            } else if (err.code === 'resource-exhausted') {
+                console.error("Firestore quota exhausted. Automatic reads paused to protect the quota.", err);
+                window.showNotification("מכסת Firebase נוצלה. עצרנו רענונים אוטומטיים; השירות יתחדש לאחר איפוס המכסה.", false);
             } else if (err.code === 'permission-denied') {
                 console.error("Firestore Error: פנייה למסד הנתונים נחסמה עקב הרשאות (Rules).", err);
                 window.showNotification("שגיאת אבטחה: אין הרשאת גישה לנתונים.", false);
@@ -3737,11 +3787,15 @@
                 window.updateAdminOverview?.();
             }, reportFirestoreError));
 
-            window.adminUnsubscribers.push(onSnapshot(collection(window.db, 'artifacts', window.appId, 'public', 'data', 'activityLogs'), (snapshot) => {
+            const recentActivityQuery = query(
+                collection(window.db, 'artifacts', window.appId, 'public', 'data', 'activityLogs'),
+                orderBy('createdAt', 'desc'),
+                limit(100)
+            );
+            window.adminUnsubscribers.push(onSnapshot(recentActivityQuery, (snapshot) => {
                 window.state.activityLogs = snapshot.docs
                     .map(d => ({ id: d.id, ...d.data() }))
-                    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
-                    .slice(0, 100);
+                    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
                 window.renderActivityLogs?.();
             }, reportFirestoreError));
         }
@@ -3892,7 +3946,12 @@
                             } catch (error) {
                                 console.error('Creating Google user profile failed:', error);
                                 const errorCode = error?.code || 'unknown';
-                                window.showNotification(`לא ניתן היה לשלוח את בקשת ההצטרפות (${errorCode}).`, false);
+                                window.showNotification(
+                                    errorCode === 'resource-exhausted'
+                                        ? 'מכסת Firebase נוצלה כרגע. האתר הפסיק רענונים מיותרים; נסה שוב לאחר איפוס המכסה.'
+                                        : `לא ניתן היה לשלוח את בקשת ההצטרפות (${errorCode}).`,
+                                    false
+                                );
                             }
                         }
                         setupFirestoreListeners(user);
@@ -8381,6 +8440,8 @@
 
             try {
                 const matchedIds = new Set();
+                // שומרים תאימות ל־Worker החי, שמקבל כרגע עד שמונה תמונות בבקשה.
+                // לאחר פריסת גרסת ה־Worker החדשה אפשר להעלות את הקבוצה ל־20.
                 const batchSize = 8;
                 const totalBatches = Math.ceil(candidates.length / batchSize);
                 for (let offset = 0; offset < candidates.length; offset += batchSize) {

@@ -715,8 +715,8 @@ async function aiImageSearch(request, env) {
   if (query.length < 3) {
     throw apiError("יש לכתוב תיאור באורך של שלוש אותיות לפחות.", 400, "query_too_short");
   }
-  if (!Array.isArray(payload.images) || payload.images.length === 0 || payload.images.length > 8) {
-    throw apiError("ניתן לסרוק בין תמונה אחת לשמונה תמונות בכל קבוצה.", 400, "invalid_image_batch");
+  if (!Array.isArray(payload.images) || payload.images.length === 0 || payload.images.length > 20) {
+    throw apiError("ניתן לסרוק בין תמונה אחת לעשרים תמונות בכל קבוצה.", 400, "invalid_image_batch");
   }
 
   const images = payload.images.map(safeAiSearchImage);
@@ -771,7 +771,27 @@ async function aiImageSearch(request, env) {
 
   const openAIPayload = await openAIResponse.json().catch(() => ({}));
   if (!openAIResponse.ok) {
-    console.error("OpenAI search request failed", openAIResponse.status, openAIPayload?.error?.code || "unknown");
+    const upstreamCode = String(openAIPayload?.error?.code || "unknown");
+    console.error("OpenAI search request failed", openAIResponse.status, upstreamCode);
+
+    if (openAIResponse.status === 401) {
+      throw apiError("מפתח OpenAI אינו תקין או בוטל. יש להחליף אותו ב־Cloudflare.", 503, "openai_invalid_key");
+    }
+    if (openAIResponse.status === 429 && upstreamCode === "insufficient_quota") {
+      throw apiError("לחשבון OpenAI API אין כרגע יתרה זמינה. יש לבדוק חיוב ומכסה בחשבון OpenAI.", 503, "openai_quota_exhausted");
+    }
+    if (openAIResponse.status === 429) {
+      throw apiError("חיפוש ה־AI עמוס כרגע. המתן מעט ונסה שוב.", 429, "openai_rate_limited");
+    }
+    if (openAIResponse.status === 403) {
+      throw apiError("למפתח OpenAI אין הרשאה להשתמש במודל החיפוש.", 503, "openai_model_forbidden");
+    }
+    if (openAIResponse.status === 404 || upstreamCode === "model_not_found") {
+      throw apiError("מודל חיפוש ה־AI אינו זמין לפרויקט הזה.", 503, "openai_model_unavailable");
+    }
+    if (openAIResponse.status === 400) {
+      throw apiError("הגדרת בקשת חיפוש ה־AI אינה נתמכת כרגע.", 502, "openai_invalid_request");
+    }
     throw apiError("מנוע חיפוש ה־AI אינו זמין כרגע.", 502, "openai_request_failed");
   }
 
