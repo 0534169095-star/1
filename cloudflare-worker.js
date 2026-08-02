@@ -1322,7 +1322,7 @@ export default {
         return json(request, {
           success: true,
           service: "simchas-gallery-api",
-          version: "2026-08-02-cloudflare-d1-v2",
+          version: "2026-08-02-cloudflare-d1-v3",
           features: ["cloudflare-d1", "google-auth", "r2-media", "chat-attachments", "persistent-drive-oauth"],
           databaseConnected: true,
           bucketConnected: true,
