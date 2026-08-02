@@ -1,5 +1,5 @@
-const CACHE_NAME = "simchat-gallery-shell-v6-safe-drive-cleanup";
-const APP_SHELL = ["./", "./index.html", "./cloudflare-client.js", "./safe-drive-reset.js", "./manifest.webmanifest"];
+const CACHE_NAME = "simchat-gallery-shell-v7-fast-approval-ui";
+const APP_SHELL = ["./", "./index.html", "./cloudflare-client.js", "./cloudflare-client-original.js", "./safe-drive-reset.js", "./fast-approval-ui.js", "./manifest.webmanifest"];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL)));
