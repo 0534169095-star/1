@@ -2,11 +2,13 @@ const API_BASE_URL = "https://simchas-gallery-api.0534169095.workers.dev";
 const TOKEN_STORAGE_KEY = "simchas_gallery_google_id_token";
 const GOOGLE_WEB_CLIENT_ID = "601586229891-giorl13mdpu7kfbeb6h2aj6qjpkphmmo.apps.googleusercontent.com";
 
-const authState = {
-  currentUser: null,
-  listeners: new Set(),
-  ready: false
-};
+// ✅ FIX: הגדלת buffer מ-60 שניות ל-5 דקות למניעת בקשות כושלות ברגע האחרון
+const TOKEN_EXPIRY_BUFFER_MS = 5 * 60 * 1000;
+
+// ✅ FIX: הפחתת מספר הניסיונות מ-80 ל-30 (7.5 שניות מקס' במקום 20)
+const GOOGLE_LIBRARY_MAX_ATTEMPTS = 30;
+
+const authState = { currentUser: null, listeners: new Set(), ready: false };
 
 function decodeJwtPayload(token) {
   try {
@@ -23,7 +25,8 @@ function decodeJwtPayload(token) {
 
 function tokenIsUsable(token) {
   const payload = decodeJwtPayload(token);
-  return Boolean(payload?.sub && Number(payload.exp || 0) * 1000 > Date.now() + 60_000);
+  // ✅ FIX: שימוש ב-TOKEN_EXPIRY_BUFFER_MS במקום 60_000 הקשיח
+  return Boolean(payload?.sub && Number(payload.exp || 0) * 1000 > Date.now() + TOKEN_EXPIRY_BUFFER_MS);
 }
 
 function userFromToken(token) {
@@ -118,24 +121,26 @@ export function onAuthStateChanged(_auth, callback) {
 
 export async function signInAnonymously() { return { user: null }; }
 export async function signInWithCustomToken() { return { user: null }; }
-export async function signInWithPopup() { throw Object.assign(new Error("יש להשתמש בחלון Google."), { code: "google-prompt-required" }); }
-export async function signInWithRedirect() { throw Object.assign(new Error("יש להשתמש בחלון Google."), { code: "google-prompt-required" }); }
+export async function signInWithPopup() {
+  throw Object.assign(new Error("יש להשתמש בחלון Google."), { code: "google-prompt-required" });
+}
+export async function signInWithRedirect() {
+  throw Object.assign(new Error("יש להשתמש בחלון Google."), { code: "google-prompt-required" });
+}
 export async function getRedirectResult() { return null; }
 
-export function getFirestore() {
-  return { type: "cloudflare-d1" };
-}
+export function getFirestore() { return { type: "cloudflare-d1" }; }
 
 function makeReference(type, segments, constraints = []) {
   return { type, segments: segments.map(String), constraints };
 }
 
-export function collection(_db, ...segments) {
-  return makeReference("collection", segments);
-}
+export function collection(_db, ...segments) { return makeReference("collection", segments); }
+export function doc(_db, ...segments) { return makeReference("document", segments); }
 
-export function doc(_db, ...segments) {
-  return makeReference("document", segments);
+// ✅ FIX: הוספת where() שהייתה חסרה לחלוטין — הקוד היה קורס בשקט בכל שימוש בה
+export function where(field, operator, value) {
+  return { kind: "where", field: String(field), operator: String(operator), value };
 }
 
 export function orderBy(field, direction = "asc") {
@@ -155,9 +160,7 @@ export function increment(amount = 1) {
 }
 
 function collectionName(reference) {
-  return reference.type === "document"
-    ? reference.segments.at(-2)
-    : reference.segments.at(-1);
+  return reference.type === "document" ? reference.segments.at(-2) : reference.segments.at(-1);
 }
 
 function documentId(reference) {
@@ -215,6 +218,13 @@ export async function getDocs(reference) {
       params.set("direction", constraint.direction);
     } else if (constraint.kind === "limit") {
       params.set("limit", String(constraint.value));
+    } else if (constraint.kind === "where") {
+      // ✅ FIX: העברת where constraints ל-API (בעבר נבלעו ונשכחו)
+      params.append("where", JSON.stringify({
+        field: constraint.field,
+        op: constraint.operator,
+        value: constraint.value
+      }));
     }
   }
   const suffix = params.size ? `?${params}` : "";
@@ -224,10 +234,10 @@ export async function getDocs(reference) {
 }
 
 export async function setDoc(reference, data, options = {}) {
-  return apiRequest(`/data/${encodeURIComponent(collectionName(reference))}/${encodeURIComponent(documentId(reference))}`, {
-    method: "PUT",
-    body: JSON.stringify({ data, merge: options?.merge === true })
-  });
+  return apiRequest(
+    `/data/${encodeURIComponent(collectionName(reference))}/${encodeURIComponent(documentId(reference))}`,
+    { method: "PUT", body: JSON.stringify({ data, merge: options?.merge === true }) }
+  );
 }
 
 export async function updateDoc(reference, data) {
@@ -235,37 +245,34 @@ export async function updateDoc(reference, data) {
 }
 
 export async function deleteDoc(reference) {
-  return apiRequest(`/data/${encodeURIComponent(collectionName(reference))}/${encodeURIComponent(documentId(reference))}`, {
-    method: "DELETE"
-  });
+  return apiRequest(
+    `/data/${encodeURIComponent(collectionName(reference))}/${encodeURIComponent(documentId(reference))}`,
+    { method: "DELETE" }
+  );
 }
 
-// Render the official Google Identity Services button instead of relying on One Tap.
+// --- Google Button Logic ---
 let googleButtonLibraryPromise = null;
 let googleButtonObserver = null;
 
 function waitForGoogleIdentityLibrary() {
   if (window.google?.accounts?.id) return Promise.resolve(window.google.accounts.id);
   if (googleButtonLibraryPromise) return googleButtonLibraryPromise;
-
   googleButtonLibraryPromise = new Promise((resolve, reject) => {
     let attempts = 0;
     const check = () => {
       const googleIdentity = window.google?.accounts?.id;
-      if (googleIdentity) {
-        resolve(googleIdentity);
-        return;
-      }
+      if (googleIdentity) { resolve(googleIdentity); return; }
       attempts += 1;
-      if (attempts >= 80) {
-        reject(new Error("ספריית ההתחברות של Google לא נטענה."));
+      if (attempts >= GOOGLE_LIBRARY_MAX_ATTEMPTS) {
+        // ✅ FIX: הודעת שגיאה ברורה יותר למשתמש
+        reject(new Error("ספריית ההתחברות של Google לא נטענה. רענן את הדף ונסה שוב."));
         return;
       }
       setTimeout(check, 250);
     };
     check();
   });
-
   return googleButtonLibraryPromise;
 }
 
@@ -274,7 +281,6 @@ async function handleOfficialGoogleCredential(response) {
     window.showNotification?.("Google לא החזירה פרטי התחברות.", false);
     return;
   }
-
   try {
     const user = await setGoogleIdToken(response.credential);
     if (!user) throw new Error("אסימון Google אינו תקין.");
@@ -287,7 +293,9 @@ async function handleOfficialGoogleCredential(response) {
 
 function findLegacyGoogleButtons(root = document) {
   if (!root?.querySelectorAll) return [];
-  return [...root.querySelectorAll('button[onclick*="signInWithGoogleAccount"], a[onclick*="signInWithGoogleAccount"]')];
+  return [...root.querySelectorAll(
+    'button[onclick*="signInWithGoogleAccount"], a[onclick*="signInWithGoogleAccount"]'
+  )];
 }
 
 async function replaceLegacyGoogleButton(button) {
@@ -298,18 +306,19 @@ async function replaceLegacyGoogleButton(button) {
   host.dataset.officialGoogleButtonHost = "true";
   host.setAttribute("role", "group");
   host.setAttribute("aria-label", "התחברות באמצעות Google");
-  host.style.display = "flex";
-  host.style.justifyContent = "center";
-  host.style.alignItems = "center";
-  host.style.width = "100%";
-  host.style.minHeight = "44px";
-  host.style.direction = "ltr";
-
+  host.style.cssText = "display:flex;justify-content:center;align-items:center;width:100%;min-height:44px;direction:ltr;";
   if (button.id) host.id = button.id;
+
+  // ✅ FIX: בדיקה שה-button עדיין ב-DOM לפני ה-replaceWith
+  if (!button.isConnected) return;
   button.replaceWith(host);
 
   try {
     const googleIdentity = await waitForGoogleIdentityLibrary();
+
+    // ✅ FIX: בדיקה שה-host עדיין ב-DOM אחרי ה-await (מניעת race condition)
+    if (!host.isConnected) return;
+
     googleIdentity.initialize({
       client_id: GOOGLE_WEB_CLIENT_ID,
       callback: handleOfficialGoogleCredential,
@@ -318,7 +327,6 @@ async function replaceLegacyGoogleButton(button) {
       auto_select: false,
       cancel_on_tap_outside: false
     });
-
     const availableWidth = Math.round(host.getBoundingClientRect().width || 320);
     googleIdentity.renderButton(host, {
       type: "standard",
@@ -332,11 +340,12 @@ async function replaceLegacyGoogleButton(button) {
     });
   } catch (error) {
     console.error("Rendering the official Google button failed:", error);
+    // ✅ FIX: בדיקת isConnected גם בטיפול בשגיאה
+    if (!host.isConnected) return;
     const fallback = document.createElement("button");
     fallback.type = "button";
     fallback.textContent = "התחברות באמצעות Google";
-    fallback.style.width = "100%";
-    fallback.style.minHeight = "44px";
+    fallback.style.cssText = "width:100%;min-height:44px;";
     fallback.onclick = () => window.showNotification?.(error?.message || "לא ניתן לטעון את Google.", false);
     host.replaceChildren(fallback);
   }
@@ -350,7 +359,6 @@ function installOfficialGoogleButtons(root = document) {
 
 function startOfficialGoogleButtonUpgrade() {
   installOfficialGoogleButtons();
-
   if (googleButtonObserver) return;
   googleButtonObserver = new MutationObserver(mutations => {
     for (const mutation of mutations) {
