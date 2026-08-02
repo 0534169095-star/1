@@ -2879,7 +2879,7 @@
         const driveReturnStatus = new URLSearchParams(window.location.search).get('drive');
         // נשמרות רק טביעות SHA-256 של חשבון מנהל-העל, לא הכתובת או המזהה עצמם.
         const INITIAL_ADMIN_UID_SHA256 = 'b38e92d2900b2c32ddfe921142715cc2becbe7b77d9e911196d7a561574d8b39';
-        const INITIAL_SUPER_ADMIN_EMAIL_SHA256 = 'd2632af59d29239eef52f10e1cfbf38e27c65c55470b355134b1cd1fb4f809d6';
+        const INITIAL_SUPER_ADMIN_EMAIL_SHA256 = '0c70c93b21ed7d7ac11f8a0e41cf0811b221f8e16524ed71d8b1822661edc137';
         const googleProvider = new GoogleAuthProvider();
         googleProvider.setCustomParameters({ prompt: 'select_account' });
 
@@ -3910,12 +3910,21 @@
 
                         window.state.currentUser = user;
                         window.state.isGoogleUser = isGoogleUser;
-                        window.state.isAdminLoggedIn = false;
-                        window.state.isSuperAdmin = false;
-                        window.state.isLocked = true;
-                        window.state.userProfile = null;
-                        window.state.userRole = isGoogleUser ? 'viewer' : 'guest';
-                        window.state.userApprovalStatus = isGoogleUser ? 'pending' : 'signed_out';
+                        const isInitialAdmin = isGoogleUser && await isInitialSuperAdmin(user);
+                        window.state.isInitialSuperAdminAccount = isInitialAdmin;
+                        window.state.isAdminLoggedIn = isInitialAdmin;
+                        window.state.isSuperAdmin = isInitialAdmin;
+                        window.state.isLocked = !isInitialAdmin;
+                        window.state.userProfile = isInitialAdmin ? {
+                            uid: user.uid,
+                            displayName: user.displayName || 'מנהל המערכת',
+                            email: user.email || '',
+                            photoURL: user.photoURL || '',
+                            status: 'approved',
+                            role: 'super_admin'
+                        } : null;
+                        window.state.userRole = isInitialAdmin ? 'super_admin' : (isGoogleUser ? 'viewer' : 'guest');
+                        window.state.userApprovalStatus = isInitialAdmin ? 'approved' : (isGoogleUser ? 'pending' : 'signed_out');
 
                         window.updateAdminUI();
                         showGoogleOneTapWhenReady();
@@ -3953,6 +3962,7 @@
                         window.galleryUnsubscribers = [];
                         window.state.currentUser = null;
                         window.state.isGoogleUser = false;
+                        window.state.isInitialSuperAdminAccount = false;
                         window.state.isAdminLoggedIn = false;
                         window.state.isSuperAdmin = false;
                         window.state.isLocked = true;
@@ -4069,14 +4079,24 @@
                 }, handleFsError));
             };
 
-            if (window.state.isAdminLoggedIn) startGalleryListeners();
+            if (window.state.isAdminLoggedIn) {
+                startGalleryListeners();
+                startAdminListeners();
+            }
 
             // פרופיל Google נפרד לכל משתמש; שינוי הרשאה מתעדכן בזמן אמת.
             if (window.state.isGoogleUser) {
                 const profileRef = doc(window.db, 'artifacts', window.appId, 'public', 'data', 'userProfiles', user.uid);
                 window.firestoreUnsubscribers.push(onSnapshot(profileRef, (snapshot) => {
                     if (!snapshot.exists()) return;
-                    const profile = { uid: snapshot.id, ...snapshot.data() };
+                    const storedProfile = { uid: snapshot.id, ...snapshot.data() };
+                    // חשבון מנהל ברירת־המחדל נשאר דרגה 4 גם אם נשארה ב־D1
+                    // רשומת pending ישנה מתקלה קודמת. ה־Worker מאמת זאת שוב בשרת.
+                    const profile = window.state.isInitialSuperAdminAccount ? {
+                        ...storedProfile,
+                        status: 'approved',
+                        role: 'super_admin'
+                    } : storedProfile;
                     const allowedRoles = ['viewer', 'uploader', 'admin', 'super_admin'];
                     const approved = profile.status === 'approved';
                     const role = approved && allowedRoles.includes(profile.role) ? profile.role : 'viewer';
@@ -4134,7 +4154,7 @@
             folders: window.DEFAULT_GALLERY_FOLDERS.map(folder => ({ ...folder })), images: [], pendingImages: [], pendingUsers: [], allUsers: [], deletionRequests: [], trashItems: [], activityLogs: [], favorites: new Set(), followedFolders: new Set(), activeFolderId: 'all', searchQuery: '', gallerySort: 'newest',
             currentLightboxIndex: -1, tempSearchResults: null,
             bulkSelectionMode: false, selectedMediaIds: new Set(), activeEventFolderId: '',
-            isLocked: true, isAdminLoggedIn: false, isSuperAdmin: false, isGoogleUser: false, currentUser: null,
+            isLocked: true, isAdminLoggedIn: false, isSuperAdmin: false, isGoogleUser: false, isInitialSuperAdminAccount: false, currentUser: null,
             userProfile: null, userRole: 'guest', userApprovalStatus: 'signed_out'
         };
         let currentFilteredImages = [];
