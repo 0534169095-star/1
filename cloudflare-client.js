@@ -212,14 +212,16 @@ export async function getDoc(reference) {
 
 export async function getDocs(reference) {
   const params = new URLSearchParams();
+  let requestedLimit = 5000;
+
   for (const constraint of reference.constraints || []) {
     if (constraint.kind === "orderBy") {
       params.set("orderBy", constraint.field);
       params.set("direction", constraint.direction);
     } else if (constraint.kind === "limit") {
+      requestedLimit = constraint.value;
       params.set("limit", String(constraint.value));
     } else if (constraint.kind === "where") {
-      // ✅ FIX: העברת where constraints ל-API (בעבר נבלעו ונשכחו)
       params.append("where", JSON.stringify({
         field: constraint.field,
         op: constraint.operator,
@@ -227,12 +229,38 @@ export async function getDocs(reference) {
       }));
     }
   }
-  const suffix = params.size ? `?${params}` : "";
-  const payload = await apiRequest(`/data/${encodeURIComponent(collectionName(reference))}${suffix}`);
-  const docs = (payload.documents || []).map(item => documentSnapshot(item.id, item.data, true));
-  return { docs, empty: docs.length === 0, size: docs.length, forEach: callback => docs.forEach(callback) };
-}
 
+  // ✅ טעינת כל הדפים אוטומטית אם אין limit מפורש
+  const allDocs = [];
+  let offset = 0;
+  const pageSize = 1000;
+
+  while (true) {
+    params.set("limit", String(Math.min(pageSize, requestedLimit - allDocs.length)));
+    params.set("offset", String(offset));
+
+    const payload = await apiRequest(
+      `/data/${encodeURIComponent(collectionName(reference))}?${params}`
+    );
+
+    const pageDocs = (payload.documents || []).map(item =>
+      documentSnapshot(item.id, item.data, true)
+    );
+
+    allDocs.push(...pageDocs);
+
+    // עצור אם: אין עוד דפים, הגענו למגבלה, או אין hasMore
+    if (!payload.hasMore || allDocs.length >= requestedLimit || pageDocs.length === 0) break;
+    offset += pageDocs.length;
+  }
+
+  return {
+    docs: allDocs,
+    empty: allDocs.length === 0,
+    size: allDocs.length,
+    forEach: callback => allDocs.forEach(callback)
+  };
+}
 export async function setDoc(reference, data, options = {}) {
   return apiRequest(
     `/data/${encodeURIComponent(collectionName(reference))}/${encodeURIComponent(documentId(reference))}`,
