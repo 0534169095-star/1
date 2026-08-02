@@ -1,4 +1,4 @@
-const CACHE_NAME = "simchat-gallery-shell-v2-cloudflare";
+const CACHE_NAME = "simchat-gallery-shell-v3-admin-recovery";
 const APP_SHELL = ["./", "./index.html", "./cloudflare-client.js", "./manifest.webmanifest"];
 
 self.addEventListener("install", event => {
