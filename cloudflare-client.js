@@ -1,4 +1,4 @@
-const API_BASE_URL = "https://simchas-gallery.0534169095.workers.dev";
+const API_BASE_URL = "https://simchas-gallery-api.0534169095.workers.dev";
 const TOKEN_STORAGE_KEY = "simchas_gallery_google_id_token";
 const GOOGLE_WEB_CLIENT_ID = "601586229891-giorl13mdpu7kfbeb6h2aj6qjpkphmmo.apps.googleusercontent.com";
 
