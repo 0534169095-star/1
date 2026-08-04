@@ -92,7 +92,7 @@
             } else {
                 imgElement.replaceWith(fallback);
             }
-            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+            scheduleIconRefresh();
         }
 
         // פונקציית גיבוב מאובטחת SHA-256 לניהול סיסמאות מוגן
@@ -2819,6 +2819,28 @@
         window.appId = typeof __app_id !== 'undefined' ? __app_id : 'org-gallery';
         window.firestoreModules = { collection, doc, getDoc, getDocs, setDoc, deleteDoc, updateDoc, increment, query, orderBy, limit };
 
+        // lucide.createIcons() סורק את כל ה-DOM בכל קריאה — יקר מאד לגלריה גדולה.
+        // קריאות מרובות באותו frame מתמזגות לאחת, וכשיש container ידוע הסריקה
+        // מוגבלת אליו בלבד — קריאה ללא container גורמת לסריקת כל ה-DOM.
+        let _iconRefreshPending = false;
+        let _iconRefreshNodes = new Set();
+        function scheduleIconRefresh(node) {
+            if (node instanceof Element) _iconRefreshNodes.add(node);
+            if (_iconRefreshPending) return;
+            _iconRefreshPending = true;
+            requestAnimationFrame(() => {
+                _iconRefreshPending = false;
+                if (typeof lucide === 'undefined' || !lucide.createIcons) return;
+                const nodes = _iconRefreshNodes;
+                _iconRefreshNodes = new Set();
+                if (nodes.size === 0) {
+                    lucide.createIcons();
+                } else {
+                    for (const n of nodes) lucide.createIcons({ node: n });
+                }
+            });
+        }
+
         // D1 משתמש בבקשות HTTPS רגילות. במקום לסרוק את כל מסד הנתונים
         // כל חמש שניות, כל מקור נטען פעם אחת ומתרענן במרווח חסכוני ורק כשהעמוד פעיל.
         // בשגיאת מכסה מופעלת השהיה ארוכה כדי לא להחריף את התקלה.
@@ -3017,7 +3039,7 @@
                     : '<i data-lucide="cloud" class="w-4 h-4"></i> חבר Google Drive';
             }
             if (syncButton) syncButton.disabled = !connected;
-            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+            scheduleIconRefresh();
         }
 
         function clearDriveConnection() {
@@ -3512,7 +3534,7 @@
                 list.append(card);
             });
 
-            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+            scheduleIconRefresh();
         }
 
         window.openDriveFolderPicker = function() {
@@ -4096,14 +4118,14 @@ async function syncNowFromWorker() {
 
                         window.updateAdminUI();
                         showGoogleOneTapWhenReady();
+                        // סנכרון הפרופיל ואתחול המאזינים רצים במקביל —
+                        // המאזין על הפרופיל מפעיל את טעינת הגלריה ברגע שהפרופיל זמין.
                         if (isGoogleUser) {
-                            try {
-                                await ensureGoogleUserProfile(user);
-                            } catch (error) {
+                            ensureGoogleUserProfile(user).catch(error => {
                                 console.error('Creating Google user profile failed:', error);
                                 const errorCode = error?.code || 'unknown';
                                 window.showNotification(`לא ניתן היה לשלוח את בקשת ההצטרפות (${errorCode}).`, false);
-                            }
+                            });
                         }
                         setupFirestoreListeners(user);
                     } else {
@@ -4341,7 +4363,7 @@ async function syncNowFromWorker() {
                 panel.classList.remove('active');
             } else {
                 panel.classList.add('active');
-                if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+                scheduleIconRefresh();
             }
         };
 
@@ -4575,7 +4597,7 @@ async function syncNowFromWorker() {
                     stream.appendChild(bubble);
                 });
             }
-            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+            scheduleIconRefresh();
             requestAnimationFrame(() => { stream.scrollTop = stream.scrollHeight; });
         };
 
@@ -4706,7 +4728,7 @@ async function syncNowFromWorker() {
             remove.innerHTML = '<i data-lucide="x" class="w-4 h-4"></i>';
             remove.onclick = () => window.clearConversationAttachment();
             preview.append(details, remove);
-            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+            scheduleIconRefresh();
         }
 
         window.handleConversationAttachment = function(input) {
@@ -5103,7 +5125,7 @@ async function syncNowFromWorker() {
                 card.appendChild(openChatButton);
                 list.appendChild(card);
             });
-            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+            scheduleIconRefresh();
         };
 
         window.markAdminReplyRead = async function(uid, messageId) {
@@ -5138,7 +5160,7 @@ async function syncNowFromWorker() {
             window.renderAdminMessageUsers();
             window.renderAdminMessageReplies();
             openModal('adminMessagesCenterModal');
-            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+            scheduleIconRefresh();
         };
 
         function personalMessageStorageKey(uid) {
@@ -5417,7 +5439,7 @@ async function syncNowFromWorker() {
                 const closeButton = drawer.querySelector('button');
                 if (closeButton) requestAnimationFrame(() => closeButton.focus({ preventScroll: true }));
             }
-            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+            scheduleIconRefresh();
         }
         window.toggleAdminDrawer = toggleAdminDrawer;
 
@@ -5438,7 +5460,7 @@ async function syncNowFromWorker() {
                     arrow.style.transform = 'rotate(180deg)';
                 }
             }
-            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+            scheduleIconRefresh();
         }
         window.toggleAccordion = toggleAccordion;
 
@@ -5548,7 +5570,7 @@ async function syncNowFromWorker() {
                 });
 
             openModal('adminCategoryModal');
-            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+            scheduleIconRefresh();
         };
 
         const adminTaskDefinitions = {
@@ -5653,7 +5675,7 @@ async function syncNowFromWorker() {
             if (contentId === 'accActivityCenter') window.renderActivityLogs?.();
             if (contentId === 'accTrash') window.renderTrashItems?.();
             if (contentId === 'accSystemHealth') window.runSystemHealthCheck?.();
-            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+            scheduleIconRefresh();
         };
 
         // מציג פופ-אפ הודעות יוקרתי ומעוצב
@@ -5715,7 +5737,7 @@ async function syncNowFromWorker() {
                 iconEl.innerHTML = `<i data-lucide="alert-circle" class="w-6 h-6 text-red-400"></i>`;
                 alertEl.className = "fixed bottom-6 left-6 bg-slate-900/95 backdrop-blur-xl text-white px-5 py-4 rounded-2xl shadow-2xl z-50 flex items-center gap-3.5 transform translate-y-0 opacity-100 transition-all duration-300 border border-red-500/20 max-w-[340px]";
             }
-            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+            scheduleIconRefresh();
 
             if (notificationTimer) clearTimeout(notificationTimer);
             notificationTimer = setTimeout(() => {
@@ -5810,7 +5832,7 @@ async function syncNowFromWorker() {
             pendingConfirmAction = typeof onApprove === 'function' ? onApprove : null;
             resetConfirmButtons();
             openModal('confirmModal');
-            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+            scheduleIconRefresh();
         }
         window.showConfirm = showConfirm;
 
@@ -5937,7 +5959,7 @@ async function syncNowFromWorker() {
                 row.appendChild(text);
                 container.appendChild(row);
             });
-            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+            scheduleIconRefresh();
         };
 
         async function r2Request(path, options = {}) {
@@ -6088,7 +6110,7 @@ async function syncNowFromWorker() {
                     const media = window.state.images.find(item => safeRecordId(item.id) === safeRecordId(entry.id));
                     return `<div class="flex items-center justify-between rounded-xl bg-black/20 px-3 py-2"><span>${index + 1}. ${escapeHtml(media?.title || entry.id)}</span><strong class="text-amber-300">${Number(entry.views) || 0} צפיות</strong></div>`;
                 }).join('') : '<p>נתוני הצפייה יופיעו כאן לאחר פתיחת תמונות וסרטונים.</p>';
-                if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+                scheduleIconRefresh();
             } catch (error) {
                 if (top) top.textContent = error.message || 'טעינת הנתונים נכשלה.';
             }
@@ -6524,7 +6546,7 @@ async function syncNowFromWorker() {
                     list.appendChild(row);
                 });
             }
-            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+            scheduleIconRefresh();
         };
 
         // --- 3. Admin UI Update Routing ---
@@ -6774,7 +6796,7 @@ async function syncNowFromWorker() {
                     statusBadge.innerText = "מצב אורח";
                 }
             }
-            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+            scheduleIconRefresh();
         }
 
         // --- 5. New Updates Banner ---
@@ -6826,7 +6848,7 @@ async function syncNowFromWorker() {
                 searchBanner.appendChild(returnBtn);
                 searchBanner.classList.remove('hidden');
             }
-            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+            scheduleIconRefresh();
             window.renderImages();
         }
 
@@ -7033,7 +7055,7 @@ async function syncNowFromWorker() {
             document.getElementById('eventEditDescription').value = folder.description || '';
             toggleEventEdit(false);
             openModal('eventPageModal');
-            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+            scheduleIconRefresh();
         };
 
         window.toggleFollowEvent = async function(folderId) {
@@ -7161,7 +7183,7 @@ async function syncNowFromWorker() {
                     </div>`);
             });
             folderList.innerHTML = folderParts.join('');
-            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+            scheduleIconRefresh(folderList);
         }
 
         window.renderImages = function() {
@@ -7209,7 +7231,7 @@ async function syncNowFromWorker() {
                     </article>`);
             });
             grid.innerHTML = htmlParts.join('');
-            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+            scheduleIconRefresh(grid);
         }
 
         window.populateFolderSelects = function() {
@@ -7283,7 +7305,7 @@ async function syncNowFromWorker() {
                 });
             }
             openModal('duplicateMediaModal');
-            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+            scheduleIconRefresh();
             const choice = await new Promise(resolve => { duplicateUploadResolver = resolve; });
             if (choice === 'cancel') return [];
             if (choice === 'skip') return records.filter(record => !record._isDuplicate);
@@ -7377,7 +7399,7 @@ async function syncNowFromWorker() {
                 row.append(icon, body, status);
                 container.appendChild(row);
             });
-            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+            scheduleIconRefresh();
         };
 
         function updateUploadQueueItem(containerId, index, state, label) {
@@ -7405,7 +7427,7 @@ async function syncNowFromWorker() {
                     state === 'active' ? 'loader-circle' : 'image'
                 }" class="w-3.5 h-3.5 ${state === 'active' ? 'animate-spin' : ''}"></i>`;
             }
-            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+            scheduleIconRefresh();
         }
 
         let uploadPaused = false;
@@ -7933,7 +7955,7 @@ async function syncNowFromWorker() {
                 card.append(header, controls, linkedActions);
                 list.appendChild(card);
             });
-            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+            scheduleIconRefresh();
         };
 
         window.renderDeletionRequests = function() {
@@ -8108,7 +8130,7 @@ async function syncNowFromWorker() {
                 list.appendChild(card);
             });
 
-            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+            scheduleIconRefresh();
         };
     
 
@@ -8213,6 +8235,7 @@ async function syncNowFromWorker() {
                     </label>`);
             });
             list.innerHTML = parts.join('');
+            scheduleIconRefresh(list);
         }
 
         window.updatePendingBadge = function() {
@@ -8414,7 +8437,7 @@ async function syncNowFromWorker() {
             button.setAttribute('aria-label', running ? 'עצירת מצגת אוטומטית' : 'הפעלת מצגת אוטומטית');
             button.title = running ? 'עצירת מצגת' : 'הפעלת מצגת';
             button.innerHTML = `<i data-lucide="${running ? 'pause' : 'play'}" class="w-6 h-6"></i>`;
-            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+            scheduleIconRefresh();
         }
 
         window.toggleGallerySlideshow = function() {
@@ -8586,7 +8609,7 @@ async function syncNowFromWorker() {
             clear.textContent = 'חזור לגלריה';
             banner.append(details, clear);
             banner.classList.remove('hidden');
-            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+            scheduleIconRefresh();
         }
 
         window.executeAiImageSearch = async function() {
@@ -8937,6 +8960,8 @@ async function syncNowFromWorker() {
                             const detections = await faceapi.detectAllFaces(galleryImg).withFaceLandmarks().withFaceDescriptors();
                             descriptors = detections.map(d => Array.from(d.descriptor));
                             window.descriptorCache[imgData.id] = descriptors;
+                            // נותן לדפדפן לצייר ולטפל באירועים בין זיהויים כבדים
+                            await new Promise(resolve => setTimeout(resolve, 0));
                         }
 
                         const distances = descriptors.map(desc => {
@@ -9023,7 +9048,7 @@ async function syncNowFromWorker() {
             banner.appendChild(rightContainer);
             banner.appendChild(btn);
             banner.classList.remove('hidden');
-            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+            scheduleIconRefresh();
         }
     </script>
 
@@ -9039,7 +9064,7 @@ async function syncNowFromWorker() {
             }
             if (icon) icon.setAttribute('data-lucide', isLight ? 'moon' : 'sun');
             if (text) text.textContent = isLight ? 'כהה' : 'בהיר';
-            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+            scheduleIconRefresh();
         }
 
         window.setSiteTheme = function(theme, persist = true) {
@@ -9216,7 +9241,7 @@ async function syncNowFromWorker() {
             try {
                 window.setSiteTheme(document.documentElement.dataset.theme, false);
                 initAmbientArchiveBackground();
-                if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+                scheduleIconRefresh();
                 if (typeof window.updateAdminUI === 'function') window.updateAdminUI();
                 if (typeof window.renderFolders === 'function') window.renderFolders();
                 if (typeof window.renderImages === 'function') window.renderImages();
