@@ -3710,6 +3710,10 @@ async function syncNowFromWorker() {
   if (btn) { btn.disabled = false; btn.textContent = '🔄 סנכרן עכשיו'; }
   setTimeout(() => { if (resultEl) resultEl.textContent = ''; }, 6000);
 }
+        window.addDriveFolderRow = addDriveFolderRow;
+        window.removeDriveFolderRow = removeDriveFolderRow;
+        window.saveDriveFoldersToWorker = saveDriveFoldersToWorker;
+        window.syncNowFromWorker = syncNowFromWorker;
         window.startGoogleDriveSync = async function(confirmed = false) {
             if (!window.checkAdminPermission?.()) return;
             if (!driveAccessToken || driveAccessTokenExpiresAt <= Date.now() + 60000) {
