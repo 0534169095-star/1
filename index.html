@@ -2840,6 +2840,7 @@
                 }
             });
         }
+        window.scheduleIconRefresh = scheduleIconRefresh;
 
         // D1 משתמש בבקשות HTTPS רגילות. במקום לסרוק את כל מסד הנתונים
         // כל חמש שניות, כל מקור נטען פעם אחת ומתרענן במרווח חסכוני ורק כשהעמוד פעיל.
@@ -3625,6 +3626,8 @@ function escapeHtml(str) {
 }
 
 async function loadDriveFolders() {
+  const existingList = document.getElementById('driveFoldersList');
+  if (existingList) existingList.innerHTML = '';
   try {
     const res = await driveWorkerRequest('/drive/folders', { method: 'GET' });
     if (!res.success) return;
@@ -3740,6 +3743,8 @@ async function syncNowFromWorker() {
         window.removeDriveFolderRow = removeDriveFolderRow;
         window.saveDriveFoldersToWorker = saveDriveFoldersToWorker;
         window.syncNowFromWorker = syncNowFromWorker;
+        window.loadDriveFolders = loadDriveFolders;
+        window.restoreDriveConnection = restoreDriveConnection;
         window.startGoogleDriveSync = async function(confirmed = false) {
             if (!window.checkAdminPermission?.()) return;
             if (!driveAccessToken || driveAccessTokenExpiresAt <= Date.now() + 60000) {
@@ -5675,6 +5680,9 @@ async function syncNowFromWorker() {
             if (contentId === 'accActivityCenter') window.renderActivityLogs?.();
             if (contentId === 'accTrash') window.renderTrashItems?.();
             if (contentId === 'accSystemHealth') window.runSystemHealthCheck?.();
+            if (contentId === 'accDriveSync') {
+                window.restoreDriveConnection?.().then(() => window.loadDriveFolders?.()).catch(() => window.loadDriveFolders?.());
+            }
             scheduleIconRefresh();
         };
 
