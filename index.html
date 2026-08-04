@@ -22,7 +22,7 @@
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://simchas-gallery-api.0534169095.workers.dev/face-assets/face-api.js"></script>
+    <script src="https://simchas-gallery-api.0534169095.workers.dev/face-assets/face-api.js" defer></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 
@@ -3947,8 +3947,10 @@ async function syncNowFromWorker() {
 
         async function syncGoogleUserProfile(user) {
             const profileRef = doc(window.db, 'artifacts', window.appId, 'public', 'data', 'userProfiles', user.uid);
-            const snapshot = await getDoc(profileRef);
-            const isInitialAdmin = await isInitialSuperAdmin(user);
+            const [snapshot, isInitialAdmin] = await Promise.all([
+                getDoc(profileRef),
+                isInitialSuperAdmin(user)
+            ]);
             const commonData = {
                 uid: user.uid,
                 displayName: user.displayName || 'משתמש Google',
@@ -3979,7 +3981,7 @@ async function syncNowFromWorker() {
                 const shouldPromoteInitialAdmin = isInitialAdmin && (
                     existingProfile.status !== 'approved' || existingProfile.role !== 'super_admin'
                 );
-                await setDoc(profileRef, {
+                const writePromise = setDoc(profileRef, {
                     ...commonData,
                     ...(isInitialAdmin ? {
                         status: 'approved',
@@ -3988,7 +3990,11 @@ async function syncNowFromWorker() {
                         approvedBy: existingProfile.approvedBy || 'initial-admin-bootstrap'
                     } : {})
                 }, { merge: true });
-                if (shouldPromoteInitialAdmin) {
+                // משתמש מחזיר ללא קידום — שולחים עדכון lastLoginAt ברקע כדי לא לעכב טעינת הגלריה
+                if (!shouldPromoteInitialAdmin) {
+                    writePromise.catch(error => console.warn('Profile update failed:', error));
+                } else {
+                    await writePromise;
                     window.showNotification('חשבון המנהל הראשי הופעל בהצלחה.', true);
                 }
             }
