@@ -7747,7 +7747,7 @@ async function syncNowFromWorker() {
                 roleChangedAt: Date.now(),
                 roleChangedBy: window.state.currentUser?.uid || ''
             }, { merge: true });
-            await window.logActivity('changed_role', 'user', uid, profile.displayName || profile.email || uid, `דרגה חדשה: ${role}`);
+            await window.logActivity('changed_role', 'user', uid, profile?.displayName || profile?.email || uid, `דרגה חדשה: ${role}`);
             window.showNotification('דרגת המשתמש עודכנה בהצלחה.');
         };
 
