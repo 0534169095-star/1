@@ -7748,6 +7748,8 @@ async function syncNowFromWorker() {
                 roleChangedBy: window.state.currentUser?.uid || ''
             }, { merge: true });
             await window.logActivity('changed_role', 'user', uid, profile?.displayName || profile?.email || uid, `דרגה חדשה: ${role}`);
+            if (profile) { profile.status = 'approved'; profile.role = role; }
+            window.renderManagedUsers?.();
             window.showNotification('דרגת המשתמש עודכנה בהצלחה.');
         };
 
@@ -7783,6 +7785,14 @@ async function syncNowFromWorker() {
                 blockedBy: window.state.currentUser?.uid || ''
             }, { merge: true });
             await window.logActivity('changed_block', 'user', uid, profile.displayName || profile.email || uid, isBlocked ? 'החסימה הוסרה' : 'המשתמש נחסם');
+            if (isBlocked) {
+                profile.status = 'approved';
+                profile.role = ['viewer', 'uploader', 'admin', 'super_admin'].includes(profile.roleBeforeBlock) ? profile.roleBeforeBlock : 'viewer';
+            } else {
+                profile.roleBeforeBlock = profile.role || 'viewer';
+                profile.status = 'blocked';
+            }
+            window.renderManagedUsers?.();
             window.showNotification(isBlocked ? 'חסימת המשתמש הוסרה.' : 'המשתמש נחסם.');
         };
 
@@ -7969,6 +7979,8 @@ async function syncNowFromWorker() {
                 resolvedAt: Date.now(),
                 resolvedBy: window.state.currentUser?.uid || ''
             }, { merge: true });
+            window.state.deletionRequests = (window.state.deletionRequests || []).filter(item => item.id !== requestId);
+            window.renderDeletionRequests?.();
             window.showNotification(approved ? 'בקשת המחיקה אושרה והפריט הועבר לסל המחזור.' : 'בקשת המחיקה נדחתה.');
         };
 
@@ -8126,6 +8138,13 @@ async function syncNowFromWorker() {
                     approvedBy: window.state.currentUser?.uid || 'system-admin'
                 }, { merge: true });
                 await window.logActivity('approved_user', 'user', uid, profile.displayName || profile.email || uid, roleLabels[role]);
+                const approvedProfile = { ...profile, status: 'approved', role };
+                window.state.pendingUsers = (window.state.pendingUsers || []).filter(u => u.uid !== uid);
+                window.state.allUsers = (window.state.allUsers || []).filter(u => u.uid !== uid);
+                window.state.allUsers.push(approvedProfile);
+                window.renderPendingUsers?.();
+                window.renderManagedUsers?.();
+                window.updatePendingUsersBadge?.();
                 window.showNotification(`${profile.displayName || 'המשתמש'} אושר בתור ${roleLabels[role]}.`);
             } catch (error) {
                 console.error('Approving user failed:', error);
@@ -8145,6 +8164,9 @@ async function syncNowFromWorker() {
                     rejectedAt: Date.now(),
                     rejectedBy: window.state.currentUser?.uid || 'system-admin'
                 }, { merge: true });
+                window.state.pendingUsers = (window.state.pendingUsers || []).filter(u => u.uid !== uid);
+                window.renderPendingUsers?.();
+                window.updatePendingUsersBadge?.();
                 window.showNotification('בקשת המשתמש נדחתה.');
             });
         };
