@@ -2822,7 +2822,7 @@
         // D1 משתמש בבקשות HTTPS רגילות. במקום לסרוק את כל מסד הנתונים
         // כל חמש שניות, כל מקור נטען פעם אחת ומתרענן במרווח חסכוני ורק כשהעמוד פעיל.
         // בשגיאת מכסה מופעלת השהיה ארוכה כדי לא להחריף את התקלה.
-        function onSnapshot(reference, onNext, onError) {
+        function onSnapshot(reference, onNext, onError, options = {}) {
             let active = true;
             let requestRunning = false;
             let timer = null;
@@ -2883,7 +2883,11 @@
             document.addEventListener('visibilitychange', refreshWhenActive);
             window.addEventListener('online', refreshWhenActive);
             window.addEventListener('focus', refreshWhenActive);
-            refresh(true);
+            if (options.initialDelay) {
+                timer = window.setTimeout(() => refresh(true), options.initialDelay);
+            } else {
+                refresh(true);
+            }
             return () => {
                 active = false;
                 window.clearTimeout(timer);
@@ -3913,7 +3917,7 @@ async function syncNowFromWorker() {
                     window.showNotification(label, true);
                 }
                 previousPendingIds = new Set(pending.map(profile => profile.uid));
-            }, reportFirestoreError));
+            }, reportFirestoreError, { initialDelay: 500 }));
 
             window.adminUnsubscribers.push(onSnapshot(collection(window.db, 'artifacts', window.appId, 'public', 'data', 'deletionRequests'), (snapshot) => {
                 window.state.deletionRequests = snapshot.docs
@@ -3922,7 +3926,7 @@ async function syncNowFromWorker() {
                     .sort((a, b) => (b.requestedAt || 0) - (a.requestedAt || 0));
                 window.renderDeletionRequests();
                 window.updateAdminOverview();
-            }, reportFirestoreError));
+            }, reportFirestoreError, { initialDelay: 1000 }));
 
             window.adminUnsubscribers.push(onSnapshot(collection(window.db, 'artifacts', window.appId, 'public', 'data', 'trashItems'), (snapshot) => {
                 window.state.trashItems = snapshot.docs
@@ -3930,7 +3934,7 @@ async function syncNowFromWorker() {
                     .sort((a, b) => (b.deletedAt || 0) - (a.deletedAt || 0));
                 window.renderTrashItems?.();
                 window.updateAdminOverview?.();
-            }, reportFirestoreError));
+            }, reportFirestoreError, { initialDelay: 1500 }));
 
             const recentActivityQuery = query(
                 collection(window.db, 'artifacts', window.appId, 'public', 'data', 'activityLogs'),
@@ -3942,7 +3946,7 @@ async function syncNowFromWorker() {
                     .map(d => ({ id: d.id, ...d.data() }))
                     .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
                 window.renderActivityLogs?.();
-            }, reportFirestoreError));
+            }, reportFirestoreError, { initialDelay: 2000 }));
         }
 
         async function syncGoogleUserProfile(user) {
@@ -7126,11 +7130,12 @@ async function syncNowFromWorker() {
 
         window.renderFolders = function() {
             if (typeof window.updateAdminOverview === 'function') window.updateAdminOverview();
-            const folderList = document.getElementById('folderList'); if (!folderList) return; folderList.innerHTML = '';
+            const folderList = document.getElementById('folderList'); if (!folderList) return;
             const isEditBlocked = window.state.isLocked && !window.state.isAdminLoggedIn;
+            const folderParts = [];
             if (window.state.isGoogleUser && window.state.userApprovalStatus === 'approved') {
                 const favoriteCount = window.state.images.filter(item => window.state.favorites.has(safeRecordId(item.id))).length;
-                folderList.insertAdjacentHTML('beforeend', `
+                folderParts.push(`
                     <div class="folder-row flex items-center justify-between group p-1 ${window.state.activeFolderId === 'favorites' ? 'is-active' : ''}">
                         <button type="button" onclick="setActiveFolder('favorites')" class="folder-button flex-1 flex items-center gap-3 px-3 py-2 text-sm" ${window.state.activeFolderId === 'favorites' ? 'aria-current="page"' : ''}>
                             <i data-lucide="heart" class="w-4 h-4"></i><span class="truncate max-w-[120px]">המועדפים שלי</span><span class="folder-count mr-auto text-xs px-2 py-0.5 rounded-full">${favoriteCount}</span>
@@ -7148,13 +7153,14 @@ async function syncNowFromWorker() {
                 const eventBtn = folderId !== 'all' ? `<button type="button" onclick="openEventPage(event, '${folderId}')" class="p-1 hover:text-amber-400 rounded" aria-label="פתיחת עמוד האירוע ${escapeHtml(folder.name)}" title="עמוד האירוע"><i data-lucide="panel-top-open" class="w-4 h-4"></i></button>` : '';
                 const count = folder.id === 'all' ? window.state.images.length : window.state.images.filter(img => img.folderId === folder.id).length;
 
-                folderList.insertAdjacentHTML('beforeend', `
+                folderParts.push(`
                     <div class="folder-row flex items-center justify-between group p-1 ${isActive ? 'is-active' : ''}">
                         <button type="button" onclick="setActiveFolder('${folderId}')" class="folder-button flex-1 flex items-center gap-3 px-3 py-2 text-sm" ${isActive ? 'aria-current="page"' : ''}>
                             <i data-lucide="${safeIconName(folder.icon)}" class="w-4 h-4"></i><span class="truncate max-w-[120px]">${escapeHtml(folder.name)}</span><span class="folder-count mr-auto text-xs px-2 py-0.5 rounded-full">${count}</span>
                         </button><div class="flex items-center gap-1 pl-2 text-slate-400">${eventBtn}${delBtn}</div>
                     </div>`);
             });
+            folderList.innerHTML = folderParts.join('');
             if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
         }
 
@@ -7170,6 +7176,7 @@ async function syncNowFromWorker() {
             if (filtered.length === 0) { grid.classList.add('hidden'); emptyState.classList.remove('hidden'); emptyState.classList.add('flex'); return; }
             grid.classList.remove('hidden'); emptyState.classList.add('hidden'); emptyState.classList.remove('flex');
             const isEditBlocked = window.state.isLocked && !window.state.isAdminLoggedIn;
+            const htmlParts = [];
             filtered.forEach((img, index) => {
                 const imageId = safeRecordId(img.id);
                 if (!imageId) return;
@@ -7187,7 +7194,7 @@ async function syncNowFromWorker() {
                        <span class="absolute top-3 right-3 rounded-full bg-black/70 border border-white/20 px-2.5 py-1 text-[9px] font-bold text-white flex items-center gap-1"><i data-lucide="video" class="w-3 h-3"></i> סרטון${durationLabel ? ` · ${durationLabel}` : ''}</span>`
                     : `<img src="${escapeHtml(imageUrl)}" loading="lazy" decoding="async" alt="${title}" class="w-full h-full object-cover gallery-card-img" onerror="handleImageError(this)">`;
                 const actionHtml = !isEditBlocked ? `<div class="gallery-actions mt-4 pt-3 border-t border-slate-200 flex items-center justify-between opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity"><button type="button" onclick="changeImageFolder('${imageId}')" class="text-xs font-semibold px-2.5 py-1.5 rounded-lg flex items-center gap-1"><i data-lucide="folder-sync" class="w-3.5 h-3.5"></i>העבר</button><button type="button" onclick="handleDeleteImage('${imageId}')" class="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg" aria-label="מחיקת ${title}"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>` : '';
-                grid.insertAdjacentHTML('beforeend', `
+                htmlParts.push(`
                     <article class="overflow-hidden flex flex-col group relative fade-up gallery-card ${isSelected ? 'ring-2 ring-cyan-400 ring-offset-2 ring-offset-slate-950' : ''}" style="--card-index:${Math.min(index, 12)}">
                         <button type="button" class="gallery-media" onclick="${window.state.bulkSelectionMode ? `toggleMediaSelection(event, '${imageId}')` : `openLightbox('${imageId}')`}" aria-label="${window.state.bulkSelectionMode ? 'בחירת' : 'פתיחת'} ${title}">
                             ${mediaHtml}
@@ -7201,6 +7208,7 @@ async function syncNowFromWorker() {
                         </div>
                     </article>`);
             });
+            grid.innerHTML = htmlParts.join('');
             if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
         }
 
@@ -8182,18 +8190,19 @@ async function syncNowFromWorker() {
         };
 
         window.renderPendingImages = function() {
-            const list = document.getElementById('pendingList'); if (!list) return; list.innerHTML = '';
+            const list = document.getElementById('pendingList'); if (!list) return;
             const pending = window.state.pendingImages || [];
             if (pending.length === 0) { list.innerHTML = '<p class="text-xs text-center text-slate-500 py-4">אין קבצי מדיה ממתינים לאישור.</p>'; return; }
+            const parts = [];
             pending.forEach(img => {
                 const imageId = safeRecordId(img.id);
+                if (!imageId) return;
                 const imageUrl = safeImageUrl(img.url);
                 const isVideo = isVideoRecord(img);
                 const preview = isVideo
                     ? '<span class="w-10 h-10 shrink-0 rounded-lg border border-slate-200 bg-slate-900 text-white flex items-center justify-center"><i data-lucide="video" class="w-4 h-4"></i></span>'
                     : `<img src="${escapeHtml(imageUrl)}" loading="lazy" decoding="async" alt="" class="w-10 h-10 object-cover rounded-lg border border-slate-200" onerror="handleImageError(this)">`;
-                if (!imageId) return;
-                list.insertAdjacentHTML('beforeend', `
+                parts.push(`
                     <label class="flex items-center gap-3 p-2 hover:bg-amber-100/50 border border-amber-100 rounded-xl cursor-pointer transition-all bg-white shadow-sm">
                         <input type="checkbox" name="pendingImgCheck" value="${imageId}" class="rounded text-amber-500 focus:ring-amber-500 bg-white border-slate-200" checked>
                         ${preview}
@@ -8203,6 +8212,7 @@ async function syncNowFromWorker() {
                         </div>
                     </label>`);
             });
+            list.innerHTML = parts.join('');
         }
 
         window.updatePendingBadge = function() {
