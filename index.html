@@ -6362,6 +6362,21 @@ async function syncNowFromWorker() {
             await setDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'trashItems', trashId), trashRecord);
             await deleteDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', collectionName, originalId));
             window.state.trashItems = [trashRecord, ...(window.state.trashItems || [])];
+            // Update local state immediately so the UI reflects the deletion without waiting for the next snapshot
+            if (type === 'image') {
+                window.state.images = (window.state.images || []).filter(item => safeRecordId(item.id) !== originalId);
+                window.renderImages();
+                window.renderFolders();
+            } else if (type === 'pendingImage') {
+                window.state.pendingImages = (window.state.pendingImages || []).filter(item => safeRecordId(item.id) !== originalId);
+                window.renderPendingImages?.();
+                window.updatePendingBadge?.();
+            } else if (type === 'folder') {
+                window.state.folders = (window.state.folders || []).filter(item => safeRecordId(item.id) !== originalId);
+                if (window.state.activeFolderId === originalId) window.state.activeFolderId = 'all';
+                window.renderFolders();
+                window.renderImages();
+            }
             window.renderTrashItems?.();
             await window.logActivity('moved_to_trash', type, originalId, trashRecord.targetName);
             return trashRecord;
@@ -6434,6 +6449,32 @@ async function syncNowFromWorker() {
             }
             await deleteDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'trashItems', safeRecordId(item.id)));
             window.state.trashItems = (window.state.trashItems || []).filter(entry => entry.id !== item.id);
+            // Update local state immediately so restored items appear without waiting for the next snapshot
+            if (item.originalType === 'image' && item.record) {
+                if (!(window.state.images || []).some(img => safeRecordId(img.id) === safeRecordId(item.originalId))) {
+                    window.state.images = [item.record, ...(window.state.images || [])];
+                    window.state.images.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                }
+                window.renderImages();
+                window.renderFolders();
+            } else if (item.originalType === 'folder' && item.record) {
+                if (!(window.state.folders || []).some(f => safeRecordId(f.id) === safeRecordId(item.originalId))) {
+                    window.state.folders = [...(window.state.folders || []), item.record];
+                }
+                // Restore related images
+                if (Array.isArray(item.relatedTrashIds)) {
+                    for (const childTrashId of item.relatedTrashIds) {
+                        const child = (window.state.trashItems || []).find(entry => safeRecordId(entry.id) === safeRecordId(childTrashId));
+                        if (child?.record && !(window.state.images || []).some(img => safeRecordId(img.id) === safeRecordId(child.originalId))) {
+                            window.state.images = [{ ...child.record, folderId: item.originalId }, ...(window.state.images || [])];
+                        }
+                    }
+                    window.state.images.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                    window.state.trashItems = (window.state.trashItems || []).filter(entry => !item.relatedTrashIds.includes(entry.id));
+                }
+                window.renderFolders();
+                window.renderImages();
+            }
             window.renderTrashItems();
             await window.logActivity('restored', item.originalType, item.originalId, item.targetName);
             window.showNotification('הפריט שוחזר בהצלחה.');
@@ -7158,7 +7199,7 @@ async function syncNowFromWorker() {
             return filtered;
         }
 
-        window.renderFolders = function() {
+        window._doRenderFolders = function() {
             if (typeof window.updateAdminOverview === 'function') window.updateAdminOverview();
             const folderList = document.getElementById('folderList'); if (!folderList) return;
             const isEditBlocked = window.state.isLocked && !window.state.isAdminLoggedIn;
@@ -7194,7 +7235,7 @@ async function syncNowFromWorker() {
             scheduleIconRefresh(folderList);
         }
 
-        window.renderImages = function() {
+        window._doRenderImages = function() {
             if (typeof window.updateAdminOverview === 'function') window.updateAdminOverview();
             const grid = document.getElementById('photosGrid'); const emptyState = document.getElementById('emptyState');
             if (!grid || !emptyState) return; grid.innerHTML = '';
@@ -7219,7 +7260,7 @@ async function syncNowFromWorker() {
                 const videoPoster = safeImageUrl(img.thumbnailUrl);
                 const durationLabel = formatMediaDuration(img.duration);
                 const mediaHtml = isVideo
-                    ? `<video src="${escapeHtml(imageUrl)}" ${videoPoster ? `poster="${escapeHtml(videoPoster)}"` : ''} muted playsinline preload="metadata" class="w-full h-full object-cover gallery-card-img bg-black"></video>
+                    ? `<video src="${escapeHtml(imageUrl)}" ${videoPoster ? `poster="${escapeHtml(videoPoster)}"` : ''} muted playsinline preload="none" class="w-full h-full object-cover gallery-card-img bg-black"></video>
                        <span class="absolute inset-0 flex items-center justify-center pointer-events-none"><span class="w-14 h-14 rounded-full bg-black/65 border border-white/30 text-white flex items-center justify-center shadow-xl"><i data-lucide="play" class="w-6 h-6 fill-current"></i></span></span>
                        <span class="absolute top-3 right-3 rounded-full bg-black/70 border border-white/20 px-2.5 py-1 text-[9px] font-bold text-white flex items-center gap-1"><i data-lucide="video" class="w-3 h-3"></i> סרטון${durationLabel ? ` · ${durationLabel}` : ''}</span>`
                     : `<img src="${escapeHtml(imageUrl)}" loading="lazy" decoding="async" alt="${title}" class="w-full h-full object-cover gallery-card-img" onerror="handleImageError(this)">`;
@@ -7252,6 +7293,19 @@ async function syncNowFromWorker() {
                 });
             });
         }
+
+        // Debounced render wrappers — collapse rapid successive calls into one DOM update
+        (function() {
+            let _imgTimer, _folderTimer;
+            window.renderImages = function() {
+                clearTimeout(_imgTimer);
+                _imgTimer = setTimeout(window._doRenderImages, 50);
+            };
+            window.renderFolders = function() {
+                clearTimeout(_folderTimer);
+                _folderTimer = setTimeout(window._doRenderFolders, 50);
+            };
+        })();
 
         // --- 7. Uploads & Approvals ---
         function isSupportedVideoFile(file) {
@@ -8552,6 +8606,7 @@ async function syncNowFromWorker() {
             const topModal = openModals.at(-1);
             if (topModal) {
                 if (topModal.id === 'faceCameraModal') closeFaceCamera();
+                else if (topModal.id === 'adminTaskModal') window.closeAdminTaskWindow?.();
                 else closeModal(topModal.id);
                 return;
             }
