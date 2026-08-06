@@ -2924,8 +2924,20 @@
                     schedule(retryNotBefore - Date.now());
                     return;
                 }
+                // אם הכרטיסייה מוסתרת: בטעינה ראשונה (force) נמתין לחשיפה, בפולינג רגיל נדחה
                 if (document.hidden) {
-                    schedule(normalDelay);
+                    if (!force || lastRefreshAt) {
+                        schedule(normalDelay);
+                        return;
+                    }
+                    // first-load forced refresh: schedule for when page becomes visible
+                    const waitForVisible = () => {
+                        if (!document.hidden) {
+                            document.removeEventListener('visibilitychange', waitForVisible);
+                            refresh(true);
+                        }
+                    };
+                    document.addEventListener('visibilitychange', waitForVisible);
                     return;
                 }
                 if (!force && lastRefreshAt && Date.now() - lastRefreshAt < minimumEventDelay) {
@@ -2948,6 +2960,16 @@
                     const retryDelay = Math.min(normalDelay, 30 * 1000 * (2 ** Math.min(consecutiveErrors - 1, 5)));
                     retryNotBefore = Date.now() + retryDelay;
                     if (active && typeof onError === 'function') onError(error);
+                    // אחרי כישלון ראשוני ב-hidden tab, נחזור לנסות מיד כשהדף יהיה פעיל
+                    if (active && consecutiveErrors === 1 && document.hidden) {
+                        const retryOnVisible = () => {
+                            if (!document.hidden) {
+                                document.removeEventListener('visibilitychange', retryOnVisible);
+                                refresh();
+                            }
+                        };
+                        document.addEventListener('visibilitychange', retryOnVisible);
+                    }
                 } finally {
                     requestRunning = false;
                     if (active) {
@@ -4262,6 +4284,29 @@ async function syncNowFromWorker() {
 
             const handleFsError = reportFirestoreError;
 
+            // מטפל שגיאות מיוחד לגלריה: מוודא שהתצוגה מתעדכנת גם בעת שגיאה
+            const handleFoldersFsError = (err) => {
+                console.error('Gallery folders load error:', err?.code, err?.message, err);
+                if (!window.state.gallerySnapshotInitialized) {
+                    window.state.folders = defaultFolders.map(folder => ({ ...folder }));
+                    window.renderFolders?.();
+                    window.populateFolderSelects?.();
+                }
+                if (err.code !== 'unavailable') {
+                    window.showNotification?.('שגיאה בטעינת התיקיות (' + (err.code || err.message || 'unknown') + '). מנסה שוב בקרוב.', false);
+                }
+            };
+
+            const handleImagesFsError = (err) => {
+                console.error('Gallery images load error:', err?.code, err?.message, err);
+                if (!window.state.gallerySnapshotInitialized) {
+                    window.renderImages?.();
+                    if (err.code !== 'unavailable') {
+                        window.showNotification?.('שגיאה בטעינת התמונות (' + (err.code || err.message || 'unknown') + '). מנסה שוב בקרוב.', false);
+                    }
+                }
+            };
+
             const stopGalleryListeners = () => {
                 window.galleryUnsubscribers.forEach(unsubscribe => {
                     try { unsubscribe(); } catch (error) { console.warn('Gallery listener cleanup failed:', error); }
@@ -4309,7 +4354,7 @@ async function syncNowFromWorker() {
                     window.state.folders.sort((a, b) => a.id === 'all' ? -1 : b.id === 'all' ? 1 : 0);
                     window.renderFolders(); window.populateFolderSelects();
                 }
-                }, handleFsError));
+                }, handleFoldersFsError));
 
                 // מאזין לתמונות פעילות רק לאחר קבלת הרשאת צפייה.
                 window.galleryUnsubscribers.push(onSnapshot(collection(window.db, 'artifacts', window.appId, 'public', 'data', 'images'), (snapshot) => {
@@ -4327,7 +4372,7 @@ async function syncNowFromWorker() {
                     window.state.images.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
                     window.renderImages();
                     window.checkNewUpdates();
-                }, handleFsError));
+                }, handleImagesFsError));
             };
 
             if (window.state.isAdminLoggedIn) {
@@ -4335,11 +4380,29 @@ async function syncNowFromWorker() {
                 startAdminListeners();
             }
 
+            // בטיחות: אם הגלריה לא נטענה תוך 7 שניות, נעדכן את הממשק ונציג שגיאה
+            const _galleryFallbackTimer = setTimeout(() => {
+                if (!window.state.gallerySnapshotInitialized) {
+                    console.warn('Gallery snapshot did not initialize within timeout — forcing render');
+                    window.renderFolders?.();
+                    window.renderImages?.();
+                    if (window.state.isAdminLoggedIn || window.state.userApprovalStatus === 'approved') {
+                        window.showNotification?.('הגלריה מתנסה להתחבר. בדוק את החיבור לרשת.', false);
+                    }
+                }
+            }, 7000);
+            window.firestoreUnsubscribers.push(() => clearTimeout(_galleryFallbackTimer));
+
             // פרופיל Google נפרד לכל משתמש; שינוי הרשאה מתעדכן בזמן אמת.
             if (window.state.isGoogleUser) {
                 const profileRef = doc(window.db, 'artifacts', window.appId, 'public', 'data', 'userProfiles', user.uid);
                 window.firestoreUnsubscribers.push(onSnapshot(profileRef, (snapshot) => {
-                    if (!snapshot.exists()) return;
+                    if (!snapshot.exists()) {
+                        // פרופיל לא קיים — אנחנו ממתינים לאישור. עדכון ממשק בלי גלריה.
+                        window.renderImages?.();
+                        window.renderFolders?.();
+                        return;
+                    }
                     const storedProfile = { uid: snapshot.id, ...snapshot.data() };
                     // חשבון מנהל ברירת־המחדל נשאר דרגה 4 גם אם נשארה ב־D1
                     // רשומת pending ישנה מתקלה קודמת. ה־Worker מאמת זאת שוב בשרת.
@@ -4373,7 +4436,13 @@ async function syncNowFromWorker() {
                     if (approved && window.state.popupAnnouncementConfig) {
                         window.showPopupAnnouncement?.(window.state.popupAnnouncementConfig);
                     }
-                }, handleFsError));
+                }, (err) => {
+                    // שגיאה בטעינת פרופיל המשתמש — נעדכן תצוגה ונציג שגיאה
+                    reportFirestoreError(err);
+                    console.error('User profile snapshot error:', err?.code, err?.message);
+                    window.renderImages?.();
+                    window.renderFolders?.();
+                }));
 
                 const favoritesRef = doc(window.db, 'artifacts', window.appId, 'public', 'data', 'userFavorites', user.uid);
                 window.firestoreUnsubscribers.push(onSnapshot(favoritesRef, (snapshot) => {
