@@ -5330,6 +5330,11 @@ async function syncNowFromWorker() {
                             const { doc, setDoc } = window.firestoreModules;
                             const profileRef = doc(window.db, 'artifacts', window.appId, 'public', 'data', 'userProfiles', window.state.currentUser.uid);
                             await setDoc(profileRef, { messages: updatedMessages }, { merge: true });
+                            // Update local state so the badge and card styling reflect the read status immediately
+                            if (window.state.userProfile) {
+                                window.state.userProfile = { ...window.state.userProfile, messages: updatedMessages };
+                                window.renderFloatingInbox();
+                            }
                         } catch (e) {
                             console.error('Error marking message read:', e);
                         }
@@ -6213,10 +6218,17 @@ async function syncNowFromWorker() {
             const folderId = safeRecordId(folderData?.id);
             if (!folderId) throw new Error('מזהה התיקייה אינו תקין.');
             const { doc, setDoc } = window.firestoreModules;
-            await setDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'folders', folderId), {
-                ...folderData,
-                id: folderId
-            });
+            const folderRecord = { ...folderData, id: folderId };
+            await setDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'folders', folderId), folderRecord);
+            // Update local state immediately so the folder appears without waiting for the next poll
+            const existingFolderIndex = (window.state.folders || []).findIndex(f => safeRecordId(f.id) === folderId);
+            if (existingFolderIndex >= 0) {
+                window.state.folders = window.state.folders.map((f, i) => i === existingFolderIndex ? folderRecord : f);
+            } else {
+                window.state.folders = [...(window.state.folders || []), folderRecord];
+            }
+            window.renderFolders();
+            window.populateFolderSelects?.();
         };
         window.deleteFolderCloud = async function(id) {
             if (!window.db) throw new Error('החיבור לענן עדיין לא מוכן. נסה שוב בעוד רגע.');
@@ -6246,6 +6258,16 @@ async function syncNowFromWorker() {
 
             const { doc, setDoc } = window.firestoreModules;
             await setDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'images', imageId), imageRecord);
+            // Upsert into local state immediately so changes appear without waiting for the next poll
+            const existingImageIndex = (window.state.images || []).findIndex(img => safeRecordId(img.id) === imageId);
+            if (existingImageIndex >= 0) {
+                window.state.images = window.state.images.map((img, i) => i === existingImageIndex ? imageRecord : img);
+            } else {
+                window.state.images = [imageRecord, ...(window.state.images || [])];
+                window.state.images.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            }
+            window.renderImages();
+            window.renderFolders();
         };
 
         // מחיקת רשומת הגלריה; הקובץ נמחק גם מ-R2.
@@ -6289,6 +6311,12 @@ async function syncNowFromWorker() {
 
             const { doc, setDoc } = window.firestoreModules;
             await setDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'pendingImages', imageId), imageRecord);
+            // Update local state immediately so the pending item appears without waiting for the next poll
+            if (!(window.state.pendingImages || []).some(img => safeRecordId(img.id) === imageId)) {
+                window.state.pendingImages = [imageRecord, ...(window.state.pendingImages || [])];
+            }
+            window.renderPendingImages?.();
+            window.updatePendingBadge?.();
         };
 
         // מחיקת בקשה ממתינה; הקובץ נמחק גם מ-R2.
@@ -7006,12 +7034,27 @@ async function syncNowFromWorker() {
                 const targetFolderId = safeRecordId(select.value);
                 const selected = window.state.images.filter(item => window.state.selectedMediaIds.has(safeRecordId(item.id)));
                 showConfirm('העברת פריטים', `להעביר ${selected.length} פריטים לתיקייה שנבחרה?`, async () => {
-                    for (const item of selected) await window.saveImageToCloud({ ...item, folderId: targetFolderId });
+                    let movedCount = 0;
+                    let failedCount = 0;
+                    for (const item of selected) {
+                        try {
+                            await window.saveImageToCloud({ ...item, folderId: targetFolderId });
+                            movedCount++;
+                        } catch (err) {
+                            failedCount++;
+                            console.warn('Bulk move failed for item:', safeRecordId(item.id), err);
+                        }
+                    }
                     closeModal('moveFolderModal');
                     window.state.selectedMediaIds.clear();
                     updateBulkSelectionBar();
                     window.renderImages();
-                    window.showNotification(`${selected.length} פריטים הועברו בהצלחה.`);
+                    window.showNotification(
+                        failedCount
+                            ? `${movedCount} פריטים הועברו; ${failedCount} נכשלו.`
+                            : `${movedCount} פריטים הועברו בהצלחה.`,
+                        !failedCount
+                    );
                 });
             };
             openModal('moveFolderModal');
@@ -7145,8 +7188,6 @@ async function syncNowFromWorker() {
                 description: String(document.getElementById('eventEditDescription')?.value || '').trim().slice(0, 600)
             };
             await window.saveFolderToCloud(updated);
-            Object.assign(folder, updated);
-            window.renderFolders();
             toggleEventEdit(false);
             window.openEventPage(null, id);
             window.showNotification('פרטי האירוע נשמרו.');
@@ -7573,7 +7614,6 @@ async function syncNowFromWorker() {
                             if (!existingFolder) {
                                 existingFolder = { id: 'folder_' + crypto.randomUUID(), name: folderName, icon: 'folder', isDefault: false };
                                 await window.saveFolderToCloud(existingFolder);
-                                window.state.folders.push(existingFolder);
                             }
                             destFolderId = existingFolder.id;
                         }
@@ -8328,6 +8368,7 @@ async function syncNowFromWorker() {
             }
             let approvedCount = 0;
 
+            const approvedIds = new Set();
             for(let cb of checkboxes) {
                 const img = window.state.pendingImages.find(i => i.id === cb.value);
                 if (img) {
@@ -8337,7 +8378,6 @@ async function syncNowFromWorker() {
                         if (!existing) {
                             existing = { id: 'folder_' + crypto.randomUUID(), name: fName, icon: 'folder', isDefault: false };
                             await window.saveFolderToCloud(existing);
-                            window.state.folders.push(existing);
                         }
                         finalFolderId = existing.id;
                     }
@@ -8355,8 +8395,15 @@ async function syncNowFromWorker() {
                         approvedAt: Date.now(),
                         approvedBy: window.state.currentUser?.uid || ''
                     }, { merge: true });
+                    approvedIds.add(safeRecordId(img.id));
                     approvedCount++;
                 }
+            }
+            // Remove approved items from local pendingImages state immediately
+            if (approvedIds.size) {
+                window.state.pendingImages = (window.state.pendingImages || []).filter(img => !approvedIds.has(safeRecordId(img.id)));
+                window.renderPendingImages?.();
+                window.updatePendingBadge?.();
             }
             await window.logActivity('approved_images', 'image', '', `${approvedCount} תמונות`);
             window.showNotification(`אושרו ${approvedCount} תמונות בהצלחה לענן!`);
