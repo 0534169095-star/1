@@ -4678,17 +4678,22 @@ async function syncNowFromWorker() {
             const profile = activeConversationProfile();
             if (!profile) return;
             const resolved = profile.supportStatus === 'resolved';
-            const { doc, setDoc } = window.firestoreModules;
-            await setDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'userProfiles', profile.uid), {
-                supportStatus: resolved ? 'open' : 'resolved',
-                supportResolvedAt: resolved ? null : Date.now(),
-                supportResolvedBy: resolved ? null : (window.state.currentUser?.uid || '')
-            }, { merge: true });
-            profile.supportStatus = resolved ? 'open' : 'resolved';
-            window.renderActiveConversation();
-            window.renderAdminMessageReplies?.();
-            await window.logActivity(resolved ? 'reopened_support' : 'resolved_support', 'user', profile.uid, profile.displayName || profile.email || profile.uid);
-            window.showNotification(resolved ? 'הפנייה נפתחה מחדש.' : 'הפנייה סומנה כטופלה.');
+            try {
+                const { doc, setDoc } = window.firestoreModules;
+                await setDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'userProfiles', profile.uid), {
+                    supportStatus: resolved ? 'open' : 'resolved',
+                    supportResolvedAt: resolved ? null : Date.now(),
+                    supportResolvedBy: resolved ? null : (window.state.currentUser?.uid || '')
+                }, { merge: true });
+                profile.supportStatus = resolved ? 'open' : 'resolved';
+                window.renderActiveConversation();
+                window.renderAdminMessageReplies?.();
+                await window.logActivity(resolved ? 'reopened_support' : 'resolved_support', 'user', profile.uid, profile.displayName || profile.email || profile.uid);
+                window.showNotification(resolved ? 'הפנייה נפתחה מחדש.' : 'הפנייה סומנה כטופלה.');
+            } catch (error) {
+                console.error('toggleConversationResolved failed:', error);
+                window.showNotification('עדכון סטטוס הפנייה נכשל.', false);
+            }
         };
 
         function renderConversationAttachmentPreview() {
@@ -5143,12 +5148,16 @@ async function syncNowFromWorker() {
                     ? { ...message, reply: { ...message.reply, readByAdmin: true } }
                     : message
             ));
-            const { doc, setDoc } = window.firestoreModules;
-            await setDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'userProfiles', uid), {
-                messages: updatedMessages
-            }, { merge: true });
-            profile.messages = updatedMessages;
-            window.renderAdminMessageReplies();
+            try {
+                const { doc, setDoc } = window.firestoreModules;
+                await setDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'userProfiles', uid), {
+                    messages: updatedMessages
+                }, { merge: true });
+                profile.messages = updatedMessages;
+                window.renderAdminMessageReplies();
+            } catch (error) {
+                console.error('markAdminReplyRead failed:', error);
+            }
         };
 
         window.openAdminMessagesForUser = function(uid) {
@@ -6516,22 +6525,31 @@ async function syncNowFromWorker() {
                 showConfirm('מחיקה סופית', `למחוק לצמיתות את "${item.targetName || 'הפריט'}"? לאחר מכן לא יהיה אפשר לשחזר.`, () => window.purgeTrashItem(trashId, true));
                 return;
             }
-            if (['image', 'pendingImage'].includes(item.originalType) && item.record?.r2Key) {
-                await window.deleteImageFromR2(item.record);
-            }
-            const { doc, deleteDoc } = window.firestoreModules;
-            if (item.originalType === 'folder' && Array.isArray(item.relatedTrashIds)) {
-                for (const childTrashId of item.relatedTrashIds) {
-                    const child = (window.state.trashItems || []).find(entry => safeRecordId(entry.id) === safeRecordId(childTrashId));
-                    if (child?.record?.r2Key) await window.deleteImageFromR2(child.record);
-                    await deleteDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'trashItems', safeRecordId(childTrashId)));
+            try {
+                if (['image', 'pendingImage'].includes(item.originalType) && item.record?.r2Key) {
+                    await window.deleteImageFromR2(item.record);
                 }
+                const { doc, deleteDoc } = window.firestoreModules;
+                const purgedChildIds = new Set();
+                if (item.originalType === 'folder' && Array.isArray(item.relatedTrashIds)) {
+                    for (const childTrashId of item.relatedTrashIds) {
+                        const child = (window.state.trashItems || []).find(entry => safeRecordId(entry.id) === safeRecordId(childTrashId));
+                        if (child?.record?.r2Key) await window.deleteImageFromR2(child.record);
+                        await deleteDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'trashItems', safeRecordId(childTrashId)));
+                        purgedChildIds.add(safeRecordId(childTrashId));
+                    }
+                }
+                await deleteDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'trashItems', safeRecordId(item.id)));
+                window.state.trashItems = (window.state.trashItems || []).filter(entry =>
+                    entry.id !== item.id && !purgedChildIds.has(safeRecordId(entry.id))
+                );
+                window.renderTrashItems();
+                await window.logActivity('purged', item.originalType, item.originalId, item.targetName);
+                window.showNotification('הפריט נמחק לצמיתות.');
+            } catch (error) {
+                console.error('purgeTrashItem failed:', error);
+                window.showNotification('מחיקה לצמיתות נכשלה.', false);
             }
-            await deleteDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'trashItems', safeRecordId(item.id)));
-            window.state.trashItems = (window.state.trashItems || []).filter(entry => entry.id !== item.id);
-            window.renderTrashItems();
-            await window.logActivity('purged', item.originalType, item.originalId, item.targetName);
-            window.showNotification('הפריט נמחק לצמיתות.');
         };
 
         window.renderTrashItems = function() {
@@ -7187,10 +7205,15 @@ async function syncNowFromWorker() {
                 eventDate: document.getElementById('eventEditDate')?.value || '',
                 description: String(document.getElementById('eventEditDescription')?.value || '').trim().slice(0, 600)
             };
-            await window.saveFolderToCloud(updated);
-            toggleEventEdit(false);
-            window.openEventPage(null, id);
-            window.showNotification('פרטי האירוע נשמרו.');
+            try {
+                await window.saveFolderToCloud(updated);
+                toggleEventEdit(false);
+                window.openEventPage(null, id);
+                window.showNotification('פרטי האירוע נשמרו.');
+            } catch (error) {
+                console.error('saveEventDetails failed:', error);
+                window.showNotification(error.message || 'שמירת פרטי האירוע נכשלה.', false);
+            }
         };
 
         // --- 6. Main UI Renders ---
@@ -7855,7 +7878,7 @@ async function syncNowFromWorker() {
 
             const requestId = `delete_${crypto.randomUUID()}`;
             const { doc, setDoc } = window.firestoreModules;
-            await setDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'deletionRequests', requestId), {
+            const newRequest = {
                 id: requestId,
                 targetType,
                 targetId: safeTargetId,
@@ -7865,7 +7888,9 @@ async function syncNowFromWorker() {
                 requestedBy: window.state.currentUser?.uid || '',
                 requestedByName: window.state.currentUser?.displayName || '',
                 requestedByEmail: window.state.currentUser?.email || ''
-            });
+            };
+            await setDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'deletionRequests', requestId), newRequest);
+            window.state.deletionRequests = [newRequest, ...(window.state.deletionRequests || [])];
         };
 
         window.changeUserRole = async function(uid, role, confirmed = false) {
@@ -7882,17 +7907,22 @@ async function syncNowFromWorker() {
                 );
                 return;
             }
-            const { doc, setDoc } = window.firestoreModules;
-            await setDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'userProfiles', uid), {
-                status: 'approved',
-                role,
-                roleChangedAt: Date.now(),
-                roleChangedBy: window.state.currentUser?.uid || ''
-            }, { merge: true });
-            await window.logActivity('changed_role', 'user', uid, profile?.displayName || profile?.email || uid, `דרגה חדשה: ${role}`);
-            if (profile) { profile.status = 'approved'; profile.role = role; }
-            window.renderManagedUsers?.();
-            window.showNotification('דרגת המשתמש עודכנה בהצלחה.');
+            try {
+                const { doc, setDoc } = window.firestoreModules;
+                await setDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'userProfiles', uid), {
+                    status: 'approved',
+                    role,
+                    roleChangedAt: Date.now(),
+                    roleChangedBy: window.state.currentUser?.uid || ''
+                }, { merge: true });
+                await window.logActivity('changed_role', 'user', uid, profile?.displayName || profile?.email || uid, `דרגה חדשה: ${role}`);
+                if (profile) { profile.status = 'approved'; profile.role = role; }
+                window.renderManagedUsers?.();
+                window.showNotification('דרגת המשתמש עודכנה בהצלחה.');
+            } catch (error) {
+                console.error('changeUserRole failed:', error);
+                window.showNotification('שינוי דרגת המשתמש נכשל.', false);
+            }
         };
 
         window.toggleUserBlock = async function(uid, confirmed = false) {
@@ -7914,28 +7944,33 @@ async function syncNowFromWorker() {
                 );
                 return;
             }
-            const { doc, setDoc } = window.firestoreModules;
-            await setDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'userProfiles', uid), isBlocked ? {
-                status: 'approved',
-                role: ['viewer', 'uploader', 'admin', 'super_admin'].includes(profile.roleBeforeBlock) ? profile.roleBeforeBlock : 'viewer',
-                unblockedAt: Date.now(),
-                unblockedBy: window.state.currentUser?.uid || ''
-            } : {
-                status: 'blocked',
-                roleBeforeBlock: profile.role || 'viewer',
-                blockedAt: Date.now(),
-                blockedBy: window.state.currentUser?.uid || ''
-            }, { merge: true });
-            await window.logActivity('changed_block', 'user', uid, profile.displayName || profile.email || uid, isBlocked ? 'החסימה הוסרה' : 'המשתמש נחסם');
-            if (isBlocked) {
-                profile.status = 'approved';
-                profile.role = ['viewer', 'uploader', 'admin', 'super_admin'].includes(profile.roleBeforeBlock) ? profile.roleBeforeBlock : 'viewer';
-            } else {
-                profile.roleBeforeBlock = profile.role || 'viewer';
-                profile.status = 'blocked';
+            try {
+                const { doc, setDoc } = window.firestoreModules;
+                await setDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'userProfiles', uid), isBlocked ? {
+                    status: 'approved',
+                    role: ['viewer', 'uploader', 'admin', 'super_admin'].includes(profile.roleBeforeBlock) ? profile.roleBeforeBlock : 'viewer',
+                    unblockedAt: Date.now(),
+                    unblockedBy: window.state.currentUser?.uid || ''
+                } : {
+                    status: 'blocked',
+                    roleBeforeBlock: profile.role || 'viewer',
+                    blockedAt: Date.now(),
+                    blockedBy: window.state.currentUser?.uid || ''
+                }, { merge: true });
+                await window.logActivity('changed_block', 'user', uid, profile.displayName || profile.email || uid, isBlocked ? 'החסימה הוסרה' : 'המשתמש נחסם');
+                if (isBlocked) {
+                    profile.status = 'approved';
+                    profile.role = ['viewer', 'uploader', 'admin', 'super_admin'].includes(profile.roleBeforeBlock) ? profile.roleBeforeBlock : 'viewer';
+                } else {
+                    profile.roleBeforeBlock = profile.role || 'viewer';
+                    profile.status = 'blocked';
+                }
+                window.renderManagedUsers?.();
+                window.showNotification(isBlocked ? 'חסימת המשתמש הוסרה.' : 'המשתמש נחסם.');
+            } catch (error) {
+                console.error('toggleUserBlock failed:', error);
+                window.showNotification('שינוי סטטוס המשתמש נכשל.', false);
             }
-            window.renderManagedUsers?.();
-            window.showNotification(isBlocked ? 'חסימת המשתמש הוסרה.' : 'המשתמש נחסם.');
         };
 
         window.deleteManagedUser = async function(uid, confirmed = false) {
@@ -7954,16 +7989,21 @@ async function syncNowFromWorker() {
                 );
                 return;
             }
-            await window.moveUserToTrash(uid);
-            adminMessageRecipients.delete(safeRecordId(uid));
-            window.state.allUsers = (window.state.allUsers || []).filter(user => user.uid !== uid);
-            window.state.pendingUsers = (window.state.pendingUsers || []).filter(user => user.uid !== uid);
-            window.renderManagedUsers();
-            window.renderPendingUsers();
-            window.renderAdminMessageUsers();
-            window.renderAdminMessageReplies();
-            window.updatePendingUsersBadge();
-            window.showNotification('המשתמש הועבר לסל המחזור.');
+            try {
+                await window.moveUserToTrash(uid);
+                adminMessageRecipients.delete(safeRecordId(uid));
+                window.state.allUsers = (window.state.allUsers || []).filter(user => user.uid !== uid);
+                window.state.pendingUsers = (window.state.pendingUsers || []).filter(user => user.uid !== uid);
+                window.renderManagedUsers();
+                window.renderPendingUsers();
+                window.renderAdminMessageUsers();
+                window.renderAdminMessageReplies();
+                window.updatePendingUsersBadge();
+                window.showNotification('המשתמש הועבר לסל המחזור.');
+            } catch (error) {
+                console.error('deleteManagedUser failed:', error);
+                window.showNotification('מחיקת המשתמש נכשלה.', false);
+            }
         };
 
         window.renderManagedUsers = function() {
@@ -8106,24 +8146,29 @@ async function syncNowFromWorker() {
             if (!checkSuperAdminPermission()) return;
             const request = (window.state.deletionRequests || []).find(item => item.id === requestId);
             if (!request) return;
-            if (approved) {
-                if (request.targetType === 'image') {
-                    await window.moveImageToTrash(request.targetId);
-                } else if (request.targetType === 'pendingImage') {
-                    await window.movePendingImageToTrash(request.targetId);
-                } else if (request.targetType === 'folder') {
-                    await window.moveFolderToTrash(request.targetId);
+            try {
+                if (approved) {
+                    if (request.targetType === 'image') {
+                        await window.moveImageToTrash(request.targetId);
+                    } else if (request.targetType === 'pendingImage') {
+                        await window.movePendingImageToTrash(request.targetId);
+                    } else if (request.targetType === 'folder') {
+                        await window.moveFolderToTrash(request.targetId);
+                    }
                 }
+                const { doc, setDoc } = window.firestoreModules;
+                await setDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'deletionRequests', requestId), {
+                    status: approved ? 'approved' : 'rejected',
+                    resolvedAt: Date.now(),
+                    resolvedBy: window.state.currentUser?.uid || ''
+                }, { merge: true });
+                window.state.deletionRequests = (window.state.deletionRequests || []).filter(item => item.id !== requestId);
+                window.renderDeletionRequests?.();
+                window.showNotification(approved ? 'בקשת המחיקה אושרה והפריט הועבר לסל המחזור.' : 'בקשת המחיקה נדחתה.');
+            } catch (error) {
+                console.error('resolveDeletionRequest failed:', error);
+                window.showNotification('הטיפול בבקשה נכשל.', false);
             }
-            const { doc, setDoc } = window.firestoreModules;
-            await setDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'deletionRequests', requestId), {
-                status: approved ? 'approved' : 'rejected',
-                resolvedAt: Date.now(),
-                resolvedBy: window.state.currentUser?.uid || ''
-            }, { merge: true });
-            window.state.deletionRequests = (window.state.deletionRequests || []).filter(item => item.id !== requestId);
-            window.renderDeletionRequests?.();
-            window.showNotification(approved ? 'בקשת המחיקה אושרה והפריט הועבר לסל המחזור.' : 'בקשת המחיקה נדחתה.');
         };
 
         
@@ -8299,17 +8344,22 @@ async function syncNowFromWorker() {
             const profile = window.state.pendingUsers.find(item => item.uid === uid);
             if (!profile) return;
             showConfirm('דחיית משתמש', `לדחות את בקשת ההצטרפות של ${profile.displayName || profile.email || 'המשתמש'}?`, async () => {
-                const { doc, setDoc } = window.firestoreModules;
-                const profileRef = doc(window.db, 'artifacts', window.appId, 'public', 'data', 'userProfiles', uid);
-                await setDoc(profileRef, {
-                    status: 'rejected',
-                    rejectedAt: Date.now(),
-                    rejectedBy: window.state.currentUser?.uid || 'system-admin'
-                }, { merge: true });
-                window.state.pendingUsers = (window.state.pendingUsers || []).filter(u => u.uid !== uid);
-                window.renderPendingUsers?.();
-                window.updatePendingUsersBadge?.();
-                window.showNotification('בקשת המשתמש נדחתה.');
+                try {
+                    const { doc, setDoc } = window.firestoreModules;
+                    const profileRef = doc(window.db, 'artifacts', window.appId, 'public', 'data', 'userProfiles', uid);
+                    await setDoc(profileRef, {
+                        status: 'rejected',
+                        rejectedAt: Date.now(),
+                        rejectedBy: window.state.currentUser?.uid || 'system-admin'
+                    }, { merge: true });
+                    window.state.pendingUsers = (window.state.pendingUsers || []).filter(u => u.uid !== uid);
+                    window.renderPendingUsers?.();
+                    window.updatePendingUsersBadge?.();
+                    window.showNotification('בקשת המשתמש נדחתה.');
+                } catch (error) {
+                    console.error('rejectUserAccess failed:', error);
+                    window.showNotification('דחיית הבקשה נכשלה.', false);
+                }
             });
         };
 
@@ -8367,36 +8417,42 @@ async function syncNowFromWorker() {
                 return;
             }
             let approvedCount = 0;
+            let failedCount = 0;
 
             const approvedIds = new Set();
             for(let cb of checkboxes) {
                 const img = window.state.pendingImages.find(i => i.id === cb.value);
                 if (img) {
-                    let finalFolderId = targetFolderId;
-                    if (targetFolderId === 'auto') {
-                        const fName = img.originalFolderName || 'כללי'; let existing = window.state.folders.find(f => f.name === fName);
-                        if (!existing) {
-                            existing = { id: 'folder_' + crypto.randomUUID(), name: fName, icon: 'folder', isDefault: false };
-                            await window.saveFolderToCloud(existing);
+                    try {
+                        let finalFolderId = targetFolderId;
+                        if (targetFolderId === 'auto') {
+                            const fName = img.originalFolderName || 'כללי'; let existing = window.state.folders.find(f => f.name === fName);
+                            if (!existing) {
+                                existing = { id: 'folder_' + crypto.randomUUID(), name: fName, icon: 'folder', isDefault: false };
+                                await window.saveFolderToCloud(existing);
+                            }
+                            finalFolderId = existing.id;
                         }
-                        finalFolderId = existing.id;
+                        const activeImage = await window.approveImageInR2({
+                            ...img,
+                            folderId: finalFolderId,
+                            createdAt: Date.now(),
+                            status: 'active'
+                        });
+                        await window.saveImageToCloud(activeImage);
+                        // שומרים תיעוד של האישור במקום למחוק, כדי שמנהל דרגה 3 לא יקבל הרשאת מחיקה עקיפה.
+                        const { doc, setDoc } = window.firestoreModules;
+                        await setDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'pendingImages', img.id), {
+                            status: 'approved',
+                            approvedAt: Date.now(),
+                            approvedBy: window.state.currentUser?.uid || ''
+                        }, { merge: true });
+                        approvedIds.add(safeRecordId(img.id));
+                        approvedCount++;
+                    } catch (error) {
+                        failedCount++;
+                        console.warn('Approve pending image failed:', safeRecordId(img.id), error);
                     }
-                    const activeImage = await window.approveImageInR2({
-                        ...img,
-                        folderId: finalFolderId,
-                        createdAt: Date.now(),
-                        status: 'active'
-                    });
-                    await window.saveImageToCloud(activeImage);
-                    // שומרים תיעוד של האישור במקום למחוק, כדי שמנהל דרגה 3 לא יקבל הרשאת מחיקה עקיפה.
-                    const { doc, setDoc } = window.firestoreModules;
-                    await setDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'pendingImages', img.id), {
-                        status: 'approved',
-                        approvedAt: Date.now(),
-                        approvedBy: window.state.currentUser?.uid || ''
-                    }, { merge: true });
-                    approvedIds.add(safeRecordId(img.id));
-                    approvedCount++;
                 }
             }
             // Remove approved items from local pendingImages state immediately
@@ -8405,8 +8461,13 @@ async function syncNowFromWorker() {
                 window.renderPendingImages?.();
                 window.updatePendingBadge?.();
             }
-            await window.logActivity('approved_images', 'image', '', `${approvedCount} תמונות`);
-            window.showNotification(`אושרו ${approvedCount} תמונות בהצלחה לענן!`);
+            if (approvedCount) await window.logActivity('approved_images', 'image', '', `${approvedCount} תמונות`);
+            window.showNotification(
+                failedCount
+                    ? `אושרו ${approvedCount} תמונות; ${failedCount} נכשלו.`
+                    : `אושרו ${approvedCount} תמונות בהצלחה לענן!`,
+                !failedCount
+            );
         }
 
         function rejectSelectedPending() {
@@ -8415,17 +8476,27 @@ async function syncNowFromWorker() {
             if (checkboxes.length === 0) return;
             if (!window.state.isSuperAdmin) {
                 showConfirm('שליחת בקשת מחיקה', 'לשלוח למנהל־העל בקשת מחיקה עבור התמונות שנבחרו?', async () => {
-                    await Promise.all(Array.from(checkboxes, cb => {
-                        const image = window.state.pendingImages.find(item => safeRecordId(item.id) === safeRecordId(cb.value));
-                        return window.requestContentDeletion('pendingImage', cb.value, image?.title || 'תמונה ממתינה');
-                    }));
-                    window.showNotification('בקשות המחיקה נשלחו למנהל־העל.');
+                    try {
+                        await Promise.all(Array.from(checkboxes, cb => {
+                            const image = window.state.pendingImages.find(item => safeRecordId(item.id) === safeRecordId(cb.value));
+                            return window.requestContentDeletion('pendingImage', cb.value, image?.title || 'תמונה ממתינה');
+                        }));
+                        window.showNotification('בקשות המחיקה נשלחו למנהל־העל.');
+                    } catch (error) {
+                        console.error('requestContentDeletion failed:', error);
+                        window.showNotification(error.message || 'שליחת הבקשה נכשלה.', false);
+                    }
                 });
                 return;
             }
             showConfirm('דחיית תמונות', 'להעביר את התמונות הממתינות לסל המחזור?', async () => {
-                await Promise.all(Array.from(checkboxes, cb => window.movePendingImageToTrash(cb.value)));
-                window.showNotification('התמונות הועברו לסל המחזור.');
+                try {
+                    await Promise.all(Array.from(checkboxes, cb => window.movePendingImageToTrash(cb.value)));
+                    window.showNotification('התמונות הועברו לסל המחזור.');
+                } catch (error) {
+                    console.error('movePendingImageToTrash failed:', error);
+                    window.showNotification('העברה לסל המחזור נכשלה.', false);
+                }
             });
         }
 
@@ -8439,15 +8510,24 @@ async function syncNowFromWorker() {
             const folder = window.state.folders.find(item => safeRecordId(item.id) === folderId);
             if (!window.state.isSuperAdmin) {
                 showConfirm('בקשת מחיקת תיקייה', 'לשלוח למנהל־העל בקשה למחיקת התיקייה?', async () => {
-                    await window.requestContentDeletion('folder', folderId, folder?.name || 'תיקייה');
-                    window.showNotification('בקשת המחיקה נשלחה למנהל־העל.');
+                    try {
+                        await window.requestContentDeletion('folder', folderId, folder?.name || 'תיקייה');
+                        window.showNotification('בקשת המחיקה נשלחה למנהל־העל.');
+                    } catch (error) {
+                        window.showNotification(error.message || 'שליחת הבקשה נכשלה.', false);
+                    }
                 });
                 return;
             }
             const mediaCount = window.state.images.filter(item => safeRecordId(item.folderId) === folderId).length;
             showConfirm('העברת תיקייה לסל', `להעביר את התיקייה ואת ${mediaCount} הפריטים שבתוכה לסל המחזור? יהיה אפשר לשחזר הכול יחד.`, async () => {
-                await window.moveFolderToTrash(folderId);
-                window.showNotification('התיקייה הועברה לסל המחזור.');
+                try {
+                    await window.moveFolderToTrash(folderId);
+                    window.showNotification('התיקייה הועברה לסל המחזור.');
+                } catch (error) {
+                    console.error('moveFolderToTrash failed:', error);
+                    window.showNotification('העברת התיקייה לסל נכשלה.', false);
+                }
             });
         }
 
@@ -8458,12 +8538,23 @@ async function syncNowFromWorker() {
             const image = window.state.images.find(item => safeRecordId(item.id) === id);
             if (!window.state.isSuperAdmin) {
                 showConfirm('בקשת מחיקת תמונה', 'לשלוח למנהל־העל בקשה למחיקת התמונה?', async () => {
-                    await window.requestContentDeletion('image', id, image?.title || 'תמונה');
-                    window.showNotification('בקשת המחיקה נשלחה למנהל־העל.');
+                    try {
+                        await window.requestContentDeletion('image', id, image?.title || 'תמונה');
+                        window.showNotification('בקשת המחיקה נשלחה למנהל־העל.');
+                    } catch (error) {
+                        window.showNotification(error.message || 'שליחת הבקשה נכשלה.', false);
+                    }
                 });
                 return;
             }
-            showConfirm('העברת תמונה לסל', 'להעביר את התמונה לסל המחזור? ניתן יהיה לשחזר אותה.', () => window.moveImageToTrash(id));
+            showConfirm('העברת תמונה לסל', 'להעביר את התמונה לסל המחזור? ניתן יהיה לשחזר אותה.', async () => {
+                try {
+                    await window.moveImageToTrash(id);
+                } catch (error) {
+                    console.error('moveImageToTrash failed:', error);
+                    window.showNotification('העברת התמונה לסל נכשלה.', false);
+                }
+            });
         }
 
         function changeImageFolder(id) {
@@ -8488,8 +8579,7 @@ async function syncNowFromWorker() {
                         `להעביר את התמונה "${img.title || 'תמונה'}" לתיקייה "${targetFolder?.name || 'התיקייה שנבחרה'}"?`,
                         async () => {
                             try {
-                                img.folderId = targetFolderId;
-                                await window.saveImageToCloud(img);
+                                await window.saveImageToCloud({ ...img, folderId: targetFolderId });
                                 closeModal('moveFolderModal');
                                 window.showNotification("עודכן בהצלחה");
                             } catch (error) {
