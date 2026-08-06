@@ -9365,7 +9365,7 @@ async function syncNowFromWorker() {
             if (!window.db) return;
             try {
                 const { doc, getDoc } = window.firestoreModules;
-                const snap = await getDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'siteSettings', 'popupAnnouncement'));
+                const snap = await getDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'systemMeta', 'popupAnnouncement'));
                 const config = snap.exists() ? snap.data() : null;
                 window.state.popupAnnouncementConfig = config || null;
                 if (config && config.enabled) {
@@ -9486,7 +9486,7 @@ async function syncNowFromWorker() {
 
                 const config = { imageUrl, r2Key, linkType, folderId, audience, enabled, updatedAt: Date.now() };
                 const { doc, setDoc } = window.firestoreModules;
-                await setDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'siteSettings', 'popupAnnouncement'), config);
+                await setDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'systemMeta', 'popupAnnouncement'), config);
                 window.state.popupAnnouncementConfig = config;
                 if (fileInput) fileInput.value = '';
                 window.renderPopupAnnouncementAdmin();
@@ -9510,7 +9510,7 @@ async function syncNowFromWorker() {
                 const r2Key = window.state.popupAnnouncementConfig?.r2Key;
                 if (r2Key) await window.deleteImageFromR2({ r2Key }).catch(() => {});
                 const { doc, deleteDoc } = window.firestoreModules;
-                await deleteDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'siteSettings', 'popupAnnouncement'));
+                await deleteDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'systemMeta', 'popupAnnouncement'));
                 window.state.popupAnnouncementConfig = null;
                 window.renderPopupAnnouncementAdmin();
                 if (statusEl) statusEl.textContent = '';
