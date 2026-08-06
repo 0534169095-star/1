@@ -5761,6 +5761,7 @@ async function syncNowFromWorker() {
             if (contentId === 'accUserApprovals') {
                 window.renderPendingUsers?.();
                 window.renderManagedUsers?.();
+                window.forceRefreshUsers?.();
             }
             if (contentId === 'accDeletionRequests') window.renderDeletionRequests?.();
             if (contentId === 'accActivityCenter') window.renderActivityLogs?.();
@@ -8076,6 +8077,28 @@ async function syncNowFromWorker() {
             } catch (error) {
                 console.error('deleteManagedUser failed:', error);
                 window.showNotification('מחיקת המשתמש נכשלה.', false);
+            }
+        };
+
+        window.forceRefreshUsers = async function() {
+            if (!window.db || !window.state.isSuperAdmin) return;
+            try {
+                const { collection, getDocs } = window.firestoreModules;
+                const snap = await getDocs(collection(window.db, 'artifacts', window.appId, 'public', 'data', 'userProfiles'));
+                const allProfiles = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+                window.state.allUsers = allProfiles.sort((a, b) =>
+                    String(a.displayName || a.email || '').localeCompare(String(b.displayName || b.email || ''), 'he')
+                );
+                window.state.pendingUsers = allProfiles
+                    .filter(p => p.status === 'pending')
+                    .sort((a, b) => (b.requestedAt || 0) - (a.requestedAt || 0));
+                window.renderManagedUsers?.();
+                window.renderPendingUsers?.();
+                window.renderAdminMessageUsers?.();
+                window.updatePendingUsersBadge?.();
+            } catch (e) {
+                console.warn('forceRefreshUsers failed:', e);
+                window.showNotification('טעינת רשימת המשתמשים נכשלה: ' + (e.message || ''), false);
             }
         };
 
