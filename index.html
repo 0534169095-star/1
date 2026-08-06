@@ -2371,11 +2371,67 @@
                     </div>
                 </div>
 
+                <!-- הודעת פופ-אפ -->
+                <div class="admin-control-card rounded-2xl overflow-hidden" style="order: 15">
+                    <button type="button" onclick="openAdminTaskWindow('accPopupAnnouncement')" class="w-full hover:bg-white/5 px-4 py-3 text-xs font-bold text-slate-200 flex items-center justify-between transition-all">
+                        <span class="flex items-center gap-2 text-amber-400"><i data-lucide="megaphone" class="w-4 h-4"></i> הודעת פופ-אפ לאתר</span>
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500/70"></i>
+                    </button>
+                    <div id="accPopupAnnouncement" class="accordion-content px-4 space-y-3">
+                        <div id="popupAnnouncementPreview" class="hidden rounded-xl overflow-hidden border border-white/10">
+                            <img id="popupAnnouncementPreviewImg" src="" alt="" class="w-full block">
+                            <div class="flex items-center justify-between px-3 py-1.5 bg-white/5">
+                                <span id="popupAnnouncementStatus" class="text-[9px] font-bold text-amber-400"></span>
+                                <span id="popupAnnouncementAudienceLabel" class="text-[9px] text-slate-400"></span>
+                            </div>
+                        </div>
+                        <label class="block">
+                            <span class="text-[9px] font-bold text-slate-400 block mb-1">תמונת הפופ-אפ (JPG/PNG/WebP):</span>
+                            <input type="file" id="popupImageInput" accept="image/*" class="w-full text-xs rounded-xl p-2 cursor-pointer text-slate-400 bg-white/5 border border-white/10">
+                        </label>
+                        <div class="space-y-1">
+                            <span class="text-[9px] font-bold text-slate-400 block">לחיצה על התמונה תפנה אל:</span>
+                            <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="popupLinkType" value="none" checked class="text-amber-500"><span class="text-[10px] text-slate-300">ללא פנייה — רק תמונה</span></label>
+                            <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="popupLinkType" value="folder" class="text-amber-500" onchange="document.getElementById('popupFolderSelectorArea').classList.remove('hidden')" onclick="document.getElementById('popupFolderSelectorArea').classList.remove('hidden')"><span class="text-[10px] text-slate-300">תיקייה ספציפית</span></label>
+                            <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="popupLinkType" value="latest" class="text-amber-500" onchange="document.getElementById('popupFolderSelectorArea').classList.add('hidden')" onclick="document.getElementById('popupFolderSelectorArea').classList.add('hidden')"><span class="text-[10px] text-slate-300">עדכונים אחרונים</span></label>
+                        </div>
+                        <div id="popupFolderSelectorArea" class="hidden">
+                            <span class="text-[9px] font-bold text-slate-400 block mb-1">בחר תיקייה:</span>
+                            <select id="popupFolderSelect" class="w-full text-xs rounded-xl py-2 px-3 focus:ring-amber-500"></select>
+                        </div>
+                        <div class="space-y-1">
+                            <span class="text-[9px] font-bold text-slate-400 block">מי יראה את הפופ-אפ:</span>
+                            <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="popupAudience" value="all" checked class="text-amber-500"><span class="text-[10px] text-slate-300">כל מי שנכנס לאתר</span></label>
+                            <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="popupAudience" value="approved" class="text-amber-500"><span class="text-[10px] text-slate-300">מי שאישרו לו גישה בלבד</span></label>
+                        </div>
+                        <label class="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 cursor-pointer">
+                            <input type="checkbox" id="popupEnabled" checked class="rounded text-amber-500 focus:ring-amber-500 border-white/10">
+                            <span class="text-[10px] font-semibold text-slate-300">הפעל את הפופ-אפ</span>
+                        </label>
+                        <div class="flex gap-2">
+                            <button type="button" onclick="window.savePopupAnnouncement()" class="flex-1 py-2 btn-primary-gold rounded-xl text-xs font-bold">שמור ופרסם</button>
+                            <button type="button" onclick="window.deletePopupAnnouncement()" class="py-2 px-3 rounded-xl text-xs font-bold text-red-300 border border-red-500/30 hover:bg-red-500/10 transition-all">מחק</button>
+                        </div>
+                        <p id="popupSaveStatus" class="text-[9px] text-center text-slate-500 min-h-4"></p>
+                    </div>
+                </div>
+
                 <button type="button" onclick="lockGalleryImmediatelySidebar()" class="admin-logout w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-md mt-4" style="order: 16">
                     <i data-lucide="log-out" class="w-4 h-4"></i>
                     התנתק ממצב ניהול
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- POPUP ANNOUNCEMENT MODAL -->
+    <div id="popupAnnouncementModal" class="fixed inset-0 z-[300] flex items-center justify-center p-4 hidden" role="dialog" aria-modal="true" aria-label="הודעה">
+        <div class="fixed inset-0 bg-black/80 backdrop-blur-sm" onclick="window.closePopupAnnouncement()"></div>
+        <div class="relative z-10 w-full max-w-lg animate-fade-in">
+            <button type="button" onclick="window.closePopupAnnouncement()" class="absolute top-3 right-3 z-20 w-9 h-9 bg-black/70 hover:bg-black text-white rounded-full flex items-center justify-center transition-all shadow-lg" aria-label="סגור">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+            <img id="popupAnnouncementDisplayImg" src="" alt="הודעה" class="w-full block rounded-2xl shadow-2xl" style="cursor:default" onclick="window.handlePopupAnnouncementClick()" onerror="window.closePopupAnnouncement()">
         </div>
     </div>
 
@@ -4314,6 +4370,9 @@ async function syncNowFromWorker() {
                         stopAdminListeners();
                     }
                     window.updateAdminUI();
+                    if (approved && window.state.popupAnnouncementConfig) {
+                        window.showPopupAnnouncement?.(window.state.popupAnnouncementConfig);
+                    }
                 }, handleFsError));
 
                 const favoritesRef = doc(window.db, 'artifacts', window.appId, 'public', 'data', 'userFavorites', user.uid);
@@ -4333,6 +4392,11 @@ async function syncNowFromWorker() {
                         : [];
                     window.state.followedFolders = new Set(ids);
                 }, handleFsError));
+            }
+
+            if (!window._popupAnnouncementLoaded) {
+                window._popupAnnouncementLoaded = true;
+                setTimeout(() => window.loadPopupAnnouncement?.(), 1200);
             }
         }
 
@@ -5495,7 +5559,8 @@ async function syncNowFromWorker() {
                     { label: 'יצירת תיקייה חדשה', description: 'הוספת תיקייה חדשה וסמל מתאים לגלריה', icon: 'folder-plus', type: 'task', target: 'accEmptyFolder' },
                     { label: 'ניהול ומחיקת מדיה', description: 'מעבר לגלריה להעברה בין תיקיות או למחיקה', icon: 'image-minus', type: 'gallery' },
                     { label: 'בקשות מחיקה', description: 'אישור בקשות מחיקה שנשלחו ממנהלי דרגה 3', icon: 'trash-2', type: 'task', target: 'accDeletionRequests', superAdminOnly: true },
-                    { label: 'סל מחזור', description: 'שחזור תמונות ותיקיות או מחיקה סופית', icon: 'archive-restore', type: 'task', target: 'accTrash', superAdminOnly: true }
+                    { label: 'סל מחזור', description: 'שחזור תמונות ותיקיות או מחיקה סופית', icon: 'archive-restore', type: 'task', target: 'accTrash', superAdminOnly: true },
+                    { label: 'הודעת פופ-אפ', description: 'הצגת תמונה עם פנייה לתיקייה למבקרי האתר', icon: 'megaphone', type: 'task', target: 'accPopupAnnouncement', superAdminOnly: true }
                 ]
             },
             users: {
@@ -5636,6 +5701,12 @@ async function syncNowFromWorker() {
                 title: 'יצירת תיקייה',
                 description: 'הוספת תיקייה חדשה לארכיון',
                 icon: 'folder-plus'
+            },
+            accPopupAnnouncement: {
+                title: 'הודעת פופ-אפ',
+                description: 'ניהול תמונת הפופ-אפ שמוצגת למבקרי האתר',
+                icon: 'megaphone',
+                superAdminOnly: true
             }
         };
         let activeAdminTask = null;
@@ -5697,6 +5768,7 @@ async function syncNowFromWorker() {
             if (contentId === 'accDriveSync') {
                 window.restoreDriveConnection?.().then(() => window.loadDriveFolders?.()).catch(() => window.loadDriveFolders?.());
             }
+            if (contentId === 'accPopupAnnouncement') window.renderPopupAnnouncementAdmin?.();
             scheduleIconRefresh();
         };
 
@@ -9285,6 +9357,170 @@ async function syncNowFromWorker() {
             const currentTheme = document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
             window.setSiteTheme(currentTheme === 'light' ? 'dark' : 'light');
         };
+
+        // =================== POPUP ANNOUNCEMENT ===================
+
+        window.loadPopupAnnouncement = async function() {
+            if (!window.db) return;
+            try {
+                const { doc, getDoc } = window.firestoreModules;
+                const snap = await getDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'siteSettings', 'popupAnnouncement'));
+                const config = snap.exists() ? snap.data() : null;
+                window.state.popupAnnouncementConfig = config || null;
+                if (config && config.enabled) {
+                    window.showPopupAnnouncement(config);
+                }
+            } catch (e) {
+                console.warn('Popup load failed:', e);
+            }
+        };
+
+        window.showPopupAnnouncement = function(config) {
+            if (!config || !config.enabled || !config.imageUrl) return;
+            try {
+                if (sessionStorage.getItem('popupAnnouncementDismissed') === '1') return;
+            } catch (e) { /* ignore */ }
+
+            if (config.audience === 'approved') {
+                const status = window.state?.userApprovalStatus;
+                if (status !== 'approved') return;
+            }
+
+            const modal = document.getElementById('popupAnnouncementModal');
+            const img = document.getElementById('popupAnnouncementDisplayImg');
+            if (!modal || !img) return;
+
+            img.style.cursor = config.linkType && config.linkType !== 'none' ? 'pointer' : 'default';
+            img.src = config.imageUrl;
+            modal.classList.remove('hidden');
+            scheduleIconRefresh();
+        };
+
+        window.closePopupAnnouncement = function() {
+            const modal = document.getElementById('popupAnnouncementModal');
+            if (!modal) return;
+            modal.classList.add('hidden');
+            try { sessionStorage.setItem('popupAnnouncementDismissed', '1'); } catch (e) { /* ignore */ }
+        };
+
+        window.handlePopupAnnouncementClick = function() {
+            const config = window.state?.popupAnnouncementConfig;
+            if (!config || !config.linkType || config.linkType === 'none') return;
+            window.closePopupAnnouncement();
+            if (config.linkType === 'latest') {
+                if (typeof window.setActiveFolder === 'function') window.setActiveFolder('all');
+                window.state.gallerySort = 'newest';
+                window.renderImages?.();
+            } else if (config.linkType === 'folder' && config.folderId) {
+                if (typeof window.setActiveFolder === 'function') window.setActiveFolder(config.folderId);
+            }
+        };
+
+        window.renderPopupAnnouncementAdmin = function() {
+            const config = window.state?.popupAnnouncementConfig;
+
+            const preview = document.getElementById('popupAnnouncementPreview');
+            const previewImg = document.getElementById('popupAnnouncementPreviewImg');
+            const statusEl = document.getElementById('popupAnnouncementStatus');
+            const audienceEl = document.getElementById('popupAnnouncementAudienceLabel');
+            const enabledCb = document.getElementById('popupEnabled');
+
+            if (config && config.imageUrl) {
+                if (preview) preview.classList.remove('hidden');
+                if (previewImg) previewImg.src = config.imageUrl;
+                if (statusEl) statusEl.textContent = config.enabled ? 'פעיל' : 'כבוי';
+                if (audienceEl) audienceEl.textContent = config.audience === 'approved' ? 'מורשים בלבד' : 'כולם';
+            } else {
+                if (preview) preview.classList.add('hidden');
+            }
+
+            if (enabledCb) enabledCb.checked = config ? !!config.enabled : true;
+
+            const linkType = config?.linkType || 'none';
+            document.querySelectorAll('input[name="popupLinkType"]').forEach(r => { r.checked = r.value === linkType; });
+            const folderArea = document.getElementById('popupFolderSelectorArea');
+            if (folderArea) folderArea.classList.toggle('hidden', linkType !== 'folder');
+
+            const audience = config?.audience || 'all';
+            document.querySelectorAll('input[name="popupAudience"]').forEach(r => { r.checked = r.value === audience; });
+
+            const folderSelect = document.getElementById('popupFolderSelect');
+            if (folderSelect) {
+                folderSelect.innerHTML = (window.state.folders || [])
+                    .filter(f => f.id !== 'all')
+                    .map(f => `<option value="${f.id}"${String(config?.folderId) === String(f.id) ? ' selected' : ''}>${f.name || f.id}</option>`)
+                    .join('');
+            }
+        };
+
+        window.savePopupAnnouncement = async function() {
+            if (!window.state.isSuperAdmin) { window.showNotification('פעולה זו זמינה למנהל-על בלבד.', false); return; }
+            const statusEl = document.getElementById('popupSaveStatus');
+            if (statusEl) statusEl.textContent = 'שומר...';
+
+            try {
+                const fileInput = document.getElementById('popupImageInput');
+                const file = fileInput?.files?.[0];
+                const linkType = document.querySelector('input[name="popupLinkType"]:checked')?.value || 'none';
+                const audience = document.querySelector('input[name="popupAudience"]:checked')?.value || 'all';
+                const enabled = document.getElementById('popupEnabled')?.checked !== false;
+                const folderId = linkType === 'folder' ? (document.getElementById('popupFolderSelect')?.value || '') : '';
+
+                let imageUrl = window.state.popupAnnouncementConfig?.imageUrl || '';
+                let r2Key = window.state.popupAnnouncementConfig?.r2Key || '';
+
+                if (file) {
+                    if (file.size > 5 * 1024 * 1024) throw new Error('גודל הקובץ מרבי 5MB.');
+                    const popupId = 'popup_announcement_' + Date.now();
+                    const uploaded = await window.uploadMediaToR2(file, popupId, 'popup-announcement');
+                    if (!uploaded?.url) throw new Error('העלאת התמונה נכשלה.');
+                    if (r2Key && r2Key !== uploaded.r2Key) {
+                        await window.deleteImageFromR2({ r2Key }).catch(() => {});
+                    }
+                    imageUrl = uploaded.url;
+                    r2Key = uploaded.r2Key || '';
+                }
+
+                if (!imageUrl) throw new Error('יש לבחור תמונה לפופ-אפ.');
+
+                const config = { imageUrl, r2Key, linkType, folderId, audience, enabled, updatedAt: Date.now() };
+                const { doc, setDoc } = window.firestoreModules;
+                await setDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'siteSettings', 'popupAnnouncement'), config);
+                window.state.popupAnnouncementConfig = config;
+                if (fileInput) fileInput.value = '';
+                window.renderPopupAnnouncementAdmin();
+                if (statusEl) statusEl.textContent = 'נשמר בהצלחה!';
+                window.showNotification('הפופ-אפ נשמר ופורסם.', true);
+            } catch (e) {
+                if (statusEl) statusEl.textContent = 'שגיאה: ' + (e.message || 'שמירה נכשלה');
+                window.showNotification('שגיאה בשמירת הפופ-אפ: ' + (e.message || ''), false);
+            }
+        };
+
+        window.deletePopupAnnouncement = async function(confirmed) {
+            if (!window.state.isSuperAdmin) { window.showNotification('פעולה זו זמינה למנהל-על בלבד.', false); return; }
+            if (!confirmed) {
+                if (!confirm('למחוק את הודעת הפופ-אפ?')) return;
+                return window.deletePopupAnnouncement(true);
+            }
+            const statusEl = document.getElementById('popupSaveStatus');
+            if (statusEl) statusEl.textContent = 'מוחק...';
+            try {
+                const r2Key = window.state.popupAnnouncementConfig?.r2Key;
+                if (r2Key) await window.deleteImageFromR2({ r2Key }).catch(() => {});
+                const { doc, deleteDoc } = window.firestoreModules;
+                await deleteDoc(doc(window.db, 'artifacts', window.appId, 'public', 'data', 'siteSettings', 'popupAnnouncement'));
+                window.state.popupAnnouncementConfig = null;
+                window.renderPopupAnnouncementAdmin();
+                if (statusEl) statusEl.textContent = '';
+                window.showNotification('הפופ-אפ נמחק.', true);
+            } catch (e) {
+                if (statusEl) statusEl.textContent = 'שגיאה: ' + (e.message || 'מחיקה נכשלה');
+                window.showNotification('שגיאה במחיקת הפופ-אפ: ' + (e.message || ''), false);
+            }
+        };
+
+        // =================== END POPUP ANNOUNCEMENT ===================
 
         function initAmbientArchiveBackground() {
             const canvas = document.getElementById('ambientCanvas');
