@@ -2322,12 +2322,25 @@
                         <!-- ──────── סנכרון אוטומטי Worker ──────── -->
 <div class="border-t border-white/10 pt-3 mt-1  space-y-2">
   <div class="flex items-center justify-between">
-    <span class="text-[9px] font-bold text-amber-400 uppercase tracking-wide">📂 סנכרון אוטומטי (Worker)</span>
+    <span class="text-[9px] font-bold text-amber-400 uppercase tracking-wide">📂 סנכרון אוטומטי</span>
     <button type="button" onclick="addDriveFolderRow()"
       class="text-[9px] text-amber-400 hover:underline font-bold">+ הוסף תיקייה</button>
   </div>
 
   <div id="driveFoldersList" class="space-y-2"></div>
+
+  <div class="grid grid-cols-2 gap-2">
+    <label class="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 cursor-pointer">
+      <input type="checkbox" id="driveAutoSyncEnabled" class="rounded text-amber-500 focus:ring-amber-500">
+      <span class="text-[10px] font-semibold text-slate-300">הפעל אוטומטית</span>
+    </label>
+    <select id="driveAutoSyncInterval" class="rounded-xl border border-white/10 bg-slate-900 px-2 py-2 text-[10px] text-slate-200">
+      <option value="15">כל 15 דקות</option>
+      <option value="30">כל 30 דקות</option>
+      <option value="60">כל שעה</option>
+      <option value="180">כל 3 שעות</option>
+    </select>
+  </div>
 
   <p id="noFoldersMsg"
     class="text-[9px] text-slate-500 text-center py-1">
@@ -2337,7 +2350,7 @@
   <div class="flex gap-2">
     <button type="button" onclick="saveDriveFoldersToWorker()"
       class="flex-1 py-2 rounded-xl text-[10px] font-bold bg-blue-600 hover:bg-blue-700 text-white transition-all">
-      💾 שמור תיקיות
+      💾 שמור הגדרות
     </button>
     <button type="button" id="workerSyncBtn" onclick="syncNowFromWorker()"
       class="flex-1 py-2 rounded-xl text-[10px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-all">
@@ -3685,14 +3698,15 @@ async function loadDriveFolders() {
   const existingList = document.getElementById('driveFoldersList');
   if (existingList) existingList.innerHTML = '';
   try {
-    const res = await driveWorkerRequest('/drive/folders', { method: 'GET' });
-    if (!res.success) return;
-
-    const folders = res.folders || [];
+    const settings = JSON.parse(localStorage.getItem('simchatDriveAutoSync') || '{}');
+    const folders = Array.isArray(settings.folders) ? settings.folders : [];
     const noMsg = document.getElementById('noFoldersMsg');
-
-    if (res.lastSync) {
-      const d = new Date(res.lastSync);
+    const enabled = document.getElementById('driveAutoSyncEnabled');
+    const interval = document.getElementById('driveAutoSyncInterval');
+    if (enabled) enabled.checked = settings.enabled === true;
+    if (interval) interval.value = String(settings.intervalMinutes || 30);
+    if (settings.lastSync) {
+      const d = new Date(settings.lastSync);
       const el = document.getElementById('workerLastSync');
       if (el) el.textContent = `סנכרון אחרון: ${d.toLocaleString('he-IL')}`;
     }
@@ -3758,16 +3772,17 @@ async function saveDriveFoldersToWorker() {
 
   const resultEl = document.getElementById('workerSyncResult');
   try {
-    const res = await driveWorkerRequest('/drive/folders', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ folders })
-    });
-    if (res.success) {
-      if (resultEl) { resultEl.style.color = '#22c55e'; resultEl.textContent = `✅ ${folders.length} תיקיות נשמרו!`; }
-    } else {
-      if (resultEl) { resultEl.style.color = '#ef4444'; resultEl.textContent = `❌ ${res.message || 'שגיאה'}`; }
-    }
+    const previous = JSON.parse(localStorage.getItem('simchatDriveAutoSync') || '{}');
+    const settings = {
+      folders,
+      enabled: document.getElementById('driveAutoSyncEnabled')?.checked === true,
+      intervalMinutes: Number(document.getElementById('driveAutoSyncInterval')?.value || 30),
+      lastSync: previous.lastSync || null
+    };
+    localStorage.setItem('simchatDriveAutoSync', JSON.stringify(settings));
+    scheduleDriveAutoSync();
+    if (resultEl) { resultEl.style.color = '#22c55e'; resultEl.textContent = `✅ ההגדרות נשמרו (${folders.length} תיקיות)`; }
+    window.showNotification?.('הגדרות הסנכרון האוטומטי נשמרו.', true);
   } catch (err) {
     if (resultEl) { resultEl.style.color = '#ef4444'; resultEl.textContent = `❌ ${err.message}`; }
   }
@@ -3780,14 +3795,25 @@ async function syncNowFromWorker() {
   if (btn) { btn.disabled = true; btn.textContent = '⏳ מסנכרן...'; }
 
   try {
-    const res = await driveWorkerRequest('/drive/sync', { method: 'POST' });
-    if (res.success) {
-      if (resultEl) { resultEl.style.color = '#22c55e'; resultEl.textContent = `✅ ${res.totalSynced} קבצים חדשים סונכרנו!`; }
-      const lastEl = document.getElementById('workerLastSync');
-      if (lastEl) lastEl.textContent = `סנכרון אחרון: ${new Date().toLocaleString('he-IL')}`;
-    } else {
-      if (resultEl) { resultEl.style.color = '#ef4444'; resultEl.textContent = `❌ ${res.message || 'סנכרון נכשל'}`; }
+    if (!driveAccessToken) await restoreDriveConnection(false, true);
+    if (!driveAccessToken) throw new Error('יש לחבר את Google Drive לפני הסנכרון.');
+    const settings = JSON.parse(localStorage.getItem('simchatDriveAutoSync') || '{}');
+    const folders = (settings.folders || []).filter(folder => folder.autoSync !== false && parseDriveFolderId(folder.url));
+    if (!folders.length) throw new Error('לא הוגדרו תיקיות תקינות לסנכרון.');
+    let total = 0;
+    for (const saved of folders) {
+      const id = parseDriveFolderId(saved.url);
+      const folder = { id, name: saved.label || 'תיקיית Drive' };
+      const mediaFiles = await collectSingleDriveFolderMedia(folder);
+      const result = await syncDriveMediaFiles(folder, mediaFiles);
+      total += result.addedOrUpdated || 0;
     }
+    settings.lastSync = new Date().toISOString();
+    localStorage.setItem('simchatDriveAutoSync', JSON.stringify(settings));
+    if (resultEl) { resultEl.style.color = '#22c55e'; resultEl.textContent = `✅ הסנכרון הושלם: ${total} קבצים נוספו או עודכנו`; }
+    const lastEl = document.getElementById('workerLastSync');
+    if (lastEl) lastEl.textContent = `סנכרון אחרון: ${new Date(settings.lastSync).toLocaleString('he-IL')}`;
+    window.showNotification?.('הסנכרון האוטומטי הושלם בהצלחה.', true);
   } catch (err) {
     if (resultEl) { resultEl.style.color = '#ef4444'; resultEl.textContent = `❌ ${err.message}`; }
   }
@@ -3795,6 +3821,18 @@ async function syncNowFromWorker() {
   if (btn) { btn.disabled = false; btn.textContent = '🔄 סנכרן עכשיו'; }
   setTimeout(() => { if (resultEl) resultEl.textContent = ''; }, 6000);
 }
+let driveAutoSyncTimer = null;
+function scheduleDriveAutoSync() {
+  if (driveAutoSyncTimer) clearInterval(driveAutoSyncTimer);
+  const settings = JSON.parse(localStorage.getItem('simchatDriveAutoSync') || '{}');
+  if (!settings.enabled) return;
+  const delay = Math.max(15, Number(settings.intervalMinutes || 30)) * 60000;
+  driveAutoSyncTimer = setInterval(() => syncNowFromWorker(), delay);
+  if (!settings.lastSync || Date.now() - new Date(settings.lastSync).getTime() >= delay) {
+    setTimeout(() => syncNowFromWorker(), 1500);
+  }
+}
+document.addEventListener('DOMContentLoaded', scheduleDriveAutoSync);
         window.addDriveFolderRow = addDriveFolderRow;
         window.removeDriveFolderRow = removeDriveFolderRow;
         window.saveDriveFoldersToWorker = saveDriveFoldersToWorker;
