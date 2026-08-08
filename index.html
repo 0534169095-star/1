@@ -7430,7 +7430,7 @@ async function syncNowFromWorker() {
                     if (folderId) s.insertAdjacentHTML('beforeend', `<option value="${folderId}" class="bg-slate-950 text-white">${escapeHtml(f.name)}</option>`);
                 });
             });
-        }
+        };
 
         // Debounced render wrappers — collapse rapid successive calls into one DOM update
         (function() {
