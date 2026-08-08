@@ -2302,10 +2302,9 @@
                             <input type="text" id="driveFolderInput" inputmode="url" autocomplete="off" placeholder="https://drive.google.com/drive/folders/..." class="w-full rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/20" dir="ltr">
                         </label>
 
-                        <label class="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 cursor-pointer">
-                            <input type="checkbox" id="driveIncludeSubfolders" checked class="rounded text-amber-500 focus:ring-amber-500 border-white/10">
-                            <span class="text-[10px] font-semibold text-slate-300">כלול גם תיקיות משנה</span>
-                        </label>
+                        <div class="rounded-xl border border-amber-400/20 bg-amber-400/5 px-3 py-2 text-[10px] font-semibold leading-relaxed text-amber-300">
+                            כל קישור מסנכרן תמיד את כל התיקייה, כולל כל תיקיות המשנה והמבנה שלהן.
+                        </div>
 
                         <div id="driveSyncProgress" class="hidden rounded-xl border border-white/10 bg-white/5 p-3" aria-live="polite">
                             <div class="h-1.5 w-full overflow-hidden rounded-full bg-white/5">
@@ -2316,7 +2315,7 @@
 
                         <button type="button" id="driveSyncBtn" onclick="startGoogleDriveSync()" disabled class="w-full py-2.5 btn-primary-gold rounded-xl text-xs font-bold flex items-center justify-center gap-2">
                             <i data-lucide="folders" class="w-4 h-4"></i>
-                            פתח תיקיות לסנכרון
+                            סנכרן את התיקייה וכל תיקיות המשנה
                         </button>
                         <p class="pb-1 text-[9px] text-slate-400 leading-relaxed">הסנכרון מוסיף ומעדכן בלבד. הוא לא מוחק מהגלריה קבצים שהוסרו מ־Drive. סרטוני MP4 ו־WebM מוגבלים ל־100MB.</p>
                         <!-- ──────── סנכרון אוטומטי Worker ──────── -->
@@ -3343,7 +3342,8 @@
                 id: root.id,
                 name: root.name || 'Google Drive',
                 path: root.name || 'Google Drive',
-                depth: 0
+                depth: 0,
+                parentDriveFolderId: null
             };
             const folders = [rootFolder];
 
@@ -3361,7 +3361,8 @@
                             id: item.id,
                             name: item.name || 'תיקייה ללא שם',
                             path: currentFolder.path + ' / ' + (item.name || 'תיקייה ללא שם'),
-                            depth: currentFolder.depth + 1
+                            depth: currentFolder.depth + 1,
+                            parentDriveFolderId: currentFolder.id
                         });
                     }
                 }
@@ -3391,6 +3392,12 @@
                 icon: 'folder-sync',
                 isDefault: false,
                 driveFolderId: folder.id,
+                driveParentFolderId: folder.parentDriveFolderId || null,
+                parentFolderId: folder.parentDriveFolderId
+                    ? makeDriveRecordId('drivefolder', folder.parentDriveFolderId)
+                    : null,
+                drivePath: folder.path,
+                driveDepth: Number(folder.depth) || 0,
                 syncedFromDrive: true
             });
         }
@@ -3500,6 +3507,38 @@
 
             window.populateFolderSelects?.();
             return { addedOrUpdated, unchanged, failed, total };
+        }
+
+        async function syncDriveFolderTree(rootFolder) {
+            const discovered = await collectDriveFolders(rootFolder.id, true);
+            const folders = discovered.folders;
+            const previousRootId = driveFolderPickerState.rootFolderId;
+            driveFolderPickerState.rootFolderId = rootFolder.id;
+            let addedOrUpdated = 0;
+            let unchanged = 0;
+            let failed = 0;
+            let total = 0;
+            try {
+                for (let index = 0; index < folders.length; index++) {
+                    setDriveSyncProgress(index, folders.length, 'יוצר מבנה תיקיות: ' + folders[index].path);
+                    await saveDriveGalleryFolder(folders[index]);
+                }
+                for (let index = 0; index < folders.length; index++) {
+                    const folder = folders[index];
+                    setDriveSyncProgress(index, folders.length, 'מסנכרן תיקייה ' + (index + 1) + ' מתוך ' + folders.length + ': ' + folder.path);
+                    const mediaFiles = await collectSingleDriveFolderMedia(folder);
+                    const result = await syncDriveMediaFiles(folder, mediaFiles);
+                    addedOrUpdated += result.addedOrUpdated || 0;
+                    unchanged += result.unchanged || 0;
+                    failed += result.failed || 0;
+                    total += result.total || 0;
+                }
+            } finally {
+                driveFolderPickerState.rootFolderId = previousRootId;
+            }
+            setDriveSyncProgress(folders.length, folders.length,
+                'הסנכרון הושלם: ' + folders.length + ' תיקיות, ' + addedOrUpdated + ' קבצים נוספו או עודכנו.');
+            return { addedOrUpdated, unchanged, failed, total, folders: folders.length };
         }
 
         function ensureDriveFolderPickerModal() {
@@ -3648,13 +3687,13 @@
             }
 
             try {
-                const mediaFiles = await collectSingleDriveFolderMedia(folder);
-                if (status) status.textContent = 'נמצאו ' + mediaFiles.length + ' קבצי מדיה. מסנכרן...';
-                const result = await syncDriveMediaFiles(folder, mediaFiles);
+                if (status) status.textContent = 'סורק את התיקייה ואת כל תיקיות המשנה...';
+                const result = await syncDriveFolderTree(folder);
 
                 if (status) {
                     status.className = 'mt-4 min-h-5 text-[11px] font-semibold text-emerald-400';
-                    status.textContent = 'הושלם: ' + result.addedOrUpdated + ' נוספו או עודכנו, '
+                    status.textContent = 'הושלם: ' + result.folders + ' תיקיות, '
+                        + result.addedOrUpdated + ' קבצים נוספו או עודכנו, '
                         + result.unchanged + ' ללא שינוי'
                         + (result.failed ? ', ' + result.failed + ' נכשלו' : '');
                 }
@@ -3668,7 +3707,7 @@
                 window.showNotification(
                     result.failed
                         ? 'הסנכרון הושלם חלקית: ' + result.addedOrUpdated + ' הצליחו, ' + result.failed + ' נכשלו.'
-                        : 'התיקייה “' + folder.name + '” סונכרנה בהצלחה.',
+                        : 'התיקייה “' + folder.name + '” וכל תיקיות המשנה סונכרנו בהצלחה.',
                     result.failed === 0
                 );
             } catch (error) {
@@ -3803,9 +3842,15 @@ async function syncNowFromWorker() {
     let total = 0;
     for (const saved of folders) {
       const id = parseDriveFolderId(saved.url);
-      const folder = { id, name: saved.label || 'תיקיית Drive' };
-      const mediaFiles = await collectSingleDriveFolderMedia(folder);
-      const result = await syncDriveMediaFiles(folder, mediaFiles);
+      const metadata = await getDriveFileMetadata(id);
+      const folder = {
+        id,
+        name: saved.label || metadata.name || 'תיקיית Drive',
+        path: saved.label || metadata.name || 'תיקיית Drive',
+        depth: 0,
+        parentDriveFolderId: null
+      };
+      const result = await syncDriveFolderTree(folder);
       total += result.addedOrUpdated || 0;
     }
     settings.lastSync = new Date().toISOString();
@@ -3857,13 +3902,10 @@ document.addEventListener('DOMContentLoaded', scheduleDriveAutoSync);
                 return;
             }
 
-            const includeSubfolders = document.getElementById('driveIncludeSubfolders')?.checked !== false;
             if (!confirmed) {
                 window.showConfirm(
-                    'חיפוש תיקיות ב־Drive',
-                    includeSubfolders
-                        ? 'המערכת תסרוק את התיקייה ותפתח דף עם כל תיקיות המשנה, כדי שתוכל לסנכרן כל אחת בנפרד. להמשיך?'
-                        : 'המערכת תסנכרן רק את התיקייה שבחרת. להמשיך?',
+                    'סנכרון תיקיית Drive',
+                    'המערכת תסנכרן את התיקייה שבקישור, את כל תיקיות המשנה ואת כל הקבצים שבתוכן. להמשיך?',
                     function() { window.startGoogleDriveSync(true); }
                 );
                 return;
@@ -3876,30 +3918,20 @@ document.addEventListener('DOMContentLoaded', scheduleDriveAutoSync);
             setDriveSyncProgress(0, 0, 'קורא את מבנה התיקיות מ־Drive...');
 
             try {
-                const driveFolders = await collectDriveFolders(rootFolderId, includeSubfolders);
-                driveFolderPickerState = {
-                    rootFolderId,
-                    rootName: driveFolders.root?.name || 'Google Drive',
-                    folders: driveFolders.folders
+                const metadata = await getDriveFileMetadata(rootFolderId);
+                const rootFolder = {
+                    id: rootFolderId,
+                    name: metadata.name || 'Google Drive',
+                    path: metadata.name || 'Google Drive',
+                    depth: 0,
+                    parentDriveFolderId: null
                 };
-
-                if (includeSubfolders && driveFolders.folders.length > 1) {
-                    setDriveSyncProgress(
-                        driveFolders.folders.length,
-                        driveFolders.folders.length,
-                        'נמצאו ' + driveFolders.folders.length + ' תיקיות. בחר מהדף שנפתח איזו תיקייה לסנכרן.'
-                    );
-                    window.openDriveFolderPicker();
-                    window.showNotification('נפתח דף עם כל תיקיות ה־Drive. סנכרן כל תיקייה בנפרד.', true);
-                } else {
-                    const folder = driveFolders.folders[0];
-                    const mediaFiles = await collectSingleDriveFolderMedia(folder);
-                    const result = await syncDriveMediaFiles(folder, mediaFiles);
-                    window.showNotification(
-                        'סנכרון Drive הושלם: ' + result.addedOrUpdated + ' קבצים נוספו או עודכנו.',
-                        true
-                    );
-                }
+                const result = await syncDriveFolderTree(rootFolder);
+                window.showNotification(
+                    'סנכרון Drive הושלם: ' + result.folders + ' תיקיות ו־'
+                        + result.addedOrUpdated + ' קבצים נוספו או עודכנו.',
+                    result.failed === 0
+                );
             } catch (error) {
                 console.error('Google Drive sync failed:', error);
                 setDriveSyncProgress(0, 1, error.message || 'סנכרון Drive נכשל.');
