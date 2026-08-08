@@ -1,5 +1,5 @@
 // ✅ FIX: עדכון גרסת cache — משתמשים יקבלו את cloudflare-client.js המתוקן
-const CACHE_NAME = "simchat-gallery-shell-v8-drive-auto-sync";
+const CACHE_NAME = "simchat-gallery-shell-v9-drive-recursive-sync";
 const APP_SHELL = ["./", "./index.html", "./cloudflare-client.js", "./manifest.webmanifest"];
 
 self.addEventListener("install", event => {
